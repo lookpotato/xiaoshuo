@@ -17,7 +17,9 @@
    `python .\novel_manager.py progress --book cosmic-404 --phase chapter_archived`。
 6. 只有 `fanqie_writer_url`、`book_id` 均非 `UNBOUND` 才能进入番茄后台，
    并必须核对页面作品名和 book_id。`submit_publish: false` 时只存番茄草稿；
-   `submit_publish: true` 时才提交发布。
+   `submit_publish: true` 时才提交发布。进入后台前必须完整读取
+   `fanqie_ui_workflow.md`，严格遵守其中的章节号、标题、正文定位、固定弹窗和
+   发布设置流程。标题必须超过 5 个汉字。
 7. 归档成功但上传尚未完成时记录 `upload_pending`，下次只重传：
    `python .\novel_manager.py finish --book cosmic-404 --result upload_pending --message "具体原因"`。
 8. 登录失效、验证码、风控、政策或审核警告、陌生确认框、作品不匹配等需要
