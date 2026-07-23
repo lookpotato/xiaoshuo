@@ -10,6 +10,6 @@ chapter_or_publish_id: 7665721695205868057
 # 已获得自动提交授权；遇到登录验证、验证码、风控或未知弹窗时仍须停止。
 submit_publish: true
 
-email_report_enabled: false
-email_to:
+email_report_enabled: true
+email_to: 1600793966@qq.com
 failure_policy: stop
