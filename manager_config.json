@@ -8,8 +8,8 @@
   "books": [
     {
       "id": "cosmic-404",
-      "title": "宇宙不予解析",
-      "path": "宇宙不予解析",
+      "title": "404修理站",
+      "path": "404修理站",
       "enabled": true,
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
