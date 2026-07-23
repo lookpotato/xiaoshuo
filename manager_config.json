@@ -2,21 +2,10 @@
   "schema_version": 1,
   "timezone": "Asia/Shanghai",
   "global_lock_minutes": 180,
-  "default_failure_policy": "retry_next_run",
+  "max_daily_attempts": 2,
+  "retry_delay_minutes": 30,
+  "default_failure_policy": "retry_same_day",
   "books": [
-    {
-      "id": "test-novel",
-      "title": "测试12342353245",
-      "path": "测试本小说",
-      "enabled": false,
-      "schedule": {
-        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-        "time": "12:00"
-      },
-      "priority": 10,
-      "mode": "retry_upload_first",
-      "note": "保留作上传链路测试；默认停用，防止与正式书混写。"
-    },
     {
       "id": "cosmic-404",
       "title": "宇宙不予解析",
@@ -24,7 +13,7 @@
       "enabled": true,
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-        "time": "12:30"
+        "time": "12:00"
       },
       "priority": 100,
       "mode": "write_then_upload",

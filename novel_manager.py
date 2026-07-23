@@ -126,14 +126,31 @@ def is_due(book, now, runtime):
     target = scheduled_today(book, now)
     if target is None or now < target:
         return False, "not_time"
-    last = runtime.get("books", {}).get(book["id"], {}).get("last_claimed_at")
-    if last and datetime.fromisoformat(last).date() == now.date():
-        return False, "already_claimed"
+    status = runtime.get("books", {}).get(book["id"], {})
+    last_success = status.get("last_success_at")
+    if last_success and datetime.fromisoformat(last_success).date() == now.date():
+        return False, "already_completed"
+    state = status.get("run_status")
+    last_claimed = status.get("last_claimed_at")
+    if last_claimed and datetime.fromisoformat(last_claimed).date() == now.date():
+        if state in {"claimed", "chapter_archived"}:
+            return False, state
+        if state == "blocked_manual":
+            return False, "blocked_manual"
+        if state in {"failed_retryable", "upload_pending"}:
+            attempts = status.get("attempt_count", 0)
+            max_attempts = runtime.get("max_daily_attempts", 3)
+            if attempts >= max_attempts:
+                return False, "retry_limit"
+            retry_after = status.get("retry_after")
+            if retry_after and now < datetime.fromisoformat(retry_after):
+                return False, "retry_wait"
     return True, "due"
 
 
 def cmd_list(data, _args):
     runtime = read_json(RUNTIME, {"books": {}})
+    runtime["max_daily_attempts"] = data.get("max_daily_attempts", 3)
     now = now_for(data)
     for book in sorted(data["books"], key=lambda x: -x.get("priority", 0)):
         due, reason = is_due(book, now, runtime)
@@ -164,6 +181,7 @@ def cmd_validate(data, _args):
 
 def cmd_due(data, _args):
     runtime = read_json(RUNTIME, {"books": {}})
+    runtime["max_daily_attempts"] = data.get("max_daily_attempts", 3)
     now = now_for(data)
     due_books = []
     for book in data["books"]:
@@ -208,9 +226,50 @@ def cmd_claim(data, args):
         print("任务刚被另一个进程领取", file=sys.stderr)
         return 2
     runtime = read_json(RUNTIME, {"books": {}})
-    runtime.setdefault("books", {}).setdefault(book["id"], {})["last_claimed_at"] = now.isoformat()
+    status = runtime.setdefault("books", {}).setdefault(book["id"], {})
+    previous_claim = status.get("last_claimed_at")
+    if previous_claim and datetime.fromisoformat(previous_claim).date() == now.date():
+        status["attempt_count"] = status.get("attempt_count", 0) + 1
+    else:
+        status["attempt_count"] = 1
+    status.update({
+        "last_claimed_at": now.isoformat(),
+        "run_status": "claimed",
+        "retry_after": None,
+        "message": "",
+    })
     write_json(RUNTIME, runtime)
     print(json.dumps({**payload, "project_path": str(project_path(book)), "mode": book.get("mode")}, ensure_ascii=False))
+
+
+def cmd_next(data, _args):
+    runtime = read_json(RUNTIME, {"books": {}})
+    runtime["max_daily_attempts"] = data.get("max_daily_attempts", 3)
+    now = now_for(data)
+    due_books = [book for book in data["books"] if is_due(book, now, runtime)[0]]
+    due_books.sort(key=lambda item: -item.get("priority", 0))
+    if not due_books:
+        print("{}")
+        return 0
+    args = argparse.Namespace(book=due_books[0]["id"], force=False)
+    return cmd_claim(data, args)
+
+
+def cmd_progress(data, args):
+    now = now_for(data)
+    lock = read_json(LOCK, None)
+    if not lock or lock.get("book_id") != args.book:
+        print("没有与该书匹配的运行锁", file=sys.stderr)
+        return 2
+    runtime = read_json(RUNTIME, {"books": {}})
+    status = runtime.setdefault("books", {}).setdefault(args.book, {})
+    status.update({
+        "run_status": args.phase,
+        "last_progress_at": now.isoformat(),
+        "message": args.message,
+    })
+    write_json(RUNTIME, runtime)
+    print(f"已记录 {args.book}: {args.phase}")
 
 
 def cmd_finish(data, args):
@@ -221,10 +280,25 @@ def cmd_finish(data, args):
         return 2
     runtime = read_json(RUNTIME, {"books": {}})
     status = runtime.setdefault("books", {}).setdefault(args.book, {})
-    status.update({"last_finished_at": now.isoformat(), "last_result": args.result, "message": args.message})
+    result_aliases = {"failed": "failed_retryable", "blocked": "blocked_manual"}
+    result = result_aliases.get(args.result, args.result)
+    status.update({
+        "last_finished_at": now.isoformat(),
+        "last_result": result,
+        "run_status": result,
+        "message": args.message,
+    })
+    if result == "success":
+        status["last_success_at"] = now.isoformat()
+        status["retry_after"] = None
+    elif result in {"failed_retryable", "upload_pending"}:
+        delay = data.get("retry_delay_minutes", 30)
+        status["retry_after"] = (now + timedelta(minutes=delay)).isoformat()
+    else:
+        status["retry_after"] = None
     write_json(RUNTIME, runtime)
     LOCK.unlink(missing_ok=True)
-    print(f"已记录 {args.book}: {args.result}")
+    print(f"已记录 {args.book}: {result}")
 
 
 def main():
@@ -233,16 +307,33 @@ def main():
     sub.add_parser("list")
     sub.add_parser("validate")
     sub.add_parser("due")
+    sub.add_parser("next")
     claim = sub.add_parser("claim")
     claim.add_argument("--book", required=True)
     claim.add_argument("--force", action="store_true")
+    progress = sub.add_parser("progress")
+    progress.add_argument("--book", required=True)
+    progress.add_argument("--phase", choices=["chapter_archived", "upload_pending"], required=True)
+    progress.add_argument("--message", default="")
     finish = sub.add_parser("finish")
     finish.add_argument("--book", required=True)
-    finish.add_argument("--result", choices=["success", "failed", "blocked"], required=True)
+    finish.add_argument(
+        "--result",
+        choices=["success", "failed_retryable", "upload_pending", "blocked_manual", "failed", "blocked"],
+        required=True,
+    )
     finish.add_argument("--message", default="")
     args = parser.parse_args()
     data = config()
-    funcs = {"list": cmd_list, "validate": cmd_validate, "due": cmd_due, "claim": cmd_claim, "finish": cmd_finish}
+    funcs = {
+        "list": cmd_list,
+        "validate": cmd_validate,
+        "due": cmd_due,
+        "next": cmd_next,
+        "claim": cmd_claim,
+        "progress": cmd_progress,
+        "finish": cmd_finish,
+    }
     result = funcs[args.command](data, args)
     raise SystemExit(result or 0)
 
