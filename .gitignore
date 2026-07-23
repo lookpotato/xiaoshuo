@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+
+# Local manager execution state
+.manager.lock
+.manager_runtime.json
