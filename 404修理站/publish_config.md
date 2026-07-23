@@ -1,14 +1,14 @@
 # 发布配置
 
-# 新书尚未在番茄后台建立并绑定。创建作品后，把本书专属章节发布 URL 填在下方。
-fanqie_writer_url: UNBOUND
-book_id: UNBOUND
-chapter_or_publish_id: UNBOUND
+# 已绑定《404修理站》的番茄作家后台；每次发布前仍须核对页面作品名与 book_id。
+fanqie_writer_url: https://fanqienovel.com/main/writer/7665708834681277465/publish/?enter_from=newchapter
+book_id: 7665708834681277465
+chapter_or_publish_id: 7665721695205868057
 
 # 浏览器发布前必须读取 fanqie_ui_workflow.md；不得借用测试作品的链接。
 
-# 未绑定期间必须为 false，仅允许本地生成与归档。
-submit_publish: false
+# 已获得自动提交授权；遇到登录验证、验证码、风控或未知弹窗时仍须停止。
+submit_publish: true
 
 email_report_enabled: false
 email_to:
