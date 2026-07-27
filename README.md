@@ -32,6 +32,9 @@ python .\novel_manager.py finish --book cosmic-404 --result blocked_manual --mes
 原子领取任务；根目录锁避免重复写作，默认 180 分钟过期。管理器只负责调度和
 运行状态，生成与上传由自动任务按目标书 `automation_prompt.md` 执行。
 
+`notes` 还会输出 `browser_reliability_steps`，用于判断浏览器控制超时、
+拆分单步操作、执行只读恢复，并防止不确定动作被重复点击。
+
 临时失败或待上传任务由 12:30 的补偿唤醒重试，每天最多 2 次；正常情况下
 12:00 成功后，12:30 只检查状态并立即结束。登录、验证码、风控、
 政策警告等记为 `blocked_manual`，等待人工处理。已经成功完成当天任务后不再领取。

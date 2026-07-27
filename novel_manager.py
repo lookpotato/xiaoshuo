@@ -55,6 +55,16 @@ FANQIE_SUCCESS_CHECKS = [
     "登录失效、验证码、风控、政策警告、陌生确认框、作品不匹配时立即停止并记录 blocked_manual。",
     "页面加载失败、控件暂不可用、网络超时时记录 failed_retryable。",
 ]
+FANQIE_BROWSER_RELIABILITY_STEPS = [
+    "浏览器控制日志中的 ab.chatgpt.com/Statsig 超时属于控制层遥测失败，不等同于番茄提交失败。",
+    "每次浏览器调用只执行一个有副作用的动作；点击后另起一次只读检查，不把多个点击打包成长调用。",
+    "单步控制调用至少预留 60 秒；若仍超时或连接重置，假定动作结果未知，禁止立即重放。",
+    "动作结果未知时，复用同一浏览器并重新取得现有页面；先读取当前 URL、可见弹窗和章节列表，再决定恢复点。",
+    "若确认发布后进入章节管理页，只以列表中的待发布、审核中或已发布为成功信号。",
+    "日期和时间必须通过可见日历/时间选项点击；不得只对输入框 fill，因为受控输入值可能回退到平台默认值。",
+    "选择日期或时间后，回读日期、时间、AI=是和定时开关；四项完全一致才允许点击确认发布。",
+    "同一不确定动作最多进行一次只读恢复；未确认失败前不得再次点击，避免重复提交。",
+]
 FANQIE_BODY_INPUT_STEPS = [
     "优先定位真正的正文编辑器：contenteditable=true 或 ProseMirror 正文区域。",
     "不要点击“AI 开书灵感/生成大纲”等提示入口；只点击正文空白输入区。",
@@ -279,6 +289,9 @@ def cmd_notes(data, args):
         print("success_checks:")
         for check in FANQIE_SUCCESS_CHECKS:
             print(f"- {check}")
+        print("browser_reliability_steps:")
+        for index, step in enumerate(FANQIE_BROWSER_RELIABILITY_STEPS, 1):
+            print(f"{index}. {step}")
         if publish_required and not upload_is_publish_complete(state):
             print("current_action: 先继续完成番茄确认发布，再报告 success。")
         print()
