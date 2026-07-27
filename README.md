@@ -20,7 +20,9 @@ python .\novel_manager.py due
 python .\novel_manager.py next
 python .\novel_manager.py claim --book cosmic-404
 python .\novel_manager.py progress --book cosmic-404 --phase chapter_archived
+python .\novel_manager.py progress --book cosmic-404 --phase publish_pending
 python .\novel_manager.py finish --book cosmic-404 --result success
+python .\novel_manager.py finish --book cosmic-404 --result publish_pending --message "fanqie draft saved; continue publish confirmation"
 python .\novel_manager.py finish --book cosmic-404 --result failed_retryable --message "临时网络失败"
 python .\novel_manager.py finish --book cosmic-404 --result blocked_manual --message "登录失效"
 ```
@@ -34,6 +36,11 @@ python .\novel_manager.py finish --book cosmic-404 --result blocked_manual --mes
 政策警告等记为 `blocked_manual`，等待人工处理。已经成功完成当天任务后不再领取。
 
 ## 调度原则
+
+When `submit_publish: true`, Fanqie draft storage is only an intermediate state.
+The manager must not record `success` until the chapter is visibly in pending
+publish, review, or published state. Use `publish_pending` when a saved Fanqie
+draft still needs the fixed publish-confirmation flow.
 
 1. 《404修理站》每天 12:00 运行。
 2. 同一本书前一章上传失败时，优先重传，不生成重复章节。

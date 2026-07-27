@@ -20,12 +20,16 @@
    `python .\novel_manager.py progress --book cosmic-404 --phase chapter_archived`。
 6. 只有 `fanqie_writer_url`、`book_id` 均非 `UNBOUND` 才能进入番茄后台，
    并必须核对页面作品名和 book_id。`submit_publish: false` 时只存番茄草稿；
-   `submit_publish: true` 时才提交发布。进入后台前必须完整读取
+   `submit_publish: true` 时必须提交发布并设置定时发布；保存到番茄草稿箱只算中间态，
+   不得视为本轮上传成功，也不得以 `success` 结束任务。进入后台前必须完整读取
    `fanqie_ui_workflow.md`，严格遵守其中的章节号、标题、正文定位、固定弹窗和
    发布设置流程。标题必须超过 5 个汉字。只有章节列表、成功提示或审核状态明确
-   证明本轮上传成功，才能更新上传状态并开始第二轮；否则立即停止本次任务。
+   证明目标章节已经进入待发布/审核中/已发布，才能更新上传状态并开始第二轮；
+   否则立即记录 `publish_pending` 或 `upload_pending` 并停止本次任务。
 7. 归档成功但上传尚未完成时记录 `upload_pending`，下次只重传：
    `python .\novel_manager.py finish --book cosmic-404 --result upload_pending --message "具体原因"`。
+   若章节已经进入番茄草稿箱但尚未完成“下一步→基础检测→AI=是→定时发布→确认发布”，
+   记录 `publish_pending`；下次只从草稿箱继续推进发布，不得重写章节。
 8. 登录失效、验证码、风控、政策或审核警告、陌生确认框、作品不匹配等需要
    人工处理的问题，记录 `blocked_manual`；临时网络或页面加载失败记录
    `failed_retryable`。两者都必须写明原因并释放运行锁。
@@ -41,6 +45,6 @@
     简短报告；邮件必须包含两轮各自的章节号、标题、番茄状态、日志路径和失败原因。
     若邮件连接不可用或发送失败，写入日志并将本次结果视为 `failed_retryable`，不得
     虚报通知成功。
-12. 两轮都成功后执行：
+12. 两轮都确认进入待发布/审核中/已发布后才执行：
     `python .\novel_manager.py finish --book cosmic-404 --result success`。
     无论成功、失败还是阻塞，都必须调用一次 `finish` 释放锁。

@@ -22,6 +22,13 @@ REQUIRED_FILES = {
 }
 REQUIRED_DIRS = {"chapters", "drafts", "logs"}
 DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+INCOMPLETE_UPLOAD_STATUSES = {
+    "draft_saved", "not_uploaded", "upload_pending", "failed", "failed_retryable", "blocked_manual",
+}
+SUBMITTED_UPLOAD_STATUSES = {
+    "submitted", "scheduled", "scheduled_review", "submitted_pending_review",
+    "pending_review", "pending_publish", "published",
+}
 
 
 def read_json(path: Path, default=None):
@@ -34,6 +41,25 @@ def write_json(path: Path, data):
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(tmp, path)
+
+
+def publish_flag(text: str, key: str) -> bool:
+    match = re.search(rf"^\s*{re.escape(key)}\s*:\s*(true|false)\s*$", text, re.I | re.M)
+    return bool(match and match.group(1).lower() == "true")
+
+
+def publish_requires_submission(project: Path) -> bool:
+    pub = project / "publish_config.md"
+    if not pub.exists():
+        return False
+    return publish_flag(pub.read_text(encoding="utf-8"), "submit_publish")
+
+
+def upload_is_publish_complete(state: dict) -> bool:
+    status = str(state.get("last_uploaded_status", "")).strip()
+    completed = int(state.get("last_completed_chapter", 0) or 0)
+    uploaded = int(state.get("last_uploaded_chapter", 0) or 0)
+    return uploaded >= completed and status in SUBMITTED_UPLOAD_STATUSES
 
 
 def config():
@@ -106,6 +132,13 @@ def validate_book(book):
         text = pub.read_text(encoding="utf-8")
         if "submit_publish:" not in text:
             errors.append("publish_config.md 缺少 submit_publish")
+        elif publish_flag(text, "submit_publish") and state_path.exists():
+            status = str(state.get("last_uploaded_status", "")).strip()
+            if status in INCOMPLETE_UPLOAD_STATUSES:
+                errors.append(
+                    "submit_publish=true 时，番茄草稿只算中间态；"
+                    f"当前 last_uploaded_status={status}，必须推进到待发布/审核中后才算完成"
+                )
     return errors
 
 
@@ -137,7 +170,7 @@ def is_due(book, now, runtime):
             return False, state
         if state == "blocked_manual":
             return False, "blocked_manual"
-        if state in {"failed_retryable", "upload_pending"}:
+        if state in {"failed_retryable", "upload_pending", "publish_pending"}:
             attempts = status.get("attempt_count", 0)
             max_attempts = runtime.get("max_daily_attempts", 3)
             if attempts >= max_attempts:
@@ -278,6 +311,22 @@ def cmd_finish(data, args):
     if not lock or lock.get("book_id") != args.book:
         print("没有与该书匹配的运行锁", file=sys.stderr)
         return 2
+    book = find_book(data, args.book)
+    project = project_path(book)
+    if args.result == "success" and publish_requires_submission(project):
+        state = read_json(project / "chapter_state.json", {})
+        if not upload_is_publish_complete(state):
+            status = state.get("last_uploaded_status", "unknown")
+            completed = state.get("last_completed_chapter", "unknown")
+            uploaded = state.get("last_uploaded_chapter", "unknown")
+            print(
+                "submit_publish=true 时不能把草稿箱状态记为 success；"
+                f"last_completed_chapter={completed}, last_uploaded_chapter={uploaded}, "
+                f"last_uploaded_status={status}。请先提交到待发布/审核中，"
+                "或使用 upload_pending/publish_pending 保留重试。",
+                file=sys.stderr,
+            )
+            return 1
     runtime = read_json(RUNTIME, {"books": {}})
     status = runtime.setdefault("books", {}).setdefault(args.book, {})
     result_aliases = {"failed": "failed_retryable", "blocked": "blocked_manual"}
@@ -291,7 +340,7 @@ def cmd_finish(data, args):
     if result == "success":
         status["last_success_at"] = now.isoformat()
         status["retry_after"] = None
-    elif result in {"failed_retryable", "upload_pending"}:
+    elif result in {"failed_retryable", "upload_pending", "publish_pending"}:
         delay = data.get("retry_delay_minutes", 30)
         status["retry_after"] = (now + timedelta(minutes=delay)).isoformat()
     else:
@@ -313,13 +362,16 @@ def main():
     claim.add_argument("--force", action="store_true")
     progress = sub.add_parser("progress")
     progress.add_argument("--book", required=True)
-    progress.add_argument("--phase", choices=["chapter_archived", "upload_pending"], required=True)
+    progress.add_argument("--phase", choices=["chapter_archived", "upload_pending", "publish_pending"], required=True)
     progress.add_argument("--message", default="")
     finish = sub.add_parser("finish")
     finish.add_argument("--book", required=True)
     finish.add_argument(
         "--result",
-        choices=["success", "failed_retryable", "upload_pending", "blocked_manual", "failed", "blocked"],
+        choices=[
+            "success", "failed_retryable", "upload_pending", "publish_pending",
+            "blocked_manual", "failed", "blocked",
+        ],
         required=True,
     )
     finish.add_argument("--message", default="")
