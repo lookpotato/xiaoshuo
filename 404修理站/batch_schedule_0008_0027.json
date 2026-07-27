@@ -19,7 +19,7 @@
     {"chapter": 13, "date": "2026-07-29", "time": "12:00", "status": "scheduled_review"},
     {"chapter": 14, "date": "2026-07-30", "time": "12:00", "status": "scheduled_review"},
     {"chapter": 15, "date": "2026-07-30", "time": "12:00", "status": "scheduled_review"},
-    {"chapter": 16, "date": "2026-07-31", "time": "12:00", "status": "pending"},
+    {"chapter": 16, "date": "2026-07-31", "time": "12:00", "status": "submitted_pending_review"},
     {"chapter": 17, "date": "2026-07-31", "time": "platform_nearest_allowed", "status": "pending"},
     {"chapter": 18, "date": "2026-08-01", "time": "12:00", "status": "pending"},
     {"chapter": 19, "date": "2026-08-01", "time": "platform_nearest_allowed", "status": "pending"},
