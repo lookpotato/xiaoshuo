@@ -36,6 +36,23 @@ PUBLISH_ATTENTION_NOTES = [
     "遇到 publish_pending 时，只从现有番茄草稿继续发布，不重写、不推进章节号。",
     "记录 success 前必须核对章节号、标题、日期时间、AI=是、定时发布开关和最终列表状态。",
 ]
+FANQIE_FIXED_UPLOAD_STEPS = [
+    "打开 publish_config.md 中的 fanqie_writer_url，并核对 book_id 与作品名。",
+    "填写章节号、标题和纯正文；正文不得包含 Markdown 标题、分隔线、Metadata 或自动化说明。",
+    "核对平台正文字数非零，且与本地章节字数大致一致。",
+    "点击“下一步”；若出现错别字未修改提示，确认目标作品无误后点击“提交”。",
+    "内容检测方式固定选择“仅基础检测”或同义的“基础检测”，不选择“全面检测”。",
+    "发布设置中“是否使用AI”固定选择“是”。",
+    "打开“定时发布”开关，选择计划日期和时间。",
+    "最终核对章节号、标题、日期、时间、AI=是、定时发布开关后，点击“确认发布”。",
+    "返回章节列表或结果页，确认目标章节显示为待发布、审核中或已发布。",
+]
+FANQIE_SUCCESS_CHECKS = [
+    "只看到草稿箱记录不算成功；记录 publish_pending 并下次继续。",
+    "看到待发布、审核中、已发布、发布成功或已提交审核，才可更新为 success。",
+    "登录失效、验证码、风控、政策警告、陌生确认框、作品不匹配时立即停止并记录 blocked_manual。",
+    "页面加载失败、控件暂不可用、网络超时时记录 failed_retryable。",
+]
 
 
 def read_json(path: Path, default=None):
@@ -242,6 +259,12 @@ def cmd_notes(data, args):
         print("attention:")
         for note in PUBLISH_ATTENTION_NOTES:
             print(f"- {note}")
+        print("fixed_upload_steps:")
+        for index, step in enumerate(FANQIE_FIXED_UPLOAD_STEPS, 1):
+            print(f"{index}. {step}")
+        print("success_checks:")
+        for check in FANQIE_SUCCESS_CHECKS:
+            print(f"- {check}")
         if publish_required and not upload_is_publish_complete(state):
             print("current_action: 先继续完成番茄确认发布，再报告 success。")
         print()

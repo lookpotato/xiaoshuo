@@ -16,7 +16,7 @@
 ```powershell
 python .\novel_manager.py list
 python .\novel_manager.py validate
-python .\novel_manager.py notes --book cosmic-404
+python .\novel_manager.py notes --book cosmic-404  # 查看固定上传流程、成功校验和当前待补动作
 python .\novel_manager.py due
 python .\novel_manager.py next
 python .\novel_manager.py claim --book cosmic-404
