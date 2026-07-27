@@ -23,7 +23,7 @@
     {"chapter": 17, "date": "2026-07-28", "time": "12:00", "status": "scheduled"},
     {"chapter": 18, "date": "2026-08-01", "time": "12:00", "status": "submitted_pending_review"},
     {"chapter": 19, "date": "2026-08-01", "time": "18:00", "status": "scheduled"},
-    {"chapter": 20, "date": "2026-08-02", "time": "12:00", "status": "draft_saved"},
+    {"chapter": 20, "date": "2026-08-02", "time": "18:00", "status": "submitted_pending_review"},
     {"chapter": 21, "date": "2026-08-02", "time": "platform_nearest_allowed", "status": "draft_saved"},
     {"chapter": 22, "date": "2026-08-03", "time": "12:00", "status": "draft_saved"},
     {"chapter": 23, "date": "2026-08-03", "time": "platform_nearest_allowed", "status": "draft_saved"},
