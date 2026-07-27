@@ -29,6 +29,13 @@ SUBMITTED_UPLOAD_STATUSES = {
     "submitted", "scheduled", "scheduled_review", "submitted_pending_review",
     "pending_review", "pending_publish", "published",
 }
+PUBLISH_ATTENTION_NOTES = [
+    "submit_publish=true 时，番茄草稿箱不是终点。",
+    "章节只有明确显示为待发布、审核中或已发布，才算完成。",
+    "章节已存入番茄草稿但尚未确认定时发布时，记录 publish_pending。",
+    "遇到 publish_pending 时，只从现有番茄草稿继续发布，不重写、不推进章节号。",
+    "记录 success 前必须核对章节号、标题、日期时间、AI=是、定时发布开关和最终列表状态。",
+]
 
 
 def read_json(path: Path, default=None):
@@ -212,6 +219,34 @@ def cmd_validate(data, _args):
     return 1 if failed else 0
 
 
+def cmd_notes(data, args):
+    books = data["books"]
+    if args.book:
+        books = [find_book(data, args.book)]
+    runtime = read_json(RUNTIME, {"books": {}})
+    for book in sorted(books, key=lambda x: -x.get("priority", 0)):
+        path = project_path(book)
+        state = read_json(path / "chapter_state.json", {})
+        publish_required = publish_requires_submission(path)
+        print(f"[{book['id']}] {book.get('title')} -> {path}")
+        print(f"submit_publish: {'true' if publish_required else 'false'}")
+        print(
+            "state: "
+            f"completed={state.get('last_completed_chapter', 'unknown')}, "
+            f"uploaded={state.get('last_uploaded_chapter', 'unknown')}, "
+            f"upload_status={state.get('last_uploaded_status', 'unknown')}"
+        )
+        run_status = runtime.get("books", {}).get(book["id"], {}).get("run_status")
+        if run_status:
+            print(f"runtime_status: {run_status}")
+        print("attention:")
+        for note in PUBLISH_ATTENTION_NOTES:
+            print(f"- {note}")
+        if publish_required and not upload_is_publish_complete(state):
+            print("current_action: 先继续完成番茄确认发布，再报告 success。")
+        print()
+
+
 def cmd_due(data, _args):
     runtime = read_json(RUNTIME, {"books": {}})
     runtime["max_daily_attempts"] = data.get("max_daily_attempts", 3)
@@ -355,6 +390,8 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list")
     sub.add_parser("validate")
+    notes = sub.add_parser("notes")
+    notes.add_argument("--book")
     sub.add_parser("due")
     sub.add_parser("next")
     claim = sub.add_parser("claim")
@@ -380,6 +417,7 @@ def main():
     funcs = {
         "list": cmd_list,
         "validate": cmd_validate,
+        "notes": cmd_notes,
         "due": cmd_due,
         "next": cmd_next,
         "claim": cmd_claim,

@@ -5,4 +5,5 @@
 - 修正：`submit_publish: true` 时，`draft_saved` 只算中间态，不再允许作为成功结果。
 - 新增状态：`publish_pending`，用于表示章节已进番茄草稿箱，但还需要继续执行固定发布确认流程。
 - 管理器行为：若章节状态仍是 `draft_saved`、`upload_pending` 等未完成状态，`novel_manager.py validate` 会报错；`finish --result success` 会拒绝完成。
+- 管理器提示：新增 `python .\novel_manager.py notes --book cosmic-404`，用于在执行前查看本次发布注意细节和当前待补动作。
 - 当前待处理：第19—25章仍需从番茄草稿继续推进到定时发布/审核中。
