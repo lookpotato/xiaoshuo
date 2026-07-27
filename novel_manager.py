@@ -38,8 +38,9 @@ PUBLISH_ATTENTION_NOTES = [
 ]
 FANQIE_FIXED_UPLOAD_STEPS = [
     "打开 publish_config.md 中的 fanqie_writer_url，并核对 book_id 与作品名。",
-    "填写章节号、标题和纯正文；正文不得包含 Markdown 标题、分隔线、Metadata 或自动化说明。",
-    "核对平台正文字数非零，且与本地章节字数大致一致。",
+    "填写章节号和标题；标题输入后重新读取页面值，确认没有漏填或焦点错位。",
+    "定位正文编辑器，确认光标进入可编辑正文区域后再粘贴纯正文。",
+    "粘贴后读取正文首段、末段和平台字数；三项都正确才允许继续。",
     "点击“下一步”；若出现错别字未修改提示，确认目标作品无误后点击“提交”。",
     "内容检测方式固定选择“仅基础检测”或同义的“基础检测”，不选择“全面检测”。",
     "发布设置中“是否使用AI”固定选择“是”。",
@@ -50,8 +51,18 @@ FANQIE_FIXED_UPLOAD_STEPS = [
 FANQIE_SUCCESS_CHECKS = [
     "只看到草稿箱记录不算成功；记录 publish_pending 并下次继续。",
     "看到待发布、审核中、已发布、发布成功或已提交审核，才可更新为 success。",
+    "正文为空、正文首尾不匹配、平台字数为 0、字数明显偏离本地章节时，不得点击下一步。",
     "登录失效、验证码、风控、政策警告、陌生确认框、作品不匹配时立即停止并记录 blocked_manual。",
     "页面加载失败、控件暂不可用、网络超时时记录 failed_retryable。",
+]
+FANQIE_BODY_INPUT_STEPS = [
+    "优先定位真正的正文编辑器：contenteditable=true 或 ProseMirror 正文区域。",
+    "不要点击“AI 开书灵感/生成大纲”等提示入口；只点击正文空白输入区。",
+    "不要并行填章节号、标题和正文；同一页面输入必须串行完成，避免焦点被抢。",
+    "正文只粘贴纯正文，不带章节 Markdown 标题、分隔线、Metadata、写作说明或自动化信息。",
+    "粘贴后等待平台字数刷新，再读取编辑器文本、首段、末段和平台显示字数。",
+    "若编辑器文本为空、只出现提示词、首尾不匹配或字数不刷新，重新聚焦正文区再粘贴一次。",
+    "重试后仍不正确，停止并记录 failed_retryable；不要点“下一步”，不要把空正文存草稿。",
 ]
 
 
@@ -261,6 +272,9 @@ def cmd_notes(data, args):
             print(f"- {note}")
         print("fixed_upload_steps:")
         for index, step in enumerate(FANQIE_FIXED_UPLOAD_STEPS, 1):
+            print(f"{index}. {step}")
+        print("body_input_steps:")
+        for index, step in enumerate(FANQIE_BODY_INPUT_STEPS, 1):
             print(f"{index}. {step}")
         print("success_checks:")
         for check in FANQIE_SUCCESS_CHECKS:
