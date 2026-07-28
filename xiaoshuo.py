@@ -29,6 +29,11 @@ def main() -> int:
         action="store_true",
         help="首次配置番茄专用 Chrome 登录会话",
     )
+    parser.add_argument(
+        "--debug-browser",
+        action="store_true",
+        help="报错时保留 Chrome 窗口，便于人工查看页面",
+    )
     parser.add_argument("--resume", help="续跑 `.manager_jobs` 中已有的 job id")
     args = parser.parse_args()
     if args.setup_browser:
@@ -63,6 +68,8 @@ def main() -> int:
         command.extend(["--resume", args.resume])
     if args.dry_run:
         command.append("--dry-run")
+    if args.debug_browser:
+        command.append("--debug-browser")
     return subprocess.run(command, cwd=ROOT).returncode
 
 

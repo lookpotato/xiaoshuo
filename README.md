@@ -59,6 +59,13 @@ python xiaoshuo --resume <job-id>
 
 浏览器不可用、登录失效、验证码、风控或政策警告会安全停止并保留恢复点。再次登录或
 临时故障恢复后，使用 `python xiaoshuo --resume <job-id>` 继续同一个批次。
+需要观察浏览器步骤时使用：
+
+```powershell
+python xiaoshuo --resume <job-id> --debug-browser
+```
+
+调试模式遇到错误会保留 Chrome 窗口，查看页面后回到终端按 Enter 才会关闭。
 
 ```powershell
 python .\fanqie_novel_manager.py list

@@ -188,6 +188,27 @@ def wait_editor(page: Page, config: PublishConfig) -> None:
     assert_safe_page(page, config)
 
 
+def type_controlled_input(
+    page: Page,
+    field: Locator,
+    value: str,
+    description: str,
+) -> None:
+    """像人工操作一样点击、键入并失焦，触发 React 的受控输入事件。"""
+    field.scroll_into_view_if_needed()
+    field.click()
+    field.press("Control+A")
+    field.press("Backspace")
+    field.type(value, delay=60)
+    field.press("Tab")
+    page.wait_for_timeout(350)
+    actual = field.input_value().strip()
+    if actual != value:
+        raise FanqieRetryable(
+            f"{description}回读不一致：期望“{value}”，实际“{actual}”"
+        )
+
+
 def fill_editor(page: Page, chapter: Chapter) -> None:
     serial = unique(
         page.locator("input.serial-input:not([placeholder='请输入标题'])"),
@@ -200,14 +221,27 @@ def fill_editor(page: Page, chapter: Chapter) -> None:
         ),
         "正文编辑器",
     )
-    serial.fill(str(chapter.number))
-    if serial.input_value().strip() != str(chapter.number):
-        raise FanqieRetryable("章节号回读不一致")
-    title.fill(chapter.title)
-    if title.input_value().strip() != chapter.title:
-        raise FanqieRetryable("标题回读不一致")
+    # “第”和“章”是固定文字，只向两者中间的输入框输入阿拉伯数字。
+    type_controlled_input(page, serial, str(chapter.number), "章节号")
+    # 标题框是 React 受控输入；必须先点击，再键入并用 Tab 触发失焦。
+    type_controlled_input(page, title, chapter.title, "标题")
+    body.click()
     body.fill(chapter.body)
+    body.press("Tab")
     page.wait_for_timeout(1200)
+
+    # 正文写入会导致编辑器重渲染，因此要在最后再次检查章节号和标题。
+    serial_value = serial.input_value().strip()
+    title_value = title.input_value().strip()
+    if serial_value != str(chapter.number):
+        raise FanqieRetryable(
+            f"正文写入后章节号丢失：期望“{chapter.number}”，实际“{serial_value}”"
+        )
+    if title_value != chapter.title:
+        raise FanqieRetryable(
+            f"正文写入后标题丢失：期望“{chapter.title}”，实际“{title_value}”"
+        )
+
     rendered = body.inner_text().strip()
     first = chapter.body.splitlines()[0].strip()
     last = chapter.body.splitlines()[-1].strip()
@@ -249,10 +283,20 @@ def choose_basic_check(page: Page) -> None:
         raise FanqieRetryable("未找到“仅基础检测”选项")
 
 
+def publish_dialog(page: Page) -> Locator:
+    dialogs = page.locator(".arco-modal:visible").filter(has_text="是否使用AI")
+    if dialogs.count() != 1:
+        raise FanqieRetryable(
+            f"发布设置弹窗匹配到 {dialogs.count()} 个，无法安全操作"
+        )
+    return dialogs
+
+
 def choose_ai_yes(page: Page) -> None:
-    dialogs = page.locator(".arco-modal:visible")
-    scope = dialogs.last if dialogs.count() else page
-    yes = scope.get_by_text("是", exact=True)
+    scope = publish_dialog(page)
+    yes = scope.locator("label.arco-radio").filter(
+        has_text=re.compile(r"^\s*是\s*$")
+    )
     visible = [item for item in yes.all() if item.is_visible()]
     if len(visible) != 1:
         raise FanqieRetryable("发布设置中的“是否使用AI=是”控件不唯一")
@@ -265,8 +309,7 @@ def choose_ai_yes(page: Page) -> None:
 
 
 def enable_timed_publish(page: Page) -> None:
-    dialogs = page.locator(".arco-modal:visible")
-    scope = dialogs.last if dialogs.count() else page
+    scope = publish_dialog(page)
     switches = scope.get_by_role("switch")
     visible = [item for item in switches.all() if item.is_visible()]
     if len(visible) != 1:
@@ -281,8 +324,7 @@ def enable_timed_publish(page: Page) -> None:
 
 def choose_date(page: Page, target: str) -> None:
     target_date = date.fromisoformat(target)
-    dialogs = page.locator(".arco-modal:visible")
-    scope = dialogs.last if dialogs.count() else page
+    scope = publish_dialog(page)
     candidates = scope.locator(
         "input[placeholder*='日期'], input[placeholder*='时间']"
     )
@@ -326,8 +368,7 @@ def choose_date(page: Page, target: str) -> None:
 
 
 def choose_time(page: Page, target: str) -> None:
-    dialogs = page.locator(".arco-modal:visible")
-    scope = dialogs.last if dialogs.count() else page
+    scope = publish_dialog(page)
     candidates = scope.locator(
         "input[placeholder*='时间'], input[placeholder*='日期']"
     )
@@ -377,7 +418,11 @@ def verify_list(page: Page, chapter: Chapter) -> dict:
 
 
 def publish(
-    project: Path, chapter_path: Path, publish_date: str, publish_time: str
+    project: Path,
+    chapter_path: Path,
+    publish_date: str,
+    publish_time: str,
+    debug_browser: bool = False,
 ) -> dict:
     config = parse_publish_config(project)
     chapter = parse_chapter(chapter_path)
@@ -417,6 +462,20 @@ def publish(
             confirm.click()
             result = verify_list(page, chapter)
             return {"chapter": chapter.number, **result}
+        except Exception as exc:
+            if debug_browser:
+                print(
+                    f"\n浏览器操作已停在出错页面：{exc}\n"
+                    "请查看 Chrome 中的页面和弹窗。记录现象后，"
+                    "回到终端按 Enter 关闭浏览器。",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                try:
+                    input()
+                except (EOFError, KeyboardInterrupt):
+                    pass
+            raise
         finally:
             context.close()
 
@@ -496,6 +555,7 @@ def main() -> int:
     parser.add_argument("--chapter-file", type=Path)
     parser.add_argument("--date")
     parser.add_argument("--time")
+    parser.add_argument("--debug-browser", action="store_true")
     parser.add_argument("--login-timeout", type=int, default=600)
     args = parser.parse_args()
     project = args.project.resolve()
@@ -527,7 +587,15 @@ def main() -> int:
             return 0
         if not args.chapter_file or not args.date or not args.time:
             parser.error("发布需要 --chapter-file、--date 和 --time")
-        emit(publish(project, args.chapter_file, args.date, args.time))
+        emit(
+            publish(
+                project,
+                args.chapter_file,
+                args.date,
+                args.time,
+                debug_browser=args.debug_browser,
+            )
+        )
         return 0
     except FanqieBlocked as exc:
         emit({"status": "blocked_manual", "message": str(exc)})

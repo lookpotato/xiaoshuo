@@ -274,7 +274,13 @@ def finish_job(
     )
 
 
-def run(count: int, book_id: str, resume: str | None, dry_run: bool) -> int:
+def run(
+    count: int,
+    book_id: str,
+    resume: str | None,
+    dry_run: bool,
+    debug_browser: bool,
+) -> int:
     data = manager.config()
     project = project_for(data, book_id)
     errors = manager.validate_book(
@@ -342,7 +348,11 @@ def run(count: int, book_id: str, resume: str | None, dry_run: bool) -> int:
                 flush=True,
             )
             upload = publish(
-                project, chapter_path, str(entry["date"]), publish_time
+                project,
+                chapter_path,
+                str(entry["date"]),
+                publish_time,
+                debug_browser=debug_browser,
             )
             changed = record_upload(
                 data,
@@ -435,13 +445,20 @@ def main() -> int:
     parser.add_argument("--book", default="cosmic-404")
     parser.add_argument("--resume")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--debug-browser", action="store_true")
     args = parser.parse_args()
     if args.resume and args.count is None:
         args.count = int(manager.read_job(args.resume)["target_chapters"])
     if args.count is None or not 1 <= args.count <= 50:
         parser.error("请提供 1 到 50 的章节数，或使用 --resume <job-id>")
     try:
-        return run(args.count, args.book, args.resume, args.dry_run)
+        return run(
+            args.count,
+            args.book,
+            args.resume,
+            args.dry_run,
+            args.debug_browser,
+        )
     except (RuntimeError, ValueError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 3
