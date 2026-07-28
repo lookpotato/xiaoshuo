@@ -41,7 +41,8 @@ python xiaoshuo --check
 python .\xiaoshuo.py 1 --dry-run
 ```
 
-实际运行会创建被 Git 忽略的 `.manager_jobs/` 任务记录。任务中断后可查看：
+实际运行会创建被 Git 忽略的 `.manager_jobs/` 任务记录并立即返回。Codex 桌面工作器
+通常会在 5 分钟内领取任务；任务中断后可查看：
 
 ```powershell
 python .\fanqie_novel_manager.py job-status
@@ -49,15 +50,10 @@ python .\fanqie_novel_manager.py job-status --job <job-id>
 python xiaoshuo --resume <job-id>
 ```
 
-发布仍依赖已登录的番茄浏览器会话。浏览器不可用、登录失效、验证码、风控或政策
-警告会安全停止并保留恢复点；管理器不会保存 Cookie、Token、密码或验证码。
-`--check` 能确认本地浏览器控制组件存在，但实际番茄登录状态仍会在任务打开作品页后
-再次核对。
-
-管理器优先使用 Codex 桌面版配置中登记的 CLI，避免 PATH 中较旧的全局 npm 版本抢先
-启动。需要手动指定时可设置环境变量 `XIAOSHUO_CODEX` 为目标 `codex.exe` 的完整路径。
-执行上传时请保持当前终端与 Codex 桌面版运行，并确保番茄已在可用浏览器会话中登录；
-任务完成或安全停止后命令才会退出。
+发布依赖 Codex 桌面版自动任务中的已登录番茄浏览器会话。浏览器不可用、登录失效、
+验证码、风控或政策警告会安全停止并保留恢复点；管理器不会保存 Cookie、Token、密码
+或验证码。终端命令只负责入队，不再启动无法访问桌面浏览器的 `codex exec` 子进程。
+请保持 Codex 桌面版运行，并确保番茄已在可用浏览器会话中登录。
 
 ```powershell
 python .\fanqie_novel_manager.py list

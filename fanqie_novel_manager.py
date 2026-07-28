@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
-import shutil
-import subprocess
 import sys
-import tomllib
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -102,35 +101,6 @@ def write_json(path: Path, data):
     os.replace(tmp, path)
 
 
-def resolve_codex_cli() -> str | None:
-    override = os.environ.get("XIAOSHUO_CODEX")
-    if override and Path(override).is_file():
-        return str(Path(override).resolve())
-    config_path = Path.home() / ".codex" / "config.toml"
-    if config_path.is_file():
-        try:
-            config_data = tomllib.loads(config_path.read_text(encoding="utf-8"))
-            configured = (
-                config_data.get("mcp_servers", {})
-                .get("node_repl", {})
-                .get("env", {})
-                .get("CODEX_CLI_PATH")
-            )
-            if configured and Path(configured).is_file():
-                return str(Path(configured).resolve())
-        except (OSError, tomllib.TOMLDecodeError):
-            pass
-    app_bin = Path.home() / "AppData" / "Local" / "OpenAI" / "Codex" / "bin"
-    candidates = sorted(
-        app_bin.glob("*/codex.exe"),
-        key=lambda path: path.stat().st_mtime,
-        reverse=True,
-    ) if app_bin.is_dir() else []
-    if candidates:
-        return str(candidates[0].resolve())
-    return shutil.which("codex")
-
-
 def job_path(job_id: str) -> Path:
     if not re.fullmatch(r"[0-9A-Za-z_-]{8,80}", job_id):
         raise ValueError(f"非法 job id: {job_id}")
@@ -168,7 +138,8 @@ def build_batch_prompt(job: dict) -> str:
 2. 运行 `python .\\fanqie_novel_manager.py validate`。
 3. 运行 `python .\\fanqie_novel_manager.py session --book {job["book_id"]}`。
 4. 运行 `python .\\fanqie_novel_manager.py pending --book {job["book_id"]}`。
-5. 启动器已经领取全局锁；不得再次 claim。通过 session 确认 runtime_status=claimed。
+5. 桌面工作器通过 `job-next` 领取了本 job 和全局锁；不得再次 claim。
+   通过 session 确认 runtime_status=claimed。
 
 每个章节槽位取得番茄权威成功状态并完成本地回写后，运行：
 `python .\\fanqie_novel_manager.py job-progress --job {job["id"]} --chapter <章节号> --platform-status <pending_publish|pending_review|published> --message "<标题、排期和核验摘要>"`
@@ -777,47 +748,19 @@ def cmd_job_status(_data, args):
 def cmd_doctor(data, args):
     book = find_book(data, args.book)
     project = project_path(book)
-    codex = resolve_codex_cli()
+    automation_files = list((Path.home() / ".codex" / "automations").glob("*/automation.toml"))
+    worker_automation = None
+    for automation_file in automation_files:
+        text = automation_file.read_text(encoding="utf-8")
+        if "job-next" in text and 'status = "ACTIVE"' in text:
+            worker_automation = str(automation_file)
+            break
     checks = {
         "project_valid": not validate_book(book, require_publish_complete=False),
-        "codex_cli": bool(codex),
-        "codex_login": False,
-        "browser_control_component": False,
+        "desktop_worker_automation": bool(worker_automation),
         "publish_url_bound": False,
         "submit_publish": publish_requires_submission(project),
-        "manager_lock_free": live_lock(data, now_for(data)) is None,
     }
-    codex_version = None
-    if codex:
-        version = subprocess.run(
-            [codex, "--version"],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        codex_version = version.stdout.strip() if version.returncode == 0 else None
-        login = subprocess.run(
-            [codex, "login", "status"],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        checks["codex_login"] = login.returncode == 0
-        mcp = subprocess.run(
-            [codex, "mcp", "list"],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        checks["browser_control_component"] = (
-            mcp.returncode == 0 and "node_repl" in mcp.stdout
-        )
     publish_text = (project / "publish_config.md").read_text(encoding="utf-8")
     url_match = re.search(r"^\s*fanqie_writer_url\s*:\s*(\S+)\s*$", publish_text, re.M)
     book_match = re.search(r"^\s*book_id\s*:\s*(\S+)\s*$", publish_text, re.M)
@@ -830,16 +773,69 @@ def cmd_doctor(data, args):
     print(json.dumps({
         "ready": ready,
         "book": args.book,
-        "codex_path": codex,
-        "codex_version": codex_version,
+        "worker_automation": worker_automation,
         "checks": checks,
+        "manager_busy": live_lock(data, now_for(data)) is not None,
         "note": (
-            "预检通过；实际番茄登录状态会在批次启动后由浏览器页面再次核对。"
+            "预检通过；命令会把 job 入队，由 Codex 桌面工作器领取并核对番茄登录。"
             if ready else
             "预检未通过；请修复 false 项后再启动批次。"
         ),
     }, ensure_ascii=False, indent=2))
     return 0 if ready else 2
+
+
+def cmd_job_next(data, _args):
+    now = now_for(data)
+    lock = live_lock(data, now)
+    if lock:
+        print(json.dumps({
+            "status": "busy",
+            "book_id": lock.get("book_id"),
+            "claimed_at": lock.get("claimed_at"),
+        }, ensure_ascii=False))
+        return
+    if not JOB_DIR.exists():
+        print("{}")
+        return
+    queued = []
+    for path in JOB_DIR.glob("*.json"):
+        job = read_json(path, {})
+        if job.get("status") == "queued":
+            queued.append((job.get("created_at", ""), path, job))
+    if not queued:
+        print("{}")
+        return
+    _, path, job = sorted(queued, key=lambda item: (item[0], item[1].name))[0]
+    capture = io.StringIO()
+    with contextlib.redirect_stdout(capture):
+        result = cmd_claim(
+            data,
+            argparse.Namespace(book=job["book_id"], force=False),
+        )
+    if result:
+        print(capture.getvalue(), end="", file=sys.stderr)
+        return result
+    job.update({
+        "status": "running",
+        "result": None,
+        "message": "",
+        "worker_claimed_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+    })
+    job.setdefault("events", []).append({
+        "type": "worker_claimed",
+        "at": now.isoformat(),
+    })
+    write_json(path, job)
+    print(json.dumps({
+        "status": "claimed",
+        "job": job,
+        "remaining_chapters": (
+            int(job["target_chapters"]) - len(job.get("completed_chapters", []))
+        ),
+        "project_path": str(project_path(find_book(data, job["book_id"]))),
+    }, ensure_ascii=False, indent=2))
 
 
 def cmd_run(data, args):
@@ -863,18 +859,6 @@ def cmd_run(data, args):
     if errors:
         print("项目校验失败：" + "；".join(errors), file=sys.stderr)
         return 1
-    lock = live_lock(data, now_for(data))
-    if lock:
-        print(
-            f"已有任务运行: {lock['book_id']}，领取于 {lock['claimed_at']}。"
-            "请等待或先处理该任务，避免重复章节。",
-            file=sys.stderr,
-        )
-        return 2
-    codex = resolve_codex_cli()
-    if not codex:
-        print("找不到 codex CLI；请先安装并登录 Codex。", file=sys.stderr)
-        return 2
     preview = resume_job or {
         "schema_version": 1,
         "id": "DRY-RUN-JOB",
@@ -882,166 +866,36 @@ def cmd_run(data, args):
         "target_chapters": args.count,
         "completed_chapters": [],
     }
-    command = [
-        codex, "exec", "-C", str(ROOT),
-        "--sandbox", "danger-full-access",
-        "--enable", "browser_use",
-        "--enable", "in_app_browser",
-        "-",
-    ]
     if args.dry_run:
         print(json.dumps({
-            "command": command,
+            "action": "enqueue",
             "prompt": build_batch_prompt(preview),
-            "note": "dry-run 未创建 job，也未启动 Codex 或访问番茄。",
+            "note": "dry-run 未创建 job；正式运行会交给 Codex 桌面工作器。",
         }, ensure_ascii=False, indent=2))
         return
-    login = subprocess.run(
-        [codex, "login", "status"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if login.returncode != 0:
-        print("Codex 尚未登录；请先运行 `codex login`。", file=sys.stderr)
-        return 2
-    claim_result = cmd_claim(
-        data,
-        argparse.Namespace(book=args.book, force=False),
-    )
-    if claim_result:
-        return claim_result
-    try:
-        if resume_job:
-            job = resume_job
-            job.update({
-                "status": "running",
-                "result": None,
-                "message": "",
-                "updated_at": now_for(data).isoformat(),
-            })
-            job.setdefault("events", []).append({
-                "type": "job_resumed",
-                "at": now_for(data).isoformat(),
-            })
-            write_json(job_path(job["id"]), job)
-        else:
-            job = create_job(data, args.book, args.count)
-    except Exception:
-        cmd_finish(
-            data,
-            argparse.Namespace(
-                book=args.book,
-                result="failed_retryable",
-                message="创建批次 job 失败",
-            ),
-        )
-        raise
-    output_path = JOB_DIR / f"{job['id']}.result.md"
-    prompt = build_batch_prompt(job)
-    command[-1:-1] = ["--output-last-message", str(output_path)]
-    job.update({
-        "status": "running",
-        "updated_at": now_for(data).isoformat(),
-        "command": command[:-1] + ["<PROMPT_FROM_STDIN>"],
-    })
-    write_json(job_path(job["id"]), job)
-    print(f"已启动 job {job['id']}：{args.book}，目标 {args.count} 章。", flush=True)
-    try:
-        process = subprocess.Popen(
-            command,
-            cwd=ROOT,
-            stdin=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-    except OSError as exc:
-        latest = read_job(job["id"])
-        latest.update({
-            "status": "failed_to_start",
-            "result": "failed",
-            "message": str(exc),
+    if resume_job:
+        job = resume_job
+        job.update({
+            "status": "queued",
+            "result": None,
+            "message": "",
             "updated_at": now_for(data).isoformat(),
         })
-        write_json(job_path(job["id"]), latest)
-        cmd_finish(
-            data,
-            argparse.Namespace(
-                book=args.book,
-                result="failed_retryable",
-                message=f"Codex 启动失败；job={job['id']}",
-            ),
-        )
-        print(f"Codex 启动失败：{exc}", file=sys.stderr)
-        return 2
-    try:
-        process.communicate(input=prompt)
-        exit_code = process.returncode
-    except KeyboardInterrupt:
-        process.terminate()
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        latest = read_job(job["id"])
-        latest.update({
-            "status": "interrupted",
-            "result": "interrupted",
-            "updated_at": now_for(data).isoformat(),
+        job.setdefault("events", []).append({
+            "type": "job_requeued",
+            "at": now_for(data).isoformat(),
         })
-        write_json(job_path(job["id"]), latest)
-        if LOCK.exists():
-            cmd_finish(
-                data,
-                argparse.Namespace(
-                    book=args.book,
-                    result="failed_retryable",
-                    message=f"命令行中断；job={job['id']}，可从项目状态恢复",
-                ),
-            )
-        print(f"\njob {job['id']} 已中断；状态已保留，可查看后恢复。", file=sys.stderr)
-        return 130
-    latest = read_job(job["id"])
-    latest["codex_exit_code"] = exit_code
-    latest["updated_at"] = now_for(data).isoformat()
-    if latest.get("status") != "finished":
-        latest["status"] = "agent_exited_unverified"
-        latest["result"] = latest.get("result") or "failed"
-        latest["message"] = (
-            latest.get("message")
-            or "Codex 已退出，但未执行 job-finish；请检查 result.md 和项目日志。"
-        )
-    write_json(job_path(job["id"]), latest)
-    if LOCK.exists():
-        finish_result = {
-            "success": "batch_success",
-            "blocked": "blocked_manual",
-            "partial": "publish_pending",
-        }.get(latest.get("result"), "failed_retryable")
-        cmd_finish(
-            data,
-            argparse.Namespace(
-                book=args.book,
-                result=finish_result,
-                message=f"启动器兜底释放锁；job={job['id']}，result={latest.get('result')}",
-            ),
-        )
+        write_json(job_path(job["id"]), job)
+    else:
+        job = create_job(data, args.book, args.count)
     print(json.dumps({
         "job": job["id"],
-        "result": latest.get("result"),
-        "completed": len(latest.get("completed_chapters", [])),
-        "target": latest["target_chapters"],
-        "codex_exit_code": exit_code,
-        "job_file": str(job_path(job["id"])),
-        "result_file": str(output_path),
+        "status": "queued",
+        "book": job["book_id"],
+        "completed": len(job.get("completed_chapters", [])),
+        "target": job["target_chapters"],
+        "message": "已进入 Codex 桌面工作队列，通常会在 5 分钟内领取。",
     }, ensure_ascii=False, indent=2))
-    if exit_code != 0:
-        return exit_code
-    return 0 if latest.get("result") == "success" else 3
 
 
 def main():
@@ -1081,7 +935,7 @@ def main():
         required=True,
     )
     finish.add_argument("--message", default="")
-    run = sub.add_parser("run", help="创建批量 job 并非交互调用 Codex")
+    run = sub.add_parser("run", help="创建批量 job 并进入桌面工作队列")
     run.add_argument("count", type=int, nargs="?", help="严格串行完成的章节槽位数")
     run.add_argument("--book", default="cosmic-404")
     run.add_argument("--dry-run", action="store_true")
@@ -1105,6 +959,7 @@ def main():
     job_finish.add_argument("--message", default="")
     job_status = sub.add_parser("job-status")
     job_status.add_argument("--job")
+    sub.add_parser("job-next", help="桌面工作器原子领取下一个排队 job")
     doctor = sub.add_parser("doctor")
     doctor.add_argument("--book", default="cosmic-404")
     args = parser.parse_args()
@@ -1124,6 +979,7 @@ def main():
         "job-progress": cmd_job_progress,
         "job-finish": cmd_job_finish,
         "job-status": cmd_job_status,
+        "job-next": cmd_job_next,
         "doctor": cmd_doctor,
     }
     result = funcs[args.command](data, args)
