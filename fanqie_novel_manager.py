@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small, dependency-free dispatcher for multiple Fanqie novel projects."""
+"""番茄小说管理器：批量创作、发布恢复与运行状态调度入口。"""
 
 from __future__ import annotations
 
@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "manager_config.json"
 RUNTIME = ROOT / ".manager_runtime.json"
 LOCK = ROOT / ".manager.lock"
+MANAGER_NAME = "番茄小说管理器"
+MANAGER_SCRIPT = "fanqie_novel_manager.py"
 REQUIRED_FILES = {
     "novel_config.md", "outline.md", "characters.md", "world.md",
     "style_guide.md", "publish_config.md", "chapter_state.json",
@@ -38,15 +40,19 @@ PUBLISH_ATTENTION_NOTES = [
 ]
 FANQIE_FIXED_UPLOAD_STEPS = [
     "打开 publish_config.md 中的 fanqie_writer_url，并核对 book_id 与作品名。",
+    "先判断目标章节是否已有番茄草稿；已有草稿必须沿用其编辑 URL，不得重新新建同章。",
     "填写章节号和标题；标题输入后重新读取页面值，确认没有漏填或焦点错位。",
     "定位正文编辑器，确认光标进入可编辑正文区域后再粘贴纯正文。",
     "粘贴后读取正文首段、末段和平台字数；三项都正确才允许继续。",
     "点击“下一步”；若出现错别字未修改提示，确认目标作品无误后点击“提交”。",
     "内容检测方式固定选择“仅基础检测”或同义的“基础检测”，不选择“全面检测”。",
     "发布设置中“是否使用AI”固定选择“是”。",
-    "打开“定时发布”开关，选择计划日期和时间。",
-    "最终核对章节号、标题、日期、时间、AI=是、定时发布开关后，点击“确认发布”。",
-    "返回章节列表或结果页，确认目标章节显示为待发布、审核中或已发布。",
+    "打开“定时发布”开关；日期和时间使用可见选择器点击，禁止直接 fill 受控输入框。",
+    "选择后回读日期输入值、时间输入值、AI 单选 checked 和定时开关 aria-checked。",
+    "四项与计划完全一致时才点击一次“确认发布”，不得在未知结果下重复确认。",
+    "确认后应返回章节管理页；按章节号和标题唯一定位该行，读取状态与计划时间。",
+    "目标行显示待发布、审核中或已发布才算成功；审核中通过后会自动转为待发布。",
+    "成功后立即更新 chapter_state.json、对应 batch_schedule 文件和当日日志，再进入下一章。",
 ]
 FANQIE_SUCCESS_CHECKS = [
     "只看到草稿箱记录不算成功；记录 publish_pending 并下次继续。",
@@ -64,6 +70,8 @@ FANQIE_BROWSER_RELIABILITY_STEPS = [
     "日期和时间必须通过可见日历/时间选项点击；不得只对输入框 fill，因为受控输入值可能回退到平台默认值。",
     "选择日期或时间后，回读日期、时间、AI=是和定时开关；四项完全一致才允许点击确认发布。",
     "同一不确定动作最多进行一次只读恢复；未确认失败前不得再次点击，避免重复提交。",
+    "重新打开草稿若回到正文编辑页，说明上次发布设置未最终提交；必须重新走发布检查流程。",
+    "列表核对必须按章节号和标题唯一匹配目标行，并同时读取状态与发布时间，不能只看页面上存在某个“待发布”字样。",
 ]
 FANQIE_BODY_INPUT_STEPS = [
     "优先定位真正的正文编辑器：contenteditable=true 或 ProseMirror 正文区域。",
@@ -107,6 +115,32 @@ def upload_is_publish_complete(state: dict) -> bool:
     return uploaded >= completed and status in SUBMITTED_UPLOAD_STATUSES
 
 
+def batch_schedule_files(project: Path):
+    return sorted(project.glob("batch_schedule_*.json"))
+
+
+def batch_publish_entries(project: Path):
+    entries = []
+    for schedule_path in batch_schedule_files(project):
+        schedule = read_json(schedule_path, {})
+        for entry in schedule.get("entries", []):
+            if not isinstance(entry, dict) or "chapter" not in entry:
+                continue
+            entries.append({
+                **entry,
+                "schedule_file": str(schedule_path.relative_to(ROOT)),
+            })
+    entries.sort(key=lambda item: (int(item.get("chapter", 0)), item["schedule_file"]))
+    return entries
+
+
+def pending_publish_entries(project: Path):
+    return [
+        entry for entry in batch_publish_entries(project)
+        if str(entry.get("status", "")).strip() not in SUBMITTED_UPLOAD_STATUSES
+    ]
+
+
 def config():
     data = read_json(CONFIG)
     if not isinstance(data.get("books"), list):
@@ -140,7 +174,7 @@ def project_path(book):
     return path
 
 
-def validate_book(book):
+def validate_book(book, require_publish_complete=True):
     path = project_path(book)
     errors = []
     if not path.is_dir():
@@ -177,7 +211,11 @@ def validate_book(book):
         text = pub.read_text(encoding="utf-8")
         if "submit_publish:" not in text:
             errors.append("publish_config.md 缺少 submit_publish")
-        elif publish_flag(text, "submit_publish") and state_path.exists():
+        elif (
+            require_publish_complete
+            and publish_flag(text, "submit_publish")
+            and state_path.exists()
+        ):
             status = str(state.get("last_uploaded_status", "")).strip()
             if status in INCOMPLETE_UPLOAD_STATUSES:
                 errors.append(
@@ -248,12 +286,19 @@ def cmd_validate(data, _args):
         if book.get("path") in paths:
             errors.append("重复书籍 path")
         paths.add(book.get("path"))
-        errors.extend(validate_book(book))
+        errors.extend(validate_book(book, require_publish_complete=False))
         if errors:
             failed = True
             print(f"[FAIL] {book.get('id')}: " + "；".join(errors))
         else:
             print(f"[OK]   {book.get('id')}: {project_path(book)}")
+            project = project_path(book)
+            state = read_json(project / "chapter_state.json", {})
+            if publish_requires_submission(project) and not upload_is_publish_complete(state):
+                print(
+                    f"[TODO] {book.get('id')}: 发布状态尚未完成，"
+                    "可领取任务并从 pending/session 指示的草稿继续"
+                )
     return 1 if failed else 0
 
 
@@ -294,7 +339,121 @@ def cmd_notes(data, args):
             print(f"{index}. {step}")
         if publish_required and not upload_is_publish_complete(state):
             print("current_action: 先继续完成番茄确认发布，再报告 success。")
+        pending = pending_publish_entries(path)
+        if pending:
+            print("pending_batch_chapters:")
+            for entry in pending:
+                print(
+                    f"- 第{entry.get('chapter')}章 {entry.get('date')} "
+                    f"{entry.get('time')} status={entry.get('status')} "
+                    f"source={entry.get('schedule_file')}"
+                )
         print()
+
+
+def cmd_pending(data, args):
+    books = data["books"]
+    if args.book:
+        books = [find_book(data, args.book)]
+    payload = []
+    for book in books:
+        project = project_path(book)
+        payload.append({
+            "book_id": book["id"],
+            "title": book.get("title"),
+            "project_path": str(project),
+            "pending_chapters": pending_publish_entries(project),
+        })
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def cmd_session(data, args):
+    book = find_book(data, args.book)
+    project = project_path(book)
+    state = read_json(project / "chapter_state.json", {})
+    runtime = read_json(RUNTIME, {"books": {}})
+    payload = {
+        "manager": {
+            "name": MANAGER_NAME,
+            "script": MANAGER_SCRIPT,
+            "schema_version": 1,
+            "purpose": "让新 Codex 会话从本地项目状态继续批量创作、归档并发布到番茄。",
+        },
+        "book": {
+            "id": book["id"],
+            "title": book.get("title"),
+            "project_path": str(project),
+            "mode": book.get("mode"),
+            "daily_chapter_target": book.get("daily_chapter_target", 1),
+            "default_publish_times": book.get("default_publish_times", []),
+            "submit_publish": publish_requires_submission(project),
+        },
+        "state": state,
+        "runtime": runtime.get("books", {}).get(book["id"], {}),
+        "pending_batch_chapters": pending_publish_entries(project),
+        "required_read_order": [
+            str(project / "automation_prompt.md"),
+            str(ROOT / "shared" / "writing_playbook.md"),
+            str(ROOT / "shared" / "quality_scorecard.md"),
+            str(ROOT / "shared" / "learning_log.md"),
+            str(project / "novel_config.md"),
+            str(project / "outline.md"),
+            str(project / "characters.md"),
+            str(project / "world.md"),
+            str(project / "style_guide.md"),
+            str(project / "publish_config.md"),
+            str(project / "chapter_state.json"),
+            str(project / "continuity_ledger.md"),
+            str(project / "fanqie_ui_workflow.md"),
+        ],
+        "start_commands": {
+            "inspect": [
+                f"python .\\{MANAGER_SCRIPT} validate",
+                f"python .\\{MANAGER_SCRIPT} session --book {book['id']}",
+                f"python .\\{MANAGER_SCRIPT} pending --book {book['id']}",
+            ],
+            "scheduled_run": f"python .\\{MANAGER_SCRIPT} next",
+            "explicit_manual_run": (
+                f"python .\\{MANAGER_SCRIPT} claim --book {book['id']}"
+            ),
+        },
+        "batch_workflow": [
+            "先处理 pending_batch_chapters：从既有番茄草稿继续，不重写、不重复创建章节。",
+            "没有待发布草稿时，按 next_chapter_number 严格串行执行“写一章→质检→归档→上传→确认列表状态”。",
+            "每章归档后更新 chapter_state.json 与 continuity_ledger.md，再记录 chapter_archived。",
+            "每章上传前核对作品名与 book_id，正文输入后核对首段、末段、平台字数。",
+            "发布固定走“下一步→错别字提示提交→仅基础检测→AI=是→定时发布→确认发布”。",
+            "每次浏览器调用只做一个有副作用动作，之后单独只读回查；超时后不得盲目重放。",
+            "每章只有在章节列表显示待发布、审核中或已发布后，才更新状态并进入下一章。",
+            "达到批量目标后写日志；全部章节成功才 finish success，否则记录可恢复或人工阻塞状态。",
+            "无论成功、临时失败还是人工阻塞，最后都必须执行一次 finish 释放运行锁。",
+        ],
+        "fixed_upload_steps": FANQIE_FIXED_UPLOAD_STEPS,
+        "body_input_steps": FANQIE_BODY_INPUT_STEPS,
+        "browser_reliability_steps": FANQIE_BROWSER_RELIABILITY_STEPS,
+        "success_checks": FANQIE_SUCCESS_CHECKS,
+        "finish_commands": {
+            "success": f"python .\\{MANAGER_SCRIPT} finish --book {book['id']} --result success",
+            "publish_pending": (
+                f"python .\\{MANAGER_SCRIPT} finish --book {book['id']} "
+                '--result publish_pending --message "已存草稿，等待继续确认发布"'
+            ),
+            "failed_retryable": (
+                f"python .\\{MANAGER_SCRIPT} finish --book {book['id']} "
+                '--result failed_retryable --message "具体临时失败原因"'
+            ),
+            "blocked_manual": (
+                f"python .\\{MANAGER_SCRIPT} finish --book {book['id']} "
+                '--result blocked_manual --message "具体人工处理原因"'
+            ),
+        },
+        "safety": [
+            "不得保存或提交密码、Cookie、Token、验证码、私钥。",
+            "验证码、登录失效、风控、政策警告、陌生确认框必须停止。",
+            "不得把草稿箱记录当成发布成功，不得重复点击结果未知的确认发布。",
+        ],
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def cmd_due(data, _args):
@@ -328,7 +487,7 @@ def cmd_claim(data, args):
         print(f"已有任务运行: {lock['book_id']}，领取于 {lock['claimed_at']}", file=sys.stderr)
         return 2
     book = find_book(data, args.book)
-    errors = validate_book(book)
+    errors = validate_book(book, require_publish_complete=False)
     if errors:
         print("项目校验失败：" + "；".join(errors), file=sys.stderr)
         return 1
@@ -436,12 +595,22 @@ def cmd_finish(data, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="多小说调度器")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(
+        description=f"{MANAGER_NAME}：多小说批量创作与番茄发布调度器"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list")
     sub.add_parser("validate")
     notes = sub.add_parser("notes")
     notes.add_argument("--book")
+    pending = sub.add_parser("pending")
+    pending.add_argument("--book")
+    session = sub.add_parser("session")
+    session.add_argument("--book", required=True)
     sub.add_parser("due")
     sub.add_parser("next")
     claim = sub.add_parser("claim")
@@ -468,6 +637,8 @@ def main():
         "list": cmd_list,
         "validate": cmd_validate,
         "notes": cmd_notes,
+        "pending": cmd_pending,
+        "session": cmd_session,
         "due": cmd_due,
         "next": cmd_next,
         "claim": cmd_claim,

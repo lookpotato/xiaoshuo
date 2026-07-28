@@ -1,12 +1,13 @@
-# 多小说创作与发布总管理器
+# 番茄小说管理器
 
-本目录是小说自动创作与发布总控工作区。当前只启用《404修理站》；
+本目录是“番茄小说管理器”的自动创作与发布总控工作区。当前只启用《404修理站》；
 作品保留独立设定、章节、发布地址和运行状态，禁止复用其他作品的番茄书号。
 
 ## 目录
 
 - `manager_config.json`：书籍注册表、时区、全局互斥与默认策略。
-- `novel_manager.py`：查看排期、校验项目、领取到期任务、记录运行结果。
+- `fanqie_novel_manager.py`：番茄小说管理器主入口，负责排期、会话交接、任务领取、
+  发布恢复和运行结果。
 - `shared/`：跨作品复用的写作方法、质量门槛和复盘记录。
 - `测试本小说/`：已有测试作品，保持独立。
 - `404修理站/`：第一本正式长期作品。
@@ -14,19 +15,69 @@
 ## 常用命令
 
 ```powershell
-python .\novel_manager.py list
-python .\novel_manager.py validate
-python .\novel_manager.py notes --book cosmic-404  # 查看固定上传流程、成功校验和当前待补动作
-python .\novel_manager.py due
-python .\novel_manager.py next
-python .\novel_manager.py claim --book cosmic-404
-python .\novel_manager.py progress --book cosmic-404 --phase chapter_archived
-python .\novel_manager.py progress --book cosmic-404 --phase publish_pending
-python .\novel_manager.py finish --book cosmic-404 --result success
-python .\novel_manager.py finish --book cosmic-404 --result publish_pending --message "fanqie draft saved; continue publish confirmation"
-python .\novel_manager.py finish --book cosmic-404 --result failed_retryable --message "临时网络失败"
-python .\novel_manager.py finish --book cosmic-404 --result blocked_manual --message "登录失效"
+python .\fanqie_novel_manager.py list
+python .\fanqie_novel_manager.py validate
+python .\fanqie_novel_manager.py session --book cosmic-404  # 新会话完整交接包
+python .\fanqie_novel_manager.py pending --book cosmic-404  # 批量排期中的待处理章节
+python .\fanqie_novel_manager.py notes --book cosmic-404    # 发布流程和成功门槛
+python .\fanqie_novel_manager.py due
+python .\fanqie_novel_manager.py next
+python .\fanqie_novel_manager.py claim --book cosmic-404
+python .\fanqie_novel_manager.py progress --book cosmic-404 --phase chapter_archived
+python .\fanqie_novel_manager.py progress --book cosmic-404 --phase publish_pending
+python .\fanqie_novel_manager.py finish --book cosmic-404 --result success
+python .\fanqie_novel_manager.py finish --book cosmic-404 --result publish_pending --message "fanqie draft saved; continue publish confirmation"
+python .\fanqie_novel_manager.py finish --book cosmic-404 --result failed_retryable --message "临时网络失败"
+python .\fanqie_novel_manager.py finish --book cosmic-404 --result blocked_manual --message "登录失效"
 ```
+
+## 新会话接管
+
+在新 Codex 会话中，可以直接说：
+
+> 使用番茄小说管理器继续 `cosmic-404` 的批量创作和发布，先读取 session，
+> 优先恢复待发布草稿，然后严格串行完成。
+
+新会话应先执行：
+
+```powershell
+python .\fanqie_novel_manager.py validate
+python .\fanqie_novel_manager.py session --book cosmic-404
+python .\fanqie_novel_manager.py pending --book cosmic-404
+python .\fanqie_novel_manager.py next
+```
+
+定时唤醒使用 `next`；如果用户在新会话里明确要求立即执行，不受当日唤醒时间限制，
+可使用：
+
+```powershell
+python .\fanqie_novel_manager.py claim --book cosmic-404
+```
+
+直接 `claim` 用于用户明确要求立即执行的已启用作品；它不绕过项目结构校验、
+全局运行锁、发布成功门槛或浏览器安全停止条件。
+
+`session` 输出机器可读 JSON，包含当前书籍状态、运行状态、批量排期中仍需处理的章节、
+必读文件顺序、完整写作与上传闭环、可靠性规则、成功门槛及结束命令。新会话不应依赖
+上一段聊天记录来猜恢复点。
+
+`pending` 会读取 `batch_schedule_*.json`，逐章列出尚未进入待发布、审核中或已发布
+状态的批量任务。已有番茄草稿时必须从原草稿继续，不得重新写作或创建重复章节。
+
+## 完整批量闭环
+
+每章必须严格串行完成：
+
+1. 读取设定、连续性账本、最近三章和当前排期。
+2. 优先恢复待发布草稿；没有待恢复项时才生成 `next_chapter_number`。
+3. 写作、质量评分、修订、归档，并更新章节状态与连续性账本。
+4. 核对番茄作品名和 `book_id`，串行填写章节号、标题、纯正文。
+5. 回读正文首段、末段、平台字数；不一致时禁止进入下一步。
+6. 依次完成错别字提示提交、仅基础检测、AI=是、定时发布。
+7. 回读日期、时间、AI 和定时开关，再点击一次“确认发布”。
+8. 返回章节管理页，按章节号和标题唯一匹配目标行；读取状态和发布时间。
+9. 只有“待发布”“审核中”或“已发布”才算该章完成，并立即回写状态和日志。
+10. 当前章确认完成后才能进入下一章；整批完成后才能 `finish --result success`。
 
 每天 12:00 由 Codex 自动任务唤醒并执行 `next`。`next` 会选择到期作品并
 原子领取任务；根目录锁避免重复写作，默认 180 分钟过期。管理器只负责调度和
