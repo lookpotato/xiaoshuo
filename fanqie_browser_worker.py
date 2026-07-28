@@ -294,49 +294,45 @@ def publish_dialog(page: Page) -> Locator:
 
 def choose_ai_yes(page: Page) -> None:
     scope = publish_dialog(page)
-    # 弹窗内两个单选框的可见顺序固定为“是、否”。直接操作第一个
-    # radio，避免平台改变 label 的类名或嵌套结构后无法点击文字。
-    radios = scope.locator("input[type='radio']")
-    if radios.count() != 2:
+    # 按番茄当前实际 DOM 点击 radio 的可见蒙层。两个蒙层顺序为“是、否”。
+    masks = scope.locator("span.arco-radio-mask-wrapper")
+    visible = [item for item in masks.all() if item.is_visible()]
+    if len(visible) != 2:
         raise FanqieRetryable(
-            f"发布设置中的 AI 单选框匹配到 {radios.count()} 个，期望 2 个"
+            f"发布设置中的 AI 可见按钮匹配到 {len(visible)} 个，期望 2 个"
         )
-    yes = radios.nth(0)
-    if not yes.is_checked():
-        yes.check(force=True)
+    yes_mask = visible[0]
+    yes_mask.click()
     page.wait_for_timeout(500)
-    if not yes.is_checked() or radios.nth(1).is_checked():
+
+    yes_label = yes_mask.locator("xpath=ancestor::label[1]")
+    yes_input = yes_label.locator("input[type='radio']")
+    no_input = visible[1].locator(
+        "xpath=ancestor::label[1]//input[@type='radio']"
+    )
+    if (
+        yes_input.count() != 1
+        or no_input.count() != 1
+        or not yes_input.is_checked()
+        or no_input.is_checked()
+    ):
         raise FanqieRetryable("AI 选项回读失败：没有唯一选中“是”")
 
 
 def enable_timed_publish(page: Page) -> None:
     scope = publish_dialog(page)
-    switches = scope.get_by_role("switch")
+    switches = scope.locator("button[role='switch'].arco-switch")
     visible = [item for item in switches.all() if item.is_visible()]
     if len(visible) != 1:
-        raise FanqieRetryable("定时发布开关不唯一")
+        raise FanqieRetryable(
+            f"定时发布按钮匹配到 {len(visible)} 个，期望 1 个"
+        )
     switch = visible[0]
     if switch.get_attribute("aria-checked") != "true":
         switch.click()
         page.wait_for_timeout(600)
     if switch.get_attribute("aria-checked") != "true":
         raise FanqieRetryable("定时发布开关回读失败")
-    date_fields = [
-        item
-        for item in scope.locator("input").all()
-        if item.is_visible()
-        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", item.input_value().strip())
-    ]
-    time_fields = [
-        item
-        for item in scope.locator("input").all()
-        if item.is_visible()
-        and re.fullmatch(r"\d{2}:\d{2}", item.input_value().strip())
-    ]
-    if len(date_fields) != 1 or len(time_fields) != 1:
-        raise FanqieRetryable(
-            "定时发布已打开，但日期或时间输入框没有唯一出现"
-        )
 
 
 def debug_checkpoint(message: str) -> None:
