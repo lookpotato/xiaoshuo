@@ -294,18 +294,25 @@ def publish_dialog(page: Page) -> Locator:
 
 def choose_ai_yes(page: Page) -> None:
     scope = publish_dialog(page)
-    yes = scope.locator("label.arco-radio").filter(
+    # 番茄的组件类名前缀可能变化；以可见 label 文本定位“是”。
+    yes = scope.locator("label").filter(
         has_text=re.compile(r"^\s*是\s*$")
     )
     visible = [item for item in yes.all() if item.is_visible()]
     if len(visible) != 1:
-        raise FanqieRetryable("发布设置中的“是否使用AI=是”控件不唯一")
+        raise FanqieRetryable(
+            f"发布设置中的“是否使用AI=是”控件匹配到 {len(visible)} 个"
+        )
     visible[0].click()
-    page.wait_for_timeout(300)
-    radios = scope.locator("input[type='radio']")
-    radio_count = radios.count()
-    if radio_count and not radios.nth(0).is_checked():
-        raise FanqieRetryable("AI 选项回读失败")
+    page.wait_for_timeout(500)
+    checked = scope.locator("input[type='radio']:checked")
+    if checked.count() != 1:
+        raise FanqieRetryable(
+            f"AI 选项回读失败：选中的单选框数量为 {checked.count()}"
+        )
+    checked_label = checked.first.locator("xpath=ancestor::label[1]")
+    if checked_label.count() != 1 or checked_label.inner_text().strip() != "是":
+        raise FanqieRetryable("AI 选项回读失败：当前选中的不是“是”")
 
 
 def enable_timed_publish(page: Page) -> None:
@@ -317,25 +324,58 @@ def enable_timed_publish(page: Page) -> None:
     switch = visible[0]
     if switch.get_attribute("aria-checked") != "true":
         switch.click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(600)
     if switch.get_attribute("aria-checked") != "true":
         raise FanqieRetryable("定时发布开关回读失败")
+    date_fields = [
+        item
+        for item in scope.locator("input").all()
+        if item.is_visible()
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", item.input_value().strip())
+    ]
+    time_fields = [
+        item
+        for item in scope.locator("input").all()
+        if item.is_visible()
+        and re.fullmatch(r"\d{2}:\d{2}", item.input_value().strip())
+    ]
+    if len(date_fields) != 1 or len(time_fields) != 1:
+        raise FanqieRetryable(
+            "定时发布已打开，但日期或时间输入框没有唯一出现"
+        )
+
+
+def publishing_field(
+    scope: Locator,
+    value_pattern: str,
+    description: str,
+) -> Locator:
+    fields = [
+        item
+        for item in scope.locator("input").all()
+        if item.is_visible()
+        and re.fullmatch(value_pattern, item.input_value().strip())
+    ]
+    if len(fields) != 1:
+        values = [
+            item.input_value()
+            for item in scope.locator("input").all()
+            if item.is_visible()
+        ]
+        raise FanqieRetryable(
+            f"{description}匹配到 {len(fields)} 个；弹窗可见输入值为 {values}"
+        )
+    return fields[0]
 
 
 def choose_date(page: Page, target: str) -> None:
     target_date = date.fromisoformat(target)
     scope = publish_dialog(page)
-    candidates = scope.locator(
-        "input[placeholder*='日期'], input[placeholder*='时间']"
+    field = publishing_field(
+        scope,
+        r"\d{4}-\d{2}-\d{2}",
+        "发布日期输入框",
     )
-    visible = [
-        item
-        for item in candidates.all()
-        if item.is_visible() and ":" not in (item.input_value() or "")
-    ]
-    if len(visible) != 1:
-        raise FanqieRetryable("发布日期输入框不唯一")
-    field = visible[0]
     field.click()
     page.wait_for_timeout(300)
     # 先切换到目标年月，再点击 in-view 单元格，避免误点相邻月份同号日期。
@@ -349,11 +389,15 @@ def choose_date(page: Page, target: str) -> None:
             or f"{target_date.month:02d}" in header_text
         ):
             break
-        next_buttons = page.locator(".arco-picker-header-next-btn:visible")
-        if next_buttons.count() != 1:
+        # Arco 的四个箭头依次是上一年、上个月、下个月、下一年。
+        header_icons = page.locator(
+            ".arco-picker-header:visible "
+            ".arco-picker-header-icon:not(.arco-picker-header-icon-hidden)"
+        )
+        if header_icons.count() < 4:
             raise FanqieRetryable("无法切换到目标发布月份")
-        next_buttons.first.click()
-        page.wait_for_timeout(150)
+        header_icons.nth(2).click()
+        page.wait_for_timeout(250)
     else:
         raise FanqieRetryable("目标发布日期超出可选择范围")
     cell = page.locator(
@@ -369,28 +413,15 @@ def choose_date(page: Page, target: str) -> None:
 
 def choose_time(page: Page, target: str) -> None:
     scope = publish_dialog(page)
-    candidates = scope.locator(
-        "input[placeholder*='时间'], input[placeholder*='日期']"
-    )
-    visible = [
-        item
-        for item in candidates.all()
-        if item.is_visible() and (
-            ":" in (item.input_value() or "")
-            or "时间" in (item.get_attribute("placeholder") or "")
-        )
-    ]
-    if len(visible) != 1:
-        raise FanqieRetryable("发布时间输入框不唯一")
-    field = visible[0]
+    field = publishing_field(scope, r"\d{2}:\d{2}", "发布时间输入框")
     if field.input_value().strip() != target:
         field.click()
-        page.wait_for_timeout(300)
-        option = page.locator(".arco-select-option:visible").filter(
-            has_text=re.compile(rf"^\s*{re.escape(target)}\s*$")
-        )
-        unique(option, "目标发布时间").click()
-        page.wait_for_timeout(300)
+        field.press("Control+A")
+        field.press("Backspace")
+        field.type(target, delay=80)
+        field.press("Enter")
+        field.press("Tab")
+        page.wait_for_timeout(500)
     if field.input_value().strip() != target:
         raise FanqieRetryable(
             f"发布时间回读失败：期望 {target}，实际 {field.input_value()}"
