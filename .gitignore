@@ -4,3 +4,4 @@ __pycache__/
 # Local manager execution state
 .manager.lock
 .manager_runtime.json
+.manager_jobs/

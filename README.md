@@ -14,6 +14,51 @@
 
 ## 常用命令
 
+### 一键批量创作、上传与排期
+
+在 VS Code 终端进入本项目根目录后运行：
+
+```powershell
+python xiaoshuo 5
+```
+
+也可以使用带扩展名的等价命令：
+
+```powershell
+python .\xiaoshuo.py 5
+```
+
+数字表示本批需要严格串行完成的章节数，不是新建书籍数。管理器会先恢复已有的
+待发布番茄草稿；每个成功恢复的章节占一个名额。待发布草稿清空后，才继续写新章。
+每章都必须完成“写作或恢复 → 质检 → 上传 → 排期 → 章节列表核验 → 状态回写”，
+上一章没有显示“待发布”“审核中”或“已发布”时不会进入下一章。
+
+首次使用前确认：
+
+```powershell
+codex login status
+python xiaoshuo --check
+python .\xiaoshuo.py 1 --dry-run
+```
+
+实际运行会创建被 Git 忽略的 `.manager_jobs/` 任务记录。任务中断后可查看：
+
+```powershell
+python .\fanqie_novel_manager.py job-status
+python .\fanqie_novel_manager.py job-status --job <job-id>
+python xiaoshuo --resume <job-id>
+```
+
+发布仍依赖已登录的番茄浏览器会话。浏览器不可用、登录失效、验证码、风控或政策
+警告会安全停止并保留恢复点；管理器不会保存 Cookie、Token、密码或验证码。
+`--check` 能确认本地浏览器控制组件存在，但实际番茄登录状态仍会在任务打开作品页后
+再次核对。
+
+管理器优先使用 Codex 桌面版配置中登记的 CLI，避免 PATH 中较旧的全局 npm 版本抢先
+启动。需要手动指定时可设置环境变量 `XIAOSHUO_CODEX` 为目标 `codex.exe` 的完整路径。
+执行上传时请保持当前终端与 Codex 桌面版运行，并确保番茄已在可用浏览器会话中登录；
+任务完成或安全停止后命令才会退出。
+
 ```powershell
 python .\fanqie_novel_manager.py list
 python .\fanqie_novel_manager.py validate
