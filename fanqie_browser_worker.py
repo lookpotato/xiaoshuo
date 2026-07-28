@@ -294,25 +294,19 @@ def publish_dialog(page: Page) -> Locator:
 
 def choose_ai_yes(page: Page) -> None:
     scope = publish_dialog(page)
-    # 番茄的组件类名前缀可能变化；以可见 label 文本定位“是”。
-    yes = scope.locator("label").filter(
-        has_text=re.compile(r"^\s*是\s*$")
-    )
-    visible = [item for item in yes.all() if item.is_visible()]
-    if len(visible) != 1:
+    # 弹窗内两个单选框的可见顺序固定为“是、否”。直接操作第一个
+    # radio，避免平台改变 label 的类名或嵌套结构后无法点击文字。
+    radios = scope.locator("input[type='radio']")
+    if radios.count() != 2:
         raise FanqieRetryable(
-            f"发布设置中的“是否使用AI=是”控件匹配到 {len(visible)} 个"
+            f"发布设置中的 AI 单选框匹配到 {radios.count()} 个，期望 2 个"
         )
-    visible[0].click()
+    yes = radios.nth(0)
+    if not yes.is_checked():
+        yes.check(force=True)
     page.wait_for_timeout(500)
-    checked = scope.locator("input[type='radio']:checked")
-    if checked.count() != 1:
-        raise FanqieRetryable(
-            f"AI 选项回读失败：选中的单选框数量为 {checked.count()}"
-        )
-    checked_label = checked.first.locator("xpath=ancestor::label[1]")
-    if checked_label.count() != 1 or checked_label.inner_text().strip() != "是":
-        raise FanqieRetryable("AI 选项回读失败：当前选中的不是“是”")
+    if not yes.is_checked() or radios.nth(1).is_checked():
+        raise FanqieRetryable("AI 选项回读失败：没有唯一选中“是”")
 
 
 def enable_timed_publish(page: Page) -> None:
@@ -343,6 +337,18 @@ def enable_timed_publish(page: Page) -> None:
         raise FanqieRetryable(
             "定时发布已打开，但日期或时间输入框没有唯一出现"
         )
+
+
+def debug_checkpoint(message: str) -> None:
+    print(
+        f"\n{message}\n请查看 Chrome 页面；确认后回到终端按 Enter 继续。",
+        file=sys.stderr,
+        flush=True,
+    )
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 
 def publishing_field(
@@ -484,8 +490,21 @@ def publish(
                 }
             choose_ai_yes(page)
             enable_timed_publish(page)
+            if debug_browser:
+                debug_checkpoint(
+                    "调试检查点 1/3：已选择“是否使用AI=是”，并打开“定时发布”。"
+                )
             choose_date(page, publish_date)
+            if debug_browser:
+                debug_checkpoint(
+                    f"调试检查点 2/3：已选择发布日期 {publish_date}。"
+                )
             choose_time(page, publish_time)
+            if debug_browser:
+                debug_checkpoint(
+                    f"调试检查点 3/3：已设置发布时间 {publish_time}；"
+                    "下一步将点击“确认发布”。"
+                )
             assert_safe_page(page, config)
             confirm = visible_button(page, "确认发布")
             if not confirm:
