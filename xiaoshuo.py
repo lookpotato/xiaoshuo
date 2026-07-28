@@ -11,6 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 MANAGER = ROOT / "fanqie_novel_manager.py"
+ON_DEMAND = ROOT / "xiaoshuo_on_demand.py"
+BROWSER_WORKER = ROOT / "fanqie_browser_worker.py"
 
 
 def main() -> int:
@@ -21,9 +23,25 @@ def main() -> int:
     parser.add_argument("count", type=int, nargs="?", help="本批要完成的章节数，例如 5")
     parser.add_argument("--book", default="cosmic-404", help="manager_config.json 中的书籍 id")
     parser.add_argument("--dry-run", action="store_true", help="只显示计划，不启动 Codex")
-    parser.add_argument("--check", action="store_true", help="检查 Codex、浏览器组件与书籍绑定")
+    parser.add_argument("--check", action="store_true", help="检查 Codex、Chrome 与书籍绑定")
+    parser.add_argument(
+        "--setup-browser",
+        action="store_true",
+        help="首次配置番茄专用 Chrome 登录会话",
+    )
     parser.add_argument("--resume", help="续跑 `.manager_jobs` 中已有的 job id")
     args = parser.parse_args()
+    if args.setup_browser:
+        return subprocess.run(
+            [
+                sys.executable,
+                str(BROWSER_WORKER),
+                "--project",
+                str(ROOT / "404修理站"),
+                "--setup",
+            ],
+            cwd=ROOT,
+        ).returncode
     if args.check:
         return subprocess.run(
             [
@@ -37,11 +55,7 @@ def main() -> int:
         ).returncode
     if args.count is None and not args.resume:
         parser.error("请提供章节数、`--resume <job-id>` 或 `--check`")
-    command = [
-        sys.executable,
-        str(MANAGER),
-        "run",
-    ]
+    command = [sys.executable, str(ON_DEMAND)]
     if args.count is not None:
         command.append(str(args.count))
     command.extend(["--book", args.book])

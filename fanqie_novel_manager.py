@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import importlib.util
 import io
 import json
 import os
 import re
+import shutil
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -748,16 +750,26 @@ def cmd_job_status(_data, args):
 def cmd_doctor(data, args):
     book = find_book(data, args.book)
     project = project_path(book)
-    automation_files = list((Path.home() / ".codex" / "automations").glob("*/automation.toml"))
-    worker_automation = None
-    for automation_file in automation_files:
-        text = automation_file.read_text(encoding="utf-8")
-        if "job-next" in text and 'status = "ACTIVE"' in text:
-            worker_automation = str(automation_file)
-            break
+    profile_dir = (
+        Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        / "xiaoshuo"
+        / "fanqie-chrome-profile-v2"
+    )
+    profile_ready = profile_dir.parent / "fanqie-chrome-profile-v2.ready.json"
+    chrome_candidates = [
+        Path(os.environ.get("PROGRAMFILES", "C:/Program Files"))
+        / "Google/Chrome/Application/chrome.exe",
+        Path(os.environ.get("PROGRAMFILES(X86)", "C:/Program Files (x86)"))
+        / "Google/Chrome/Application/chrome.exe",
+        Path(os.environ.get("LOCALAPPDATA", ""))
+        / "Google/Chrome/Application/chrome.exe",
+    ]
     checks = {
         "project_valid": not validate_book(book, require_publish_complete=False),
-        "desktop_worker_automation": bool(worker_automation),
+        "codex_cli": bool(shutil.which("codex")),
+        "playwright": importlib.util.find_spec("playwright") is not None,
+        "google_chrome": any(path.is_file() for path in chrome_candidates),
+        "browser_profile_initialized": profile_ready.is_file(),
         "publish_url_bound": False,
         "submit_publish": publish_requires_submission(project),
     }
@@ -773,13 +785,15 @@ def cmd_doctor(data, args):
     print(json.dumps({
         "ready": ready,
         "book": args.book,
-        "worker_automation": worker_automation,
+        "mode": "on_demand",
+        "background_polling": False,
+        "browser_profile": str(profile_dir),
         "checks": checks,
         "manager_busy": live_lock(data, now_for(data)) is not None,
         "note": (
-            "预检通过；命令会把 job 入队，由 Codex 桌面工作器领取并核对番茄登录。"
+            "预检通过；python xiaoshuo N 会按需运行，完成后退出。"
             if ready else
-            "预检未通过；请修复 false 项后再启动批次。"
+            "预检未通过；首次使用请运行 python xiaoshuo --setup-browser。"
         ),
     }, ensure_ascii=False, indent=2))
     return 0 if ready else 2

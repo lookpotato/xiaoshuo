@@ -37,12 +37,19 @@ python .\xiaoshuo.py 5
 
 ```powershell
 codex login status
+python xiaoshuo --setup-browser
 python xiaoshuo --check
 python .\xiaoshuo.py 1 --dry-run
 ```
 
-实际运行会创建被 Git 忽略的 `.manager_jobs/` 任务记录并立即返回。Codex 桌面工作器
-通常会在 5 分钟内领取任务；任务中断后可查看：
+`--setup-browser` 会打开一个只供本项目使用的 Chrome 窗口。首次由用户亲自登录番茄；
+登录资料由 Chrome 保存在 `%LOCALAPPDATA%\xiaoshuo\fanqie-chrome-profile-v2`，不会写入
+仓库、日志或 Git。必须从用户自己的 VS Code 终端运行该命令，后台执行环境无法把
+Chrome 窗口显示到用户桌面。管理器不会读取或导出 Cookie、Token、密码和验证码。
+
+实际运行只在命令执行期间工作，不创建定时任务、不轮询队列。命令会依次恢复待发布
+章节或调用一次 Codex 写一章，再用专用 Chrome 上传、排期并核验；达到指定章数后进程
+立即退出。任务中断后可查看和续跑：
 
 ```powershell
 python .\fanqie_novel_manager.py job-status
@@ -50,10 +57,8 @@ python .\fanqie_novel_manager.py job-status --job <job-id>
 python xiaoshuo --resume <job-id>
 ```
 
-发布依赖 Codex 桌面版自动任务中的已登录番茄浏览器会话。浏览器不可用、登录失效、
-验证码、风控或政策警告会安全停止并保留恢复点；管理器不会保存 Cookie、Token、密码
-或验证码。终端命令只负责入队，不再启动无法访问桌面浏览器的 `codex exec` 子进程。
-请保持 Codex 桌面版运行，并确保番茄已在可用浏览器会话中登录。
+浏览器不可用、登录失效、验证码、风控或政策警告会安全停止并保留恢复点。再次登录或
+临时故障恢复后，使用 `python xiaoshuo --resume <job-id>` 继续同一个批次。
 
 ```powershell
 python .\fanqie_novel_manager.py list
@@ -120,16 +125,14 @@ python .\fanqie_novel_manager.py claim --book cosmic-404
 9. 只有“待发布”“审核中”或“已发布”才算该章完成，并立即回写状态和日志。
 10. 当前章确认完成后才能进入下一章；整批完成后才能 `finish --result success`。
 
-每天 12:00 由 Codex 自动任务唤醒并执行 `next`。`next` 会选择到期作品并
-原子领取任务；根目录锁避免重复写作，默认 180 分钟过期。管理器只负责调度和
-运行状态，生成与上传由自动任务按目标书 `automation_prompt.md` 执行。
+默认不启用任何定时唤醒。只有用户输入 `python xiaoshuo N` 时才会取得根目录锁并
+运行；根目录锁避免重复写作，默认 180 分钟过期。
 
 `notes` 还会输出 `browser_reliability_steps`，用于判断浏览器控制超时、
 拆分单步操作、执行只读恢复，并防止不确定动作被重复点击。
 
-临时失败或待上传任务由 12:30 的补偿唤醒重试，每天最多 2 次；正常情况下
-12:00 成功后，12:30 只检查状态并立即结束。登录、验证码、风控、
-政策警告等记为 `blocked_manual`，等待人工处理。已经成功完成当天任务后不再领取。
+临时失败或待上传任务不会后台重试。登录、验证码、风控、政策警告等记为
+`blocked_manual`，等待用户处理后手动续跑。
 
 ## 调度原则
 
