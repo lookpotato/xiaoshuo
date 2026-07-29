@@ -19,8 +19,8 @@
       "mode": "write_then_upload",
       "daily_chapter_target": 2,
       "manual_extra_chapters_supported": true,
-      "default_publish_times": ["12:00", "18:00"],
-      "note": "正式长篇；常规每天发布2章。批量排期时首章优先12:00，同日第二章使用平台允许的最近可用时段；用户可临时指定某日加更数量与时间，未指定时不改变后续常规排期。"
+      "default_publish_times": ["12:00"],
+      "note": "正式长篇；所有章节固定在中午12:00发布；用户可临时指定其他时间，未指定时不改变后续常规排期。"
     }
   ]
 }
