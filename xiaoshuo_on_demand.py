@@ -101,7 +101,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；
 2. 更新 chapter_state.json、continuity_ledger.md、batch_schedule 和当日日志；
-3. 新排期沿用 manager_config.json 的每日发布时间，第二章默认 18:00；
+3. 新排期沿用 manager_config.json 的每日发布时间，未特别指定时固定 12:00；
 4. Metadata 的 upload_status 写为 not_uploaded；
 5. 不访问任何浏览器，不上传番茄，不调用 job-progress/job-finish/claim/finish；
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
@@ -120,8 +120,8 @@ def write_one(book_id: str, job: dict) -> None:
         str(ROOT),
         "--sandbox",
         "danger-full-access",
-        "--ask-for-approval",
-        "never",
+        "--config",
+        'approval_policy="never"',
         "--output-last-message",
         str(result_file),
         "-",
