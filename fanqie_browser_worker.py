@@ -436,14 +436,24 @@ def verify_list(page: Page, chapter: Chapter) -> dict:
     except PlaywrightTimeoutError:
         pass
     assert_safe_page(page, parse_publish_config(chapter.path.parents[1]))
-    rows = page.locator("tr, .arco-table-tr").filter(
-        has_text=re.compile(
-            rf"第\s*{chapter.number}\s*章.*{re.escape(chapter.title)}"
-        )
-    )
-    if rows.count() != 1:
+    chapter_text = f"第{chapter.number}章 {chapter.title}"
+    title = page.get_by_text(chapter_text, exact=True)
+    try:
+        title.wait_for(state="visible", timeout=45_000)
+    except PlaywrightTimeoutError as exc:
+        raise FanqieRetryable(
+            f"章节管理页等待“{chapter_text}”出现超时"
+        ) from exc
+    visible = [item for item in title.all() if item.is_visible()]
+    if len(visible) != 1:
         raise FanqieRetryable("章节管理页无法唯一定位目标章节")
-    text = rows.inner_text()
+    row = visible[0].locator(
+        "xpath=ancestor::tr[contains(concat(' ', normalize-space(@class), ' '), "
+        "' arco-table-tr ')][1]"
+    )
+    if row.count() != 1:
+        raise FanqieRetryable("章节管理页无法定位目标章节所在表格行")
+    text = row.inner_text()
     status = next((item for item in SUCCESS_STATUSES if item in text), None)
     if not status:
         raise FanqieRetryable("目标章节尚未显示待发布、审核中或已发布")
