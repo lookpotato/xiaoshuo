@@ -134,7 +134,8 @@
       "chapter": 27,
       "date": "2026-08-05",
       "time": "12:00",
-      "status": "pending"
+      "status": "not_uploaded",
+      "archived_at": "2026-07-30T21:03:00+08:00"
     }
   ]
 }
