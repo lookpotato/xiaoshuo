@@ -112,31 +112,61 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 
 def write_one(book_id: str, job: dict) -> None:
     codex = resolve_codex()
+    project = project_for(manager.config(), book_id)
+    expected_chapter = int(
+        manager.read_json(project / "chapter_state.json")["next_chapter_number"]
+    )
     result_file = manager.JOB_DIR / f"{job['id']}-write-{datetime.now():%H%M%S}.md"
     command = [
         codex,
         "exec",
+        "--ignore-user-config",
+        "--ephemeral",
         "-C",
         str(ROOT),
+        "--model",
+        "gpt-5.6-sol",
         "--sandbox",
         "danger-full-access",
         "--config",
         'approval_policy="never"',
+        "--config",
+        'model_reasoning_effort="medium"',
         "--output-last-message",
         str(result_file),
         "-",
     ]
-    print("正在调用 Codex 生成下一章……", flush=True)
-    process = subprocess.run(
-        command,
-        cwd=ROOT,
-        input=local_write_prompt(book_id, job),
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if process.returncode:
-        raise RuntimeError(f"Codex 写作任务失败，退出码 {process.returncode}")
+    prompt = local_write_prompt(book_id, job)
+    for attempt in range(1, 3):
+        suffix = "" if attempt == 1 else "（仅重试一次）"
+        print(f"正在调用 Codex 生成下一章……{suffix}", flush=True)
+        process = subprocess.run(
+            command,
+            cwd=ROOT,
+            input=prompt,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if not process.returncode:
+            return
+
+        state = manager.read_json(project / "chapter_state.json", {})
+        if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
+            print(
+                "Codex 回传中断，但新章节已完整归档；继续执行上传。",
+                flush=True,
+            )
+            return
+        if attempt == 1:
+            print(
+                "Codex 写作连接中断；本次命令将在隔离远程插件后仅重试一次。",
+                flush=True,
+            )
+            continue
+        raise RuntimeError(
+            f"Codex 写作任务连续两次失败，最后退出码 {process.returncode}"
+        )
 
 
 def schedule_entries(project: Path) -> list[tuple[Path, dict]]:
