@@ -286,9 +286,9 @@ def git_sync(paths: list[Path], message: str) -> None:
     staged = subprocess.run(
         ["git", "diff", "--cached", "--quiet"], cwd=ROOT
     )
-    if staged.returncode == 0:
-        return
-    subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
+    if staged.returncode != 0:
+        subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
+    # 上一次运行可能已经 commit、只在 push 阶段断网；恢复时仍必须重试推送。
     subprocess.run(["git", "push"], cwd=ROOT, check=True)
 
 

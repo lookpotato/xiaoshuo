@@ -312,38 +312,35 @@ def choose_basic_check(page: Page) -> None:
 
 
 def publish_dialog(page: Page) -> Locator:
-    dialogs = page.locator(".arco-modal:visible").filter(has_text="是否使用AI")
-    if dialogs.count() != 1:
-        raise FanqieRetryable(
-            f"发布设置弹窗匹配到 {dialogs.count()} 个，无法安全操作"
-        )
-    return dialogs
+    confirm = visible_button(page, "确认发布")
+    if not confirm:
+        raise FanqieRetryable("发布设置中未找到唯一的“确认发布”按钮")
+    dialog = confirm.locator(
+        "xpath=ancestor::*[.//input[@type='radio'] "
+        "and .//button[@role='switch']][1]"
+    )
+    if dialog.count() != 1 or not dialog.is_visible():
+        raise FanqieRetryable("无法从发布控件定位发布设置弹窗")
+    return dialog
 
 
 def choose_ai_yes(page: Page) -> None:
     scope = publish_dialog(page)
-    # 按番茄当前实际 DOM 点击 radio 的可见蒙层。两个蒙层顺序为“是、否”。
-    masks = scope.locator("span.arco-radio-mask-wrapper")
-    visible = [item for item in masks.all() if item.is_visible()]
-    if len(visible) != 2:
+    # 装饰层的 class 会随番茄/Arco 版本变化；真实 radio 顺序稳定为“是、否”。
+    radios = scope.locator("input[type='radio']")
+    if radios.count() != 2:
         raise FanqieRetryable(
-            f"发布设置中的 AI 可见按钮匹配到 {len(visible)} 个，期望 2 个"
+            f"发布设置中的 AI 单选框匹配到 {radios.count()} 个，期望 2 个"
         )
-    yes_mask = visible[0]
-    yes_mask.click()
-    page.wait_for_timeout(500)
-
-    yes_label = yes_mask.locator("xpath=ancestor::label[1]")
-    yes_input = yes_label.locator("input[type='radio']")
-    no_input = visible[1].locator(
-        "xpath=ancestor::label[1]//input[@type='radio']"
-    )
-    if (
-        yes_input.count() != 1
-        or no_input.count() != 1
-        or not yes_input.is_checked()
-        or no_input.is_checked()
-    ):
+    yes_input = radios.nth(0)
+    no_input = radios.nth(1)
+    if not yes_input.is_checked():
+        yes_label = yes_input.locator("xpath=ancestor::label[1]")
+        if yes_label.count() != 1 or not yes_label.is_visible():
+            raise FanqieRetryable("无法定位“是否使用AI=是”的可见标签")
+        yes_label.click(force=True)
+        page.wait_for_timeout(500)
+    if not yes_input.is_checked() or no_input.is_checked():
         raise FanqieRetryable("AI 选项回读失败：没有唯一选中“是”")
 
 
@@ -357,7 +354,7 @@ def enable_timed_publish(page: Page) -> None:
         )
     switch = visible[0]
     if switch.get_attribute("aria-checked") != "true":
-        switch.click()
+        switch.click(force=True)
         page.wait_for_timeout(600)
     if switch.get_attribute("aria-checked") != "true":
         raise FanqieRetryable("定时发布开关回读失败")
