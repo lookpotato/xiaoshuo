@@ -277,10 +277,10 @@ def record_upload(
     ]
 
 
-def git_sync(paths: list[Path], message: str) -> None:
+def git_sync(paths: list[Path], message: str) -> bool:
     unique_paths = sorted({path.resolve() for path in paths if path.exists()})
     if not unique_paths:
-        return
+        return True
     relative = [str(path.relative_to(ROOT)) for path in unique_paths]
     subprocess.run(["git", "add", "--", *relative], cwd=ROOT, check=True)
     staged = subprocess.run(
@@ -289,7 +289,16 @@ def git_sync(paths: list[Path], message: str) -> None:
     if staged.returncode != 0:
         subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
     # 上一次运行可能已经 commit、只在 push 阶段断网；恢复时仍必须重试推送。
-    subprocess.run(["git", "push"], cwd=ROOT, check=True)
+    pushed = subprocess.run(["git", "push"], cwd=ROOT)
+    if pushed.returncode:
+        print(
+            "警告：章节已在番茄成功提交，但 Git 推送暂时失败；"
+            "本地提交已保留，后续运行会重试推送。",
+            file=sys.stderr,
+            flush=True,
+        )
+        return False
+    return True
 
 
 def finish_job(
@@ -353,8 +362,8 @@ def run(
             Path(item) for item in job.get("changed_paths_pending_git", [])
         ]
         if recovery_paths:
-            git_sync(recovery_paths, f"恢复按需批次 {job['id']} 状态")
-            job.pop("changed_paths_pending_git", None)
+            if git_sync(recovery_paths, f"恢复按需批次 {job['id']} 状态"):
+                job.pop("changed_paths_pending_git", None)
             manager.write_json(manager.job_path(job["id"]), job)
         completed = len(job.get("completed_chapters", []))
         while completed < int(job["target_chapters"]):
@@ -421,16 +430,21 @@ def run(
                     ),
                 ),
             )
-            git_sync(changed, f"发布第{chapter.number}章《{chapter.title}》")
+            pushed = git_sync(changed, f"发布第{chapter.number}章《{chapter.title}》")
             job = manager.read_job(job["id"])
-            job.pop("changed_paths_pending_git", None)
+            if pushed:
+                job.pop("changed_paths_pending_git", None)
             manager.write_json(manager.job_path(job["id"]), job)
             completed += 1
+        git_push_pending = bool(job.get("changed_paths_pending_git"))
+        completion_message = f"按需完成 {completed}/{job['target_chapters']} 章"
+        if git_push_pending:
+            completion_message += "；番茄已成功，Git 推送待恢复"
         finish_job(
             data,
             job,
             "success",
-            f"按需完成 {completed}/{job['target_chapters']} 章",
+            completion_message,
             "batch_success",
         )
         print(
@@ -442,6 +456,7 @@ def run(
                     "completed": completed,
                     "target": job["target_chapters"],
                     "background_polling": False,
+                    "git_push_pending": git_push_pending,
                 },
                 ensure_ascii=False,
                 indent=2,
