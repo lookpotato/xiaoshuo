@@ -11,6 +11,7 @@ import sys
 import time
 from dataclasses import dataclass
 from datetime import date, datetime
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 try:
@@ -60,6 +61,7 @@ STOP_PATTERNS = re.compile(
     r"政策警告|违规风险|身份验证",
 )
 SUCCESS_STATUSES = ("待发布", "审核中", "已发布")
+MIN_PLAYWRIGHT_VERSION = (1, 61, 0)
 
 
 class FanqieBlocked(RuntimeError):
@@ -94,6 +96,25 @@ def chrome_path() -> Path:
         if candidate.is_file():
             return candidate
     raise FanqieBlocked("找不到 Google Chrome，无法启动专用浏览器。")
+
+
+def playwright_version() -> str:
+    try:
+        return version("playwright")
+    except PackageNotFoundError:
+        return "0"
+
+
+def ensure_playwright_version() -> None:
+    numbers = tuple(
+        int(item) for item in re.findall(r"\d+", playwright_version())[:3]
+    )
+    if numbers < MIN_PLAYWRIGHT_VERSION:
+        required = ".".join(str(item) for item in MIN_PLAYWRIGHT_VERSION)
+        raise FanqieRetryable(
+            f"Playwright 版本过旧（当前 {playwright_version()}，需要至少 "
+            f"{required}）；请运行 `python -m pip install -r requirements.txt`"
+        )
 
 
 def parse_publish_config(project: Path) -> PublishConfig:
@@ -134,14 +155,21 @@ def parse_chapter(path: Path) -> Chapter:
 
 
 def launch_context(playwright: Playwright) -> BrowserContext:
+    ensure_playwright_version()
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-    return playwright.chromium.launch_persistent_context(
-        user_data_dir=str(PROFILE_DIR),
-        executable_path=str(chrome_path()),
-        headless=False,
-        viewport={"width": 1440, "height": 960},
-        locale="zh-CN",
-    )
+    try:
+        return playwright.chromium.launch_persistent_context(
+            user_data_dir=str(PROFILE_DIR),
+            executable_path=str(chrome_path()),
+            headless=False,
+            viewport={"width": 1440, "height": 960},
+            locale="zh-CN",
+        )
+    except PlaywrightError as exc:
+        raise FanqieRetryable(
+            "专用 Chrome 启动失败；请先关闭残留的番茄专用 Chrome，"
+            "再重新运行同一条命令"
+        ) from exc
 
 
 def active_page(context: BrowserContext) -> Page:
@@ -534,9 +562,14 @@ def publish(
                     input()
                 except (EOFError, KeyboardInterrupt):
                     pass
+            if isinstance(exc, PlaywrightError):
+                raise FanqieRetryable(f"浏览器操作失败：{exc}") from exc
             raise
         finally:
-            context.close()
+            try:
+                context.close()
+            except PlaywrightError:
+                pass
 
 
 def setup(project: Path, timeout_seconds: int) -> dict:

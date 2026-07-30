@@ -59,6 +59,9 @@ def start_job(data: dict, book_id: str, count: int, resume: str | None) -> dict:
     )
     if result:
         raise RuntimeError("无法取得小说管理器运行锁")
+    lock = manager.read_json(manager.LOCK, {})
+    lock["owner_mode"] = "on_demand_process"
+    manager.write_json(manager.LOCK, lock)
     job.update(
         {
             "status": "running",
@@ -355,6 +358,11 @@ def run(
             manager.write_json(manager.job_path(job["id"]), job)
         completed = len(job.get("completed_chapters", []))
         while completed < int(job["target_chapters"]):
+            print(
+                f"\n本批进度 {completed + 1}/{job['target_chapters']}："
+                "准备下一章",
+                flush=True,
+            )
             pending = pending_chapter(project)
             if pending is None:
                 before = manager.read_json(project / "chapter_state.json")[
@@ -444,13 +452,7 @@ def run(
         finish_job(data, job, "blocked", str(exc), "blocked_manual")
         print(f"已安全停止：{exc}", file=sys.stderr)
         return 4
-    except (
-        FanqieRetryable,
-        RuntimeError,
-        ValueError,
-        OSError,
-        subprocess.CalledProcessError,
-    ) as exc:
+    except Exception as exc:
         finish_job(data, job, "failed", str(exc), "failed_retryable")
         print(f"本次运行失败，可按原 job 续跑：{exc}", file=sys.stderr)
         return 3

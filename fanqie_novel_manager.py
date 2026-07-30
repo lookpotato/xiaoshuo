@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import ctypes
 import importlib.util
+from importlib.metadata import PackageNotFoundError, version
 import io
 import json
 import os
@@ -24,6 +26,7 @@ LOCK = ROOT / ".manager.lock"
 JOB_DIR = ROOT / ".manager_jobs"
 MANAGER_NAME = "番茄小说管理器"
 MANAGER_SCRIPT = "fanqie_novel_manager.py"
+MIN_PLAYWRIGHT_VERSION = (1, 61, 0)
 REQUIRED_FILES = {
     "novel_config.md", "outline.md", "characters.md", "world.md",
     "style_guide.md", "publish_config.md", "chapter_state.json",
@@ -561,10 +564,42 @@ def live_lock(data, now):
         return None
     lock = read_json(LOCK)
     claimed = datetime.fromisoformat(lock["claimed_at"])
+    if lock.get("owner_mode") == "on_demand_process":
+        pid = int(lock.get("pid", 0) or 0)
+        if not process_is_running(pid):
+            LOCK.unlink(missing_ok=True)
+            return None
     if now - claimed > timedelta(minutes=data.get("global_lock_minutes", 180)):
         LOCK.unlink(missing_ok=True)
         return None
     return lock
+
+
+def process_is_running(pid):
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [
+            ctypes.c_ulong,
+            ctypes.c_int,
+            ctypes.c_ulong,
+        ]
+        kernel32.OpenProcess.restype = ctypes.c_void_p
+        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+        kernel32.CloseHandle.restype = ctypes.c_int
+        handle = kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        kernel32.CloseHandle(handle)
+        return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def cmd_claim(data, args):
@@ -764,10 +799,20 @@ def cmd_doctor(data, args):
         Path(os.environ.get("LOCALAPPDATA", ""))
         / "Google/Chrome/Application/chrome.exe",
     ]
+    try:
+        installed_playwright = version("playwright")
+    except PackageNotFoundError:
+        installed_playwright = "0"
+    installed_numbers = tuple(
+        int(item) for item in re.findall(r"\d+", installed_playwright)[:3]
+    )
     checks = {
         "project_valid": not validate_book(book, require_publish_complete=False),
         "codex_cli": bool(shutil.which("codex")),
-        "playwright": importlib.util.find_spec("playwright") is not None,
+        "playwright": (
+            importlib.util.find_spec("playwright") is not None
+            and installed_numbers >= MIN_PLAYWRIGHT_VERSION
+        ),
         "google_chrome": any(path.is_file() for path in chrome_candidates),
         "browser_profile_initialized": profile_ready.is_file(),
         "publish_url_bound": False,
@@ -788,6 +833,10 @@ def cmd_doctor(data, args):
         "mode": "on_demand",
         "background_polling": False,
         "browser_profile": str(profile_dir),
+        "playwright_version": installed_playwright,
+        "minimum_playwright_version": ".".join(
+            str(item) for item in MIN_PLAYWRIGHT_VERSION
+        ),
         "checks": checks,
         "manager_busy": live_lock(data, now_for(data)) is not None,
         "note": (
