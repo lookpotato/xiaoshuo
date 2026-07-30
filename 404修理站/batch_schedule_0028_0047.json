@@ -1,0 +1,27 @@
+{
+  "timezone": "Asia/Shanghai",
+  "created_at": "2026-07-30T22:25:00+08:00",
+  "chapter_range": [
+    28,
+    47
+  ],
+  "status": "writing",
+  "content_check": "basic_only",
+  "ai_usage": true,
+  "timed_publish": true,
+  "daily_target": 2,
+  "manual_extra_chapters_supported": true,
+  "primary_time": "12:00",
+  "secondary_time": "12:00",
+  "entries": [
+    {
+      "chapter": 28,
+      "date": "2026-08-06",
+      "time": "12:00",
+      "status": "submitted_pending_review",
+      "archived_at": "2026-07-30T22:25:00+08:00",
+      "verified_at": "2026-07-30T22:52:37.033316+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+    }
+  ]
+}
