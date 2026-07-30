@@ -378,8 +378,11 @@ def choose_date(page: Page, target: str) -> None:
         r"\d{4}-\d{2}-\d{2}",
         "发布日期输入框",
     )
-    field.click()
-    page.wait_for_timeout(300)
+    # 打开定时发布后，番茄有时会自动展开日期面板。此时再次点击输入框
+    # 会被面板中的日期按钮拦截，Playwright 会一直重试到超时。
+    if page.locator(".arco-picker-header-value:visible").count() == 0:
+        field.click()
+        page.wait_for_timeout(300)
     # 先切换到目标年月，再点击 in-view 单元格，避免误点相邻月份同号日期。
     for _ in range(14):
         headers = page.locator(".arco-picker-header-value")
