@@ -312,16 +312,47 @@ def choose_basic_check(page: Page) -> None:
 
 
 def publish_dialog(page: Page) -> Locator:
-    confirm = visible_button(page, "确认发布")
-    if not confirm:
-        raise FanqieRetryable("发布设置中未找到唯一的“确认发布”按钮")
-    dialog = confirm.locator(
-        "xpath=ancestor::*[.//input[@type='radio'] "
-        "and .//button[@role='switch']][1]"
+    deadline = time.monotonic() + 15
+    switches: list[Locator] = []
+    while time.monotonic() < deadline:
+        switches = []
+        for frame in page.frames:
+            candidates = frame.locator(
+                "[role='switch'], .arco-switch"
+            )
+            switches.extend(
+                item for item in candidates.all() if item.is_visible()
+            )
+        if len(switches) == 1:
+            break
+        if len(switches) > 1:
+            raise FanqieRetryable(
+                f"发布设置中的定时开关匹配到 {len(switches)} 个，无法安全操作"
+            )
+        page.wait_for_timeout(250)
+    if len(switches) != 1:
+        raise FanqieRetryable(
+            f"等待发布设置中的定时开关出现超时（frame 数：{len(page.frames)}）"
+        )
+    dialog = switches[0].locator(
+        "xpath=ancestor::*[.//input[@type='radio']][1]"
     )
     if dialog.count() != 1 or not dialog.is_visible():
         raise FanqieRetryable("无法从发布控件定位发布设置弹窗")
     return dialog
+
+
+def publishing_button(scope: Locator | Page, name: str) -> Locator | None:
+    visible = [
+        item
+        for item in scope.locator("button").all()
+        if item.is_visible() and item.inner_text().strip() == name
+    ]
+    if len(visible) == 1:
+        return visible[0]
+    if len(visible) > 1:
+        raise FanqieRetryable(f"发布设置中的按钮“{name}”不唯一")
+    return None
 
 
 def choose_ai_yes(page: Page) -> None:
@@ -346,7 +377,7 @@ def choose_ai_yes(page: Page) -> None:
 
 def enable_timed_publish(page: Page) -> None:
     scope = publish_dialog(page)
-    switches = scope.locator("button[role='switch'].arco-switch")
+    switches = scope.locator("[role='switch'], .arco-switch")
     visible = [item for item in switches.all() if item.is_visible()]
     if len(visible) != 1:
         raise FanqieRetryable(
@@ -540,7 +571,7 @@ def publish(
                     "下一步将点击“确认发布”。"
                 )
             assert_safe_page(page, config)
-            confirm = visible_button(page, "确认发布")
+            confirm = publishing_button(page, "确认发布")
             if not confirm:
                 raise FanqieRetryable("未找到确认发布按钮")
             confirm.click()
