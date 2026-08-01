@@ -338,6 +338,35 @@ def click_if_visible(page: Page, name: str) -> bool:
     return True
 
 
+def click_with_hidden_overlay_guard(page: Page, button: Locator, name: str) -> None:
+    """Bypass only stale dialogs explicitly marked aria-hidden=true."""
+    try:
+        button.click(timeout=3_000)
+        return
+    except PlaywrightTimeoutError as exc:
+        dialogs = visible_matches(page.locator("[role='dialog']:visible"))
+        active = [
+            item
+            for item in dialogs
+            if item.get_attribute("aria-hidden") != "true"
+        ]
+        if active:
+            summaries = [item.inner_text().strip()[:300] for item in active]
+            raise FanqieBlocked(
+                f"点击“{name}”前出现未授权的可见弹窗：{summaries}"
+            ) from exc
+        hidden = [
+            item for item in dialogs if item.get_attribute("aria-hidden") == "true"
+        ]
+        if not hidden:
+            raise FanqieRetryable(f"“{name}”按钮无法点击，且未识别到隐藏遮罩") from exc
+        # 这些节点已由页面明确标为隐藏，只是退出动画残留层仍错误拦截指针。
+        # force=True 仍会把鼠标坐标事件送到遮罩；调用唯一已核验按钮自身的
+        # DOM click 才能避开命中测试，同时不触碰任何可见弹窗。
+        button.evaluate("element => element.click()")
+        page.wait_for_timeout(500)
+
+
 def choose_basic_check(page: Page) -> None:
     for label in ("仅基础检测", "基础检测"):
         options = page.get_by_text(label, exact=True)
@@ -351,18 +380,84 @@ def choose_basic_check(page: Page) -> None:
         raise FanqieRetryable("未找到“仅基础检测”选项")
 
 
+def visible_publish_switches(page: Page) -> list[Locator]:
+    switches: list[Locator] = []
+    for frame in page.frames:
+        candidates = frame.locator("[role='switch'], .arco-switch")
+        switches.extend(item for item in candidates.all() if item.is_visible())
+    return switches
+
+
+def wait_through_publish_checks(page: Page, config: PublishConfig) -> None:
+    """Follow Fanqie's async warning/check dialogs until publish settings exist."""
+    deadline = time.monotonic() + 35
+    submitted_typo_warning = False
+    selected_basic_check = False
+    while time.monotonic() < deadline:
+        assert_safe_page(page, config)
+        switches = visible_publish_switches(page)
+        if len(switches) == 1:
+            return
+        if len(switches) > 1:
+            raise FanqieRetryable(
+                f"发布设置中的定时开关匹配到 {len(switches)} 个，无法安全操作"
+            )
+
+        submit = visible_button(page, "提交")
+        if submit:
+            click_with_hidden_overlay_guard(page, submit, "提交")
+            submitted_typo_warning = True
+            page.wait_for_timeout(500)
+            continue
+
+        basic_options: list[Locator] = []
+        for label in ("仅基础检测", "基础检测"):
+            basic_options.extend(
+                item
+                for item in page.get_by_text(label, exact=True).all()
+                if item.is_visible()
+            )
+        if len(basic_options) == 1:
+            basic_options[0].click()
+            selected_basic_check = True
+            page.wait_for_timeout(600)
+            continue
+        if len(basic_options) > 1:
+            raise FanqieRetryable("内容检测方式无法唯一定位")
+
+        active_dialogs = [
+            item
+            for item in visible_matches(page.locator("[role='dialog']:visible"))
+            if item.get_attribute("aria-hidden") != "true"
+        ]
+        unknown = []
+        for dialog in active_dialogs:
+            summary = dialog.inner_text().strip()
+            if summary and not any(
+                known in summary
+                for known in (
+                    "检测到你还有错别字未修改",
+                    "请选择内容检测方式",
+                    "发布设置",
+                )
+            ):
+                unknown.append(summary[:300])
+        if unknown:
+            raise FanqieBlocked(f"发布流程出现未授权的新弹窗：{unknown}")
+        page.wait_for_timeout(250)
+
+    raise FanqieRetryable(
+        "等待番茄发布检查流程超时："
+        f"错别字提示已提交={submitted_typo_warning}，"
+        f"基础检测已选择={selected_basic_check}"
+    )
+
+
 def publish_dialog(page: Page) -> Locator:
     deadline = time.monotonic() + 15
     switches: list[Locator] = []
     while time.monotonic() < deadline:
-        switches = []
-        for frame in page.frames:
-            candidates = frame.locator(
-                "[role='switch'], .arco-switch"
-            )
-            switches.extend(
-                item for item in candidates.all() if item.is_visible()
-            )
+        switches = visible_publish_switches(page)
         if len(switches) == 1:
             break
         if len(switches) > 1:
@@ -393,6 +488,28 @@ def publishing_button(scope: Locator | Page, name: str) -> Locator | None:
     if len(visible) > 1:
         raise FanqieRetryable(f"发布设置中的按钮“{name}”不唯一")
     return None
+
+
+def submit_publish_confirmation(page: Page, confirm: Locator) -> None:
+    """Click once and surface Fanqie's business-level rejection immediately."""
+    try:
+        with page.expect_response(
+            lambda response: "/api/author/publish_article/" in response.url,
+            timeout=20_000,
+        ) as response_info:
+            confirm.evaluate("element => element.click()")
+        response = response_info.value
+        payload = response.json()
+    except (PlaywrightTimeoutError, PlaywrightError, ValueError, json.JSONDecodeError):
+        # Some successful UI revisions may navigate without exposing this response;
+        # the authoritative chapter-list verification remains the fallback.
+        return
+    if not isinstance(payload, dict):
+        return
+    code = payload.get("code")
+    message = payload.get("message") or payload.get("msg") or "未知原因"
+    if code not in (None, 0, "0"):
+        raise FanqieBlocked(f"番茄拒绝确认发布：code={code}，message={message}")
 
 
 def choose_ai_yes(page: Page) -> None:
@@ -518,33 +635,39 @@ def choose_time(page: Page, target: str) -> None:
     if field.input_value().strip() != target:
         field.click()
         page.wait_for_timeout(300)
-        hour, minute = target.split(":")
-        popup = page.locator(".arco-trigger-popup:visible")
-        exact = visible_matches(popup.get_by_text(target, exact=True))
-        if len(exact) == 1:
-            exact[0].click()
-        else:
-            lists = visible_matches(
-                popup.locator(".arco-timepicker-list, .arco-picker-time-list")
+        containers = visible_matches(
+            page.locator(".arco-timepicker-container:visible")
+        )
+        if len(containers) != 1:
+            raise FanqieRetryable(
+                f"发布时间面板匹配到 {len(containers)} 个，期望 1 个"
             )
-            if len(lists) < 2:
-                raise FanqieRetryable("无法定位发布时间的可见小时/分钟列表")
-            for column, value, description in (
-                (lists[0], hour, "小时"),
-                (lists[1], minute, "分钟"),
-            ):
-                options = visible_matches(
-                    column.locator("li, [role='option']").filter(
-                        has_text=re.compile(rf"^\s*{value}\s*$")
-                    )
+        container = containers[0]
+        lists = visible_matches(container.locator(".arco-timepicker-list"))
+        if len(lists) != 2:
+            raise FanqieRetryable(
+                f"发布时间小时/分钟列表匹配到 {len(lists)} 个，期望 2 个"
+            )
+        hour, minute = target.split(":")
+        for column, value, description in (
+            (lists[0], hour, "小时"),
+            (lists[1], minute, "分钟"),
+        ):
+            options = visible_matches(
+                column.locator("li.arco-timepicker-cell").filter(
+                    has_text=re.compile(rf"^\s*{value}\s*$")
                 )
-                if len(options) != 1:
-                    raise FanqieRetryable(
-                        f"发布时间{description} {value} 无法唯一定位"
-                    )
-                options[0].scroll_into_view_if_needed()
-                options[0].click()
-        field.press("Tab")
+            )
+            if len(options) != 1:
+                raise FanqieRetryable(
+                    f"发布时间{description} {value} 匹配到 {len(options)} 个"
+                )
+            options[0].scroll_into_view_if_needed()
+            options[0].click()
+        confirms = visible_matches(container.get_by_text("确定", exact=True))
+        if len(confirms) != 1:
+            raise FanqieRetryable("发布时间面板无法唯一定位“确定”")
+        confirms[0].click()
         page.wait_for_timeout(500)
     if field.input_value().strip() != target:
         raise FanqieRetryable(
@@ -606,6 +729,10 @@ def find_chapter_row(page: Page, chapter: Chapter) -> Locator:
     visited_pages: set[str] = set()
     for _ in range(200):
         assert_safe_page(page, parse_publish_config(chapter.path.parents[1]))
+        try:
+            page.wait_for_selector("tr.arco-table-tr", timeout=15_000)
+        except PlaywrightTimeoutError as exc:
+            raise FanqieRetryable("章节管理表格加载超时") from exc
         titles = visible_matches(page.get_by_text(chapter_text, exact=True))
         if len(titles) == 1:
             row = titles[0].locator(
@@ -618,7 +745,21 @@ def find_chapter_row(page: Page, chapter: Chapter) -> Locator:
             raise FanqieRetryable("章节管理页无法唯一定位目标章节")
 
         rows = page.locator("tr.arco-table-tr:visible")
-        signature = "\n".join(item.inner_text() for item in rows.all())
+        row_items = rows.all()
+        row_texts = [item.inner_text() for item in row_items]
+        number_pattern = re.compile(rf"第\s*{chapter.number}\s*章")
+        title_prefix = chapter.title[: min(6, len(chapter.title))]
+        fuzzy = [
+            row
+            for row, text in zip(row_items, row_texts)
+            if number_pattern.search(text) and title_prefix in text
+        ]
+        if len(fuzzy) == 1:
+            return fuzzy[0]
+        if len(fuzzy) > 1:
+            raise FanqieRetryable("章节管理页按章节号和标题前缀匹配到多行")
+
+        signature = "\n".join(row_texts)
         if signature in visited_pages:
             break
         visited_pages.add(signature)
@@ -633,7 +774,15 @@ def find_chapter_row(page: Page, chapter: Chapter) -> Locator:
         if len(next_buttons) != 1:
             break
         next_buttons[0].click()
-        page.wait_for_timeout(500)
+        previous_signature = signature
+        for _ in range(30):
+            page.wait_for_timeout(250)
+            current_rows = page.locator("tr.arco-table-tr:visible")
+            current_signature = "\n".join(
+                item.inner_text() for item in current_rows.all()
+            )
+            if current_signature and current_signature != previous_signature:
+                break
     raise FanqieRetryable(f"章节管理分页中未找到“{chapter_text}”")
 
 
@@ -668,26 +817,87 @@ def open_chapter_editor(page: Page, config: PublishConfig, chapter: Chapter) -> 
 
 
 def verify_editor_identity(page: Page, chapter: Chapter) -> None:
-    serial = unique(
-        page.locator("input.serial-input:not([placeholder='请输入标题'])"),
-        "章节号输入框",
-    )
-    title = unique(page.get_by_placeholder("请输入标题", exact=True), "标题输入框")
-    actual_number = serial.input_value().strip()
-    actual_title = title.input_value().strip()
+    # 番茄编辑路由会先渲染空输入框，再异步回填已有章节。必须等回填完成
+    # 后再核对身份；等待期间绝不点击“下一步”或修改任何字段。
+    deadline = time.monotonic() + 20
+    actual_number = ""
+    actual_title = ""
+    while time.monotonic() < deadline:
+        serial = unique(
+            page.locator("input.serial-input:not([placeholder='请输入标题'])"),
+            "章节号输入框",
+        )
+        title = unique(
+            page.get_by_placeholder("请输入标题", exact=True), "标题输入框"
+        )
+        actual_number = serial.input_value().strip()
+        actual_title = title.input_value().strip()
+        if actual_number or actual_title:
+            break
+        page.wait_for_timeout(500)
+        assert_safe_page(page, parse_publish_config(chapter.path.parents[1]))
     if actual_number != str(chapter.number) or actual_title != chapter.title:
         raise FanqieBlocked(
             "编辑页章节身份不匹配："
             f"期望第{chapter.number}章《{chapter.title}》，"
-            f"实际第{actual_number}章《{actual_title}》"
+            f"实际第{actual_number}章《{actual_title}》；URL={page.url}"
         )
+
+
+def dismiss_scheduled_chapter_edit_notice(page: Page) -> None:
+    """Close the user-approved notice shown when editing a submitted chapter."""
+    notice = "请在发布时间前30分钟提交修改内容，否则无法完成修改"
+    dialogs = visible_matches(page.locator("[role='dialog']:visible"))
+    matching = [item for item in dialogs if notice in item.inner_text()]
+    if not matching:
+        return
+    if len(matching) != 1:
+        raise FanqieRetryable("已提交章节的修改提示弹窗不唯一")
+    dialog = matching[0]
+    buttons = [
+        item
+        for item in dialog.get_by_role("button", name="我知道了", exact=True).all()
+        if item.is_visible() and item.is_enabled()
+    ]
+    if not buttons:
+        buttons = [
+            item
+            for item in dialog.get_by_text("我知道了", exact=True).all()
+            if item.is_visible()
+        ]
+    if len(buttons) != 1:
+        raise FanqieRetryable("修改提示中无法唯一定位“我知道了”按钮")
+    buttons[0].click()
+    try:
+        dialog.wait_for(state="hidden", timeout=10_000)
+    except PlaywrightTimeoutError as exc:
+        raise FanqieRetryable("点击“我知道了”后修改提示未关闭") from exc
+    page.wait_for_timeout(300)
 
 
 def verify_list(page: Page, chapter: Chapter) -> dict:
     try:
-        page.wait_for_url(re.compile(r".*/chapter-manage/.*"), timeout=45_000)
-    except PlaywrightTimeoutError:
-        pass
+        page.wait_for_url(re.compile(r".*/chapter-manage/.*"), timeout=25_000)
+    except PlaywrightTimeoutError as exc:
+        dialogs = [
+            item.inner_text().strip()[:500]
+            for item in visible_matches(page.locator("[role='dialog']:visible"))
+            if item.inner_text().strip()
+        ]
+        notices = [
+            item.inner_text().strip()[:500]
+            for item in visible_matches(
+                page.locator(
+                    ".arco-message, .arco-notification, .semi-toast, "
+                    ".byte-toast, [role='alert']"
+                )
+            )
+            if item.inner_text().strip()
+        ]
+        raise FanqieRetryable(
+            "确认后未返回章节管理页："
+            f"URL={page.url}；可见弹窗={dialogs}；提示消息={notices}"
+        ) from exc
     assert_safe_page(page, parse_publish_config(chapter.path.parents[1]))
     row = find_chapter_row(page, chapter)
     text = row.inner_text()
@@ -695,6 +905,28 @@ def verify_list(page: Page, chapter: Chapter) -> dict:
     if not status:
         raise FanqieRetryable("目标章节尚未显示待发布、审核中或已发布")
     return {"status": status, "row_text": text, "url": page.url}
+
+
+def inspect_chapter(project: Path, chapter_path: Path) -> dict:
+    """Read a chapter's current platform row without editing or submitting it."""
+    config = parse_publish_config(project)
+    chapter = parse_chapter(chapter_path)
+    with sync_playwright() as playwright:
+        context = launch_context(playwright)
+        try:
+            page = active_page(context)
+            page.goto(
+                chapter_manage_url(config, project),
+                wait_until="domcontentloaded",
+                timeout=45_000,
+            )
+            result = verify_list(page, chapter)
+            return {"chapter": chapter.number, **result}
+        finally:
+            try:
+                context.close()
+            except PlaywrightError:
+                pass
 
 
 def complete_publish_settings(
@@ -709,12 +941,8 @@ def complete_publish_settings(
     next_button = visible_button(page, "下一步")
     if not next_button:
         raise FanqieRetryable("未找到视口内可用的“下一步”按钮")
-    next_button.click()
-    page.wait_for_timeout(700)
-    assert_safe_page(page, config)
-    click_if_visible(page, "提交")
-    assert_safe_page(page, config)
-    choose_basic_check(page)
+    click_with_hidden_overlay_guard(page, next_button, "下一步")
+    wait_through_publish_checks(page, config)
     assert_safe_page(page, config)
     choose_ai_yes(page)
     enable_timed_publish(page)
@@ -736,7 +964,7 @@ def complete_publish_settings(
     confirm = publishing_button(page, "确认发布")
     if not confirm:
         raise FanqieRetryable("未找到确认发布按钮")
-    confirm.click()
+    submit_publish_confirmation(page, confirm)
     return verify_list(page, chapter)
 
 
@@ -759,6 +987,7 @@ def reschedule(
             page = active_page(context)
             open_chapter_editor(page, config, chapter)
             verify_editor_identity(page, chapter)
+            dismiss_scheduled_chapter_edit_notice(page)
             confirm_started = True
             result = complete_publish_settings(
                 page,
@@ -814,12 +1043,8 @@ def publish(
             next_button = visible_button(page, "下一步")
             if not next_button:
                 raise FanqieRetryable("未找到视口内可用的“下一步”按钮")
-            next_button.click()
-            page.wait_for_timeout(700)
-            assert_safe_page(page, config)
-            click_if_visible(page, "提交")
-            assert_safe_page(page, config)
-            choose_basic_check(page)
+            click_with_hidden_overlay_guard(page, next_button, "下一步")
+            wait_through_publish_checks(page, config)
             assert_safe_page(page, config)
             if not config.submit_publish:
                 if not click_if_visible(page, "存草稿"):
@@ -853,7 +1078,7 @@ def publish(
                 raise FanqieRetryable("未找到确认发布按钮")
             # From this point onward an automatic retry could create a duplicate.
             confirm_started = True
-            confirm.click()
+            submit_publish_confirmation(page, confirm)
             result = verify_list(page, chapter)
             return {"chapter": chapter.number, **result}
         except Exception as exc:

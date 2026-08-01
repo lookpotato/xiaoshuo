@@ -27,7 +27,9 @@ ELIGIBLE_STATUSES = manager.SUBMITTED_UPLOAD_STATUSES
 
 
 def default_reward_time(now: datetime) -> str:
-    candidate = now + timedelta(minutes=30)
+    # 番茄要求已提交章节必须在新发布时间至少 30 分钟前完成修改。
+    # 预留 45 分钟并向上取整，避免页面操作耗时吃掉平台硬门槛。
+    candidate = now + timedelta(minutes=45)
     rounded_minute = int(math.ceil(candidate.minute / 10) * 10)
     candidate = candidate.replace(second=0, microsecond=0)
     if rounded_minute == 60:
@@ -45,8 +47,8 @@ def validate_time(value: str, now: datetime) -> str:
     target = datetime.combine(
         now.date(), datetime.strptime(value, "%H:%M").time(), now.tzinfo
     )
-    if target < now + timedelta(minutes=10):
-        raise ValueError("加更时间必须至少晚于当前时间 10 分钟")
+    if target < now + timedelta(minutes=40):
+        raise ValueError("已提交章节的加更时间必须至少晚于当前时间 40 分钟")
     return value
 
 

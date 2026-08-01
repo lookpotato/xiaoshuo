@@ -31,7 +31,7 @@ def main() -> int:
     parser.add_argument(
         "--reward-time",
         metavar="HH:MM",
-        help="加更发布时间；省略时使用当前时间后 30 分钟并向上取整",
+        help="加更发布时间；省略时使用当前时间后 45 分钟并向上取整",
     )
     parser.add_argument("--book", default="cosmic-404", help="manager_config.json 中的书籍 id")
     parser.add_argument("--dry-run", action="store_true", help="只显示计划，不启动 Codex")

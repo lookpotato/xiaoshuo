@@ -6,7 +6,12 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fanqie_browser_worker import PublishConfig, chapter_manage_url
+from fanqie_browser_worker import (
+    FanqieBlocked,
+    PublishConfig,
+    chapter_manage_url,
+    submit_publish_confirmation,
+)
 from xiaoshuo_reward import (
     default_reward_time,
     record_reward,
@@ -21,13 +26,13 @@ CN = timezone(timedelta(hours=8))
 class RewardTimeTests(unittest.TestCase):
     def test_default_time_adds_lead_and_rounds_up(self) -> None:
         now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
-        self.assertEqual(default_reward_time(now), "15:40")
+        self.assertEqual(default_reward_time(now), "15:50")
 
     def test_explicit_time_must_be_in_future(self) -> None:
         now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
-        self.assertEqual(validate_time("15:30", now), "15:30")
+        self.assertEqual(validate_time("15:50", now), "15:50")
         with self.assertRaises(ValueError):
-            validate_time("15:10", now)
+            validate_time("15:30", now)
 
 
 class BrowserRouteTests(unittest.TestCase):
@@ -47,6 +52,33 @@ class BrowserRouteTests(unittest.TestCase):
                 submit_publish=True,
             )
             self.assertEqual(chapter_manage_url(config, project), expected)
+
+    def test_surfaces_business_rejection_from_publish_api(self) -> None:
+        class Response:
+            def json(self):
+                return {"code": -1019, "message": "提交字数超出每日上限"}
+
+        class ResponseInfo:
+            value = Response()
+
+        class ExpectResponse:
+            def __enter__(self):
+                return ResponseInfo()
+
+            def __exit__(self, *_args):
+                return False
+
+        class Page:
+            def expect_response(self, _predicate, timeout):
+                self.timeout = timeout
+                return ExpectResponse()
+
+        class Confirm:
+            def evaluate(self, _script):
+                return None
+
+        with self.assertRaisesRegex(FanqieBlocked, "提交字数超出每日上限"):
+            submit_publish_confirmation(Page(), Confirm())
 
 
 class RewardScheduleTests(unittest.TestCase):
