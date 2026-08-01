@@ -71,6 +71,8 @@ class FanqieBlocked(RuntimeError):
 class FanqieRetryable(RuntimeError):
     """页面或网络临时失败，可安全重试。"""
 
+    safe_to_retry: bool = False
+
 
 @dataclass(frozen=True)
 class PublishConfig:
@@ -227,18 +229,26 @@ def type_controlled_input(
     description: str,
 ) -> None:
     """像人工操作一样点击、键入并失焦，触发 React 的受控输入事件。"""
-    field.scroll_into_view_if_needed()
-    field.click()
-    field.press("Control+A")
-    field.press("Backspace")
-    field.type(value, delay=60)
-    field.press("Tab")
-    page.wait_for_timeout(350)
-    actual = field.input_value().strip()
-    if actual != value:
-        raise FanqieRetryable(
-            f"{description}回读不一致：期望“{value}”，实际“{actual}”"
-        )
+    actual = ""
+    for attempt in range(3):
+        field.scroll_into_view_if_needed()
+        field.click()
+        field.press("Control+A")
+        field.press("Backspace")
+        if attempt == 1:
+            # Atomic fill avoids Fanqie's React render swallowing the second digit.
+            field.fill(value)
+        else:
+            field.press_sequentially(value, delay=100 + attempt * 100)
+        field.press("Tab")
+        page.wait_for_timeout(500)
+        actual = field.input_value().strip()
+        if actual == value:
+            return
+        page.wait_for_timeout(400)
+    raise FanqieRetryable(
+        f"{description}连续 3 次回读不一致：期望“{value}”，实际“{actual}”"
+    )
 
 
 def fill_editor(page: Page, chapter: Chapter) -> None:
@@ -558,6 +568,7 @@ def publish(
 ) -> dict:
     config = parse_publish_config(project)
     chapter = parse_chapter(chapter_path)
+    confirm_started = False
     with sync_playwright() as playwright:
         context = launch_context(playwright)
         try:
@@ -604,10 +615,14 @@ def publish(
             confirm = publishing_button(page, "确认发布")
             if not confirm:
                 raise FanqieRetryable("未找到确认发布按钮")
+            # From this point onward an automatic retry could create a duplicate.
+            confirm_started = True
             confirm.click()
             result = verify_list(page, chapter)
             return {"chapter": chapter.number, **result}
         except Exception as exc:
+            if isinstance(exc, FanqieRetryable) and not confirm_started:
+                exc.safe_to_retry = True
             if debug_browser:
                 print(
                     f"\n浏览器操作已停在出错页面：{exc}\n"

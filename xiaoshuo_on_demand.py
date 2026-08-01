@@ -202,6 +202,34 @@ def resolved_time(data: dict, book_id: str, value: str) -> str:
     return defaults[1] if len(defaults) > 1 else defaults[0]
 
 
+def publish_with_retry(
+    project: Path,
+    chapter_path: Path,
+    publish_date: str,
+    publish_time: str,
+    debug_browser: bool,
+) -> dict:
+    """Retry only failures known to have happened before confirmation started."""
+    for attempt in range(1, 4):
+        try:
+            return publish(
+                project,
+                chapter_path,
+                publish_date,
+                publish_time,
+                debug_browser=debug_browser,
+            )
+        except FanqieRetryable as exc:
+            if debug_browser or not exc.safe_to_retry or attempt == 3:
+                raise
+            print(
+                f"发布页面临时失败（{exc}）；本次命令自动重试 "
+                f"{attempt}/2……",
+                flush=True,
+            )
+    raise AssertionError("unreachable")
+
+
 def update_metadata(path: Path, upload_status: str) -> None:
     text = path.read_text(encoding="utf-8")
     updated, count = re.subn(
@@ -394,12 +422,12 @@ def run(
                 f"{entry['date']} {publish_time}",
                 flush=True,
             )
-            upload = publish(
+            upload = publish_with_retry(
                 project,
                 chapter_path,
                 str(entry["date"]),
                 publish_time,
-                debug_browser=debug_browser,
+                debug_browser,
             )
             changed = record_upload(
                 data,
