@@ -839,8 +839,10 @@ def cmd_doctor(data, args):
         ),
         "checks": checks,
         "manager_busy": live_lock(data, now_for(data)) is not None,
+        "check_scope": "environment_only",
         "note": (
-            "预检通过；python xiaoshuo N 会按需运行，完成后退出。"
+            "环境预检通过；该命令不模拟番茄页面点击。"
+            "python xiaoshuo N 会按需运行，完成后退出。"
             if ready else
             "预检未通过；首次使用请运行 python xiaoshuo --setup-browser。"
         ),

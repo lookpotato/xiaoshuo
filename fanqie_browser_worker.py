@@ -164,6 +164,7 @@ def launch_context(playwright: Playwright) -> BrowserContext:
             headless=False,
             viewport={"width": 1440, "height": 960},
             locale="zh-CN",
+            ignore_default_args=["--no-sandbox"],
         )
     except PlaywrightError as exc:
         raise FanqieRetryable(
@@ -211,6 +212,9 @@ def wait_editor(page: Page, config: PublishConfig) -> None:
             state="visible",
             timeout=45_000,
         )
+        # The editor shell appears before Fanqie's cloud-draft hydration finishes.
+        # Filling immediately can be overwritten by that late React render.
+        page.wait_for_timeout(1500)
     except PlaywrightTimeoutError as exc:
         raise FanqieRetryable("番茄章节编辑页加载超时") from exc
     assert_safe_page(page, config)
@@ -259,6 +263,17 @@ def fill_editor(page: Page, chapter: Chapter) -> None:
     page.wait_for_timeout(1200)
 
     # 正文写入会导致编辑器重渲染，因此要在最后再次检查章节号和标题。
+    # React may replace the title row while ProseMirror accepts the body. Re-query
+    # the live controls and restore only values that were lost during that render.
+    serial = unique(
+        page.locator("input.serial-input:not([placeholder='请输入标题'])"),
+        "章节号输入框",
+    )
+    title = unique(page.get_by_placeholder("请输入标题", exact=True), "标题输入框")
+    if serial.input_value().strip() != str(chapter.number):
+        type_controlled_input(page, serial, str(chapter.number), "章节号")
+    if title.input_value().strip() != chapter.title:
+        type_controlled_input(page, title, chapter.title, "标题")
     serial_value = serial.input_value().strip()
     title_value = title.input_value().strip()
     if serial_value != str(chapter.number):
@@ -281,7 +296,22 @@ def fill_editor(page: Page, chapter: Chapter) -> None:
 
 def visible_button(page: Page, name: str) -> Locator | None:
     matches = page.get_by_role("button", name=name, exact=True)
-    visible = [item for item in matches.all() if item.is_visible()]
+    viewport = page.viewport_size or {"width": 1440, "height": 960}
+    visible = []
+    for item in matches.all():
+        if not item.is_visible() or not item.is_enabled():
+            continue
+        box = item.bounding_box()
+        if not box:
+            continue
+        if (
+            box["x"] + box["width"] <= 0
+            or box["y"] + box["height"] <= 0
+            or box["x"] >= viewport["width"]
+            or box["y"] >= viewport["height"]
+        ):
+            continue
+        visible.append(item)
     if len(visible) == 1:
         return visible[0]
     if len(visible) > 1:
@@ -535,10 +565,10 @@ def publish(
             wait_editor(page, config)
             fill_editor(page, chapter)
             assert_safe_page(page, config)
-            unique(
-                page.get_by_role("button", name="下一步", exact=True),
-                "下一步按钮",
-            ).click()
+            next_button = visible_button(page, "下一步")
+            if not next_button:
+                raise FanqieRetryable("未找到视口内可用的“下一步”按钮")
+            next_button.click()
             page.wait_for_timeout(700)
             assert_safe_page(page, config)
             click_if_visible(page, "提交")
