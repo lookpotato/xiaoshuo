@@ -54,8 +54,10 @@
       "chapter": 32,
       "date": "2026-08-08",
       "time": "12:00",
-      "status": "not_uploaded",
-      "archived_at": "2026-08-01T11:09:00+08:00"
+      "status": "submitted_pending_review",
+      "archived_at": "2026-08-01T11:09:00+08:00",
+      "verified_at": "2026-08-01T11:21:48.351276+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
     }
   ]
 }
