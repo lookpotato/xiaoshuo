@@ -77,6 +77,26 @@ python xiaoshuo --resume <job-id> --debug-browser
 
 调试模式遇到错误会保留 Chrome 窗口，查看页面后回到终端按 Enter 才会关闭。
 
+### 打赏加更：提前已有排期
+
+老板打赏、需要今天额外多发章节时，使用第二种命令：
+
+```powershell
+python xiaoshuo --reward 3
+```
+
+数字表示从未来排期中提前到今天的章节数。程序按原排期从早到晚选择章节，默认设置为
+当前时间后 30 分钟并向上取整到 10 分钟；所有选中章节可使用同一发布时间。需要明确
+指定时间时可运行 `python xiaoshuo --reward 3 --reward-time 18:30`。建议先追加
+`--dry-run` 查看会调整哪些章节。
+
+程序从章节管理第 1 页开始，按“章节号 + 完整标题”逐页查找；每页 15 条、首页新增记录
+将旧章节挤到后页都不会影响定位。找到后点击该行操作列中的 `span` 编辑入口，不改标题
+和正文，只走“下一步 → 基础检测 → AI=是 → 定时发布 → 确认发布”。章节管理页再次
+显示目标章为“待发布”“审核中”或“已发布”后，才把新日期、时间和原排期历史写回本地
+`batch_schedule_*.json`、`chapter_state.json` 与当日日志，并提交、推送 Git。未被选中的
+后续常规排期不会重排。
+
 ```powershell
 python .\fanqie_novel_manager.py list
 python .\fanqie_novel_manager.py validate
