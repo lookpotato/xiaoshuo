@@ -73,16 +73,16 @@
   "last_schedule_adjustment": {
     "mode": "reward_reflow",
     "batch_id": "20260802-101010-9d9fae0d",
-    "chapter": 28,
+    "chapter": 30,
     "from": {
-      "date": "2026-08-06",
+      "date": "2026-08-07",
       "time": "12:00"
     },
     "to": {
-      "date": "2026-08-05",
+      "date": "2026-08-06",
       "time": "12:00"
     },
     "platform_status": "审核中",
-    "adjusted_at": "2026-08-02T10:12:30.453110+08:00"
+    "adjusted_at": "2026-08-02T10:12:49.790168+08:00"
   }
 }
