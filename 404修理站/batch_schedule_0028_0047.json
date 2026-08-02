@@ -229,9 +229,11 @@
       "chapter": 40,
       "date": "2026-08-11",
       "time": "12:00",
-      "status": "draft_saved",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-02T11:33:00+08:00",
-      "job_id": "20260802-110215-6a00b11c"
+      "job_id": "20260802-110215-6a00b11c",
+      "verified_at": "2026-08-02T11:50:22.393478+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
     }
   ]
 }
