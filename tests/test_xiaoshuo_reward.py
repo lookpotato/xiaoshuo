@@ -13,6 +13,7 @@ from fanqie_browser_worker import (
     submit_publish_confirmation,
 )
 from xiaoshuo_reward import (
+    build_new_reward_plan,
     default_reward_time,
     record_reward,
     reward_candidates,
@@ -136,6 +137,29 @@ class RewardScheduleTests(unittest.TestCase):
         now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
         selected = reward_candidates(self.project, 2, now, "15:40")
         self.assertEqual([item[1]["chapter"] for item in selected], [29, 30])
+
+    def test_reward_plan_refills_all_later_schedule_slots(self) -> None:
+        now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
+        plan = build_new_reward_plan(self.project, 1, now, "15:50")
+        self.assertEqual(plan["bonus_chapters"], [29])
+        self.assertEqual(
+            [
+                (move["chapter"], move["kind"], move["to"])
+                for move in plan["moves"]
+            ],
+            [
+                (
+                    29,
+                    "reward_bonus",
+                    {"date": "2026-08-01", "time": "15:50"},
+                ),
+                (
+                    30,
+                    "reward_reflow",
+                    {"date": "2026-08-02", "time": "12:00"},
+                ),
+            ],
+        )
 
     def test_record_preserves_previous_schedule_in_history(self) -> None:
         data = {"timezone": "Asia/Shanghai"}

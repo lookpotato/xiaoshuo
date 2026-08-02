@@ -803,7 +803,9 @@ def open_chapter_editor(page: Page, config: PublishConfig, chapter: Chapter) -> 
     if not spans:
         raise FanqieRetryable("目标章节操作列中未找到 span 编辑入口")
     before = page.url
-    spans[-1].click()
+    # 章节列表偶尔残留 byte-popconfirm 浮层并错误拦截指针。目标行和
+    # icon-edit span 已按章节身份唯一核验，直接触发该入口自身事件。
+    spans[-1].evaluate("element => element.click()")
     try:
         page.wait_for_url(re.compile(r".*/publish/.*"), timeout=45_000)
         page.wait_for_selector(
