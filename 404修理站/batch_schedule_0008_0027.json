@@ -100,9 +100,24 @@
     },
     {
       "chapter": 22,
-      "date": "2026-08-03",
-      "time": "12:00",
-      "status": "submitted_pending_review"
+      "date": "2026-08-02",
+      "time": "10:40",
+      "status": "submitted_pending_review",
+      "reward_history": [
+        {
+          "from": {
+            "date": "2026-08-03",
+            "time": "12:00"
+          },
+          "to": {
+            "date": "2026-08-02",
+            "time": "10:40"
+          },
+          "changed_at": "2026-08-02T09:50:55.196847+08:00"
+        }
+      ],
+      "verified_at": "2026-08-02T09:50:55.196847+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
     },
     {
       "chapter": 23,
