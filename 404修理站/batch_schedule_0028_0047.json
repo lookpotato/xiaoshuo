@@ -16,12 +16,27 @@
   "entries": [
     {
       "chapter": 28,
-      "date": "2026-08-06",
+      "date": "2026-08-05",
       "time": "12:00",
       "status": "submitted_pending_review",
       "archived_at": "2026-07-30T22:25:00+08:00",
-      "verified_at": "2026-07-30T22:52:37.033316+08:00",
-      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+      "verified_at": "2026-08-02T10:12:30.453110+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
+      "reward_history": [
+        {
+          "from": {
+            "date": "2026-08-06",
+            "time": "12:00"
+          },
+          "to": {
+            "date": "2026-08-05",
+            "time": "12:00"
+          },
+          "changed_at": "2026-08-02T10:12:30.453110+08:00",
+          "kind": "reward_reflow",
+          "batch_id": "20260802-101010-9d9fae0d"
+        }
+      ]
     },
     {
       "chapter": 29,
