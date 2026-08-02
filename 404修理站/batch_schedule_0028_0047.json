@@ -34,7 +34,9 @@
           },
           "changed_at": "2026-08-02T10:12:30.453110+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     },
@@ -67,7 +69,9 @@
           },
           "changed_at": "2026-08-02T10:12:49.790168+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     },
@@ -100,7 +104,9 @@
           },
           "changed_at": "2026-08-02T10:13:10.461740+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     },
@@ -133,7 +139,9 @@
           },
           "changed_at": "2026-08-02T10:13:30.657338+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     },
@@ -166,7 +174,9 @@
           },
           "changed_at": "2026-08-02T10:13:50.003934+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     },
@@ -199,7 +209,9 @@
           },
           "changed_at": "2026-08-02T10:14:10.113095+08:00",
           "kind": "reward_reflow",
-          "batch_id": "20260802-101010-9d9fae0d"
+          "batch_id": "20260802-101010-9d9fae0d",
+          "reflow_batch_id": "20260802-101010-9d9fae0d",
+          "reflow_completed_at": "2026-08-02T10:14:17.331128+08:00"
         }
       ]
     }
