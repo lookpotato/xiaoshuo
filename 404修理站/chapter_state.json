@@ -71,17 +71,18 @@
     "周禾与六十三名乘员抵达临川后的身份、责任及去留如何由他们自己决定"
   ],
   "last_schedule_adjustment": {
-    "mode": "reward",
-    "chapter": 22,
+    "mode": "reward_reflow",
+    "batch_id": "20260802-101010-9d9fae0d",
+    "chapter": 24,
     "from": {
-      "date": "2026-08-03",
+      "date": "2026-08-04",
       "time": "12:00"
     },
     "to": {
-      "date": "2026-08-02",
-      "time": "10:40"
+      "date": "2026-08-03",
+      "time": "12:00"
     },
     "platform_status": "审核中",
-    "adjusted_at": "2026-08-02T09:50:55.196847+08:00"
+    "adjusted_at": "2026-08-02T10:11:50.483285+08:00"
   }
 }
