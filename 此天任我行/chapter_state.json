@@ -9,6 +9,15 @@
   "last_uploaded_at": null,
   "last_fanqie_url": null,
   "timeline_day": 1,
+  "power_state": {
+    "realm": "凡人",
+    "minor_stage": "未入锻身",
+    "max_burst_uses": 0,
+    "permanent_destiny_slots": 0,
+    "active_destiny_fragments": [],
+    "stored_destiny_fragments": [],
+    "unpaid_destiny_debts": []
+  },
   "notes_for_next_chapter": [
     "第一章首选标题《禁飞日，我飞给你看》，从陆遥挂在祭台旗杆外偷换父亲木鸢切入。",
     "陆遥必须表现出嘴欠、装怂、抓规则漏洞的贱感，但笑点只能朝天巡司和安全边界内的熟人，不能欺负弱者。",
@@ -22,7 +31,8 @@
     "青羽为何出现在鸣风崖",
     "镇天碑内的声音是真人、留音还是诱饵",
     "天巡司为何连凡人的纸鸢也禁止",
-    "无归潮与九重天禁的真实关系"
+    "无归潮与九重天禁的真实关系",
+    "为什么陆遥没有命灯记录，青羽又为何能拆解别人的天命剧本"
   ],
   "tone_requirements": {
     "protagonist": "嘴欠、胆大、会装怂和规则反杀；对弱者有底线",
