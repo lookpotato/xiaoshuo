@@ -1,8 +1,7 @@
 # 发布配置
 
-# 新书尚未在番茄创建，当前严格保持本地创作模式。
-fanqie_writer_url: UNBOUND
-book_id: UNBOUND
+fanqie_writer_url: https://fanqienovel.com/main/writer/7669807761814735897/publish/?enter_from=newchapter_0
+book_id: 7669807761814735897
 chapter_or_publish_id: UNBOUND
 
 submit_publish: false
@@ -10,9 +9,16 @@ email_report_enabled: false
 email_to: UNBOUND
 failure_policy: stop
 
-# 绑定规则
+# 本次单章授权
 
-- 禁止借用《404修理站》或测试作品的地址、书号、章节号。
-- 用户在番茄创建《道友你这天命与我有缘》后，逐项填写本书独立绑定信息。
-- 完成页面作品名与 book_id 核验后，才可把 manager_config.json 的 mode 改为 write_then_upload。
-- 只有用户明确授权直接提交时，才可把 submit_publish 改为 true。
+one_time_submit_chapter: 1
+one_time_submit_authorized_at: 2026-08-03
+one_time_submit_consumed: false
+authorization_note: 用户明确要求上传一章测试流程；此授权仅适用于第1章，不开启后续自动提交。
+
+# 绑定核验
+
+- 后台作品名：道友你这天命与我有缘
+- 番茄 book_id：7669807761814735897
+- 作品名与本地项目名已核验一致。
+- `submit_publish` 保持关闭；除上述一次性授权外，后续提交仍需用户明确授权。

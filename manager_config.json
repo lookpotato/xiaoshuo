@@ -33,11 +33,11 @@
         "time": "18:30"
       },
       "priority": 90,
-      "mode": "write_only",
+      "mode": "write_then_upload",
       "daily_chapter_target": 2,
       "manual_extra_chapters_supported": false,
       "default_publish_times": ["18:30", "20:30"],
-      "note": "玄幻新书；当前仅本地创作归档，绑定独立番茄书号后再切换为 write_then_upload 并启用加更。"
+      "note": "玄幻新书；已绑定独立番茄书号 7669807761814735897。常规排期为18:30、20:30；自动提交保持关闭，只有用户明确授权时才提交。"
     }
   ]
 }
