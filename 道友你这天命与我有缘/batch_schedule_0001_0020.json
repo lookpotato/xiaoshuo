@@ -1,0 +1,23 @@
+{
+  "timezone": "Asia/Shanghai",
+  "created_at": "2026-08-03T20:00:00+08:00",
+  "chapter_range": [1, 20],
+  "status": "writing",
+  "content_check": "basic_only",
+  "ai_usage": true,
+  "timed_publish": false,
+  "daily_target": 2,
+  "manual_extra_chapters_supported": false,
+  "primary_time": "18:30",
+  "secondary_time": "20:30",
+  "entries": [
+    {
+      "chapter": 1,
+      "date": "2026-08-03",
+      "time": "immediate_test",
+      "status": "ready_to_upload",
+      "archived_at": "2026-08-03T20:00:00+08:00",
+      "authorization": "one_time_chapter_1"
+    }
+  ]
+}
