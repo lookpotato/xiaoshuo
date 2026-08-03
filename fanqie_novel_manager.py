@@ -785,6 +785,7 @@ def cmd_job_status(_data, args):
 def cmd_doctor(data, args):
     book = find_book(data, args.book)
     project = project_path(book)
+    write_only = book.get("mode") == "write_only"
     profile_dir = (
         Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
         / "xiaoshuo"
@@ -826,11 +827,29 @@ def cmd_doctor(data, args):
         and url_match.group(1).upper() != "UNBOUND"
         and book_match.group(1).upper() != "UNBOUND"
     )
-    ready = all(checks.values())
+    required_checks = (
+        ("project_valid", "codex_cli")
+        if write_only
+        else tuple(checks)
+    )
+    ready = all(checks[name] for name in required_checks)
+    if ready:
+        note = (
+            "本地创作环境预检通过；不会访问番茄。"
+            if write_only
+            else "环境预检通过；该命令不模拟番茄页面点击。"
+            "python xiaoshuo N 会按需运行，完成后退出。"
+        )
+    else:
+        note = (
+            "本地创作预检未通过；请检查项目结构与 Codex 登录。"
+            if write_only
+            else "预检未通过；首次使用请运行 python xiaoshuo --setup-browser。"
+        )
     print(json.dumps({
         "ready": ready,
         "book": args.book,
-        "mode": "on_demand",
+        "mode": "write_only" if write_only else "write_then_upload",
         "background_polling": False,
         "browser_profile": str(profile_dir),
         "playwright_version": installed_playwright,
@@ -838,14 +857,10 @@ def cmd_doctor(data, args):
             str(item) for item in MIN_PLAYWRIGHT_VERSION
         ),
         "checks": checks,
+        "required_checks": required_checks,
         "manager_busy": live_lock(data, now_for(data)) is not None,
         "check_scope": "environment_only",
-        "note": (
-            "环境预检通过；该命令不模拟番茄页面点击。"
-            "python xiaoshuo N 会按需运行，完成后退出。"
-            if ready else
-            "预检未通过；首次使用请运行 python xiaoshuo --setup-browser。"
-        ),
+        "note": note,
     }, ensure_ascii=False, indent=2))
     return 0 if ready else 2
 
@@ -1010,7 +1025,7 @@ def main():
     job_progress.add_argument("--chapter", type=int, required=True)
     job_progress.add_argument(
         "--platform-status",
-        choices=["pending_publish", "pending_review", "published"],
+        choices=["local_archived", "pending_publish", "pending_review", "published"],
         required=True,
     )
     job_progress.add_argument("--message", default="")

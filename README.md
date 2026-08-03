@@ -11,6 +11,7 @@
 - `shared/`：跨作品复用的写作方法、质量门槛和复盘记录。
 - `测试本小说/`：已有测试作品，保持独立。
 - `404修理站/`：第一本正式长期作品。
+- `此天任我行/`：东方玄幻新书骨架；未绑定番茄前只做本地创作与 Git 归档。
 
 ## 常用命令
 
@@ -23,6 +24,17 @@ python xiaoshuo 1
 python xiaoshuo 3
 python xiaoshuo 5
 ```
+
+默认更新 `manager_config.json` 的 `default_book_id`。也可以指定一本，或让全部已启用小说按优先级严格串行执行（每本各更新 N 章）：
+
+```powershell
+python xiaoshuo 2 --book cosmic-404
+python xiaoshuo 2 --book free-sky
+python xiaoshuo 2 --all
+python xiaoshuo 2 --all --dry-run
+```
+
+`--all` 不并发写作：全局运行锁要求逐本完成，某本失败时会安全停止，尚未开始的小说不受影响。`mode: write_only` 的新书只在本地写作、质检、归档并同步 Git，不会访问或误用其他作品的番茄后台。
 
 也可以使用带扩展名的等价命令：
 
@@ -84,6 +96,15 @@ python xiaoshuo --resume <job-id> --debug-browser
 ```powershell
 python xiaoshuo --reward 3
 ```
+
+加更同样支持选择书籍或全部执行：
+
+```powershell
+python xiaoshuo --reward 3 --book cosmic-404
+python xiaoshuo --reward 1 --all --dry-run
+```
+
+`--reward --all` 只选择注册表中 `manual_extra_chapters_supported: true` 的已启用作品；未绑定平台排期的本地创作书会被跳过。
 
 数字表示从未来排期中提前到今天的章节数。程序按原排期从早到晚选择章节，默认设置为
 当前时间后 45 分钟并向上取整到 10 分钟；所有选中章节可使用同一发布时间。需要明确

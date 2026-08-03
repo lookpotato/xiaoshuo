@@ -352,9 +352,11 @@ def run(
     debug_browser: bool,
 ) -> int:
     data = manager.config()
+    book = manager.find_book(data, book_id)
     project = project_for(data, book_id)
+    write_only = book.get("mode") == "write_only"
     errors = manager.validate_book(
-        manager.find_book(data, book_id), require_publish_complete=False
+        book, require_publish_complete=False
     )
     if errors:
         raise RuntimeError("项目校验失败：" + "；".join(errors))
@@ -365,12 +367,15 @@ def run(
                     "mode": "on_demand",
                     "book": book_id,
                     "target": count,
+                    "delivery": "local_archive" if write_only else "fanqie_publish",
                     "background_polling": False,
                     "steps": [
-                        "恢复未发布章节或调用一次 Codex 写一章",
-                        "启动专用 Chrome 上传并排期",
-                        "平台列表核验",
-                        "更新本地状态、提交并推送",
+                        "调用一次 Codex 写一章并完成本地质检归档",
+                        *([] if write_only else [
+                            "恢复未发布章节或启动专用 Chrome 上传并排期",
+                            "平台列表核验",
+                        ]),
+                        "更新本地状态、提交并推送 Git",
                         "进程退出",
                     ],
                 },
@@ -379,7 +384,7 @@ def run(
             )
         )
         return 0
-    if not PROFILE_READY.is_file():
+    if not write_only and not PROFILE_READY.is_file():
         raise RuntimeError(
             "专用 Chrome 尚未完成首次登录配置；"
             "请先在 VS Code 终端运行 `python xiaoshuo --setup-browser`"
@@ -400,6 +405,26 @@ def run(
                 "准备下一章",
                 flush=True,
             )
+            if write_only:
+                before = manager.read_json(project / "chapter_state.json")[
+                    "last_completed_chapter"
+                ]
+                write_one(book_id, job)
+                state = manager.read_json(project / "chapter_state.json")
+                after = int(state["last_completed_chapter"])
+                if after != int(before) + 1:
+                    raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                manager.cmd_job_progress(
+                    data,
+                    argparse.Namespace(
+                        job=job["id"],
+                        chapter=after,
+                        platform_status="local_archived",
+                        message="新章已完成本地质检、归档与 Git 同步；未访问番茄",
+                    ),
+                )
+                completed += 1
+                continue
             pending = pending_chapter(project)
             if pending is None:
                 before = manager.read_json(project / "chapter_state.json")[
@@ -466,6 +491,8 @@ def run(
             completed += 1
         git_push_pending = bool(job.get("changed_paths_pending_git"))
         completion_message = f"按需完成 {completed}/{job['target_chapters']} 章"
+        if write_only:
+            completion_message += "；本书为本地创作模式，未访问番茄"
         if git_push_pending:
             completion_message += "；番茄已成功，Git 推送待恢复"
         finish_job(

@@ -1,0 +1,25 @@
+{
+  "book_title": "此天任我行",
+  "current_volume": "第一卷：少年借风",
+  "current_arc": "祭风日",
+  "last_completed_chapter": 0,
+  "next_chapter_number": 1,
+  "last_uploaded_chapter": 0,
+  "last_uploaded_status": "not_uploaded",
+  "last_uploaded_at": null,
+  "last_fanqie_url": null,
+  "timeline_day": 1,
+  "notes_for_next_chapter": [
+    "第一章从祭风日禁飞切入，陆遥要取回父亲留下的木鸢。",
+    "本章必须让陆遥真正离地，并为救孩子选择更危险的风路。",
+    "青羽只显示三条可行路线，不解释身世、不直接赋予完整御风术。",
+    "结尾让镇天碑裂缝传出陆沉舟的声音：别落地。"
+  ],
+  "open_hooks": [
+    "陆沉舟为何知道天门是锁",
+    "青羽为何出现在鸣风崖",
+    "镇天碑内的声音是真人、留音还是诱饵",
+    "天巡司为何连凡人的纸鸢也禁止",
+    "无归潮与九重天禁的真实关系"
+  ]
+}
