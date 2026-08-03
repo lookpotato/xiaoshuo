@@ -25,8 +25,8 @@
     },
     {
       "id": "free-sky",
-      "title": "道友，你这天命与我有缘",
-      "path": "此天任我行",
+      "title": "道友你这天命与我有缘",
+      "path": "道友你这天命与我有缘",
       "enabled": true,
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],

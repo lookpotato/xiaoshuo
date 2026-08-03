@@ -4,7 +4,7 @@
 
 启用前必须同时满足：
 
-1. 用户已在番茄创建《道友，你这天命与我有缘》。
+1. 用户已在番茄创建《道友你这天命与我有缘》。
 2. `publish_config.md` 已填写本书独立 URL、book_id 与 chapter_or_publish_id。
 3. 页面作品名与本地书名核验一致。
 4. `manager_config.json` 的 mode 已由用户授权改为 `write_then_upload`。
