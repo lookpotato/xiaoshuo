@@ -15,9 +15,13 @@
       "chapter": 1,
       "date": "2026-08-03",
       "time": "immediate_test",
-      "status": "ready_to_upload",
+      "status": "platform_draft_saved_publish_not_confirmed",
       "archived_at": "2026-08-03T20:00:00+08:00",
-      "authorization": "one_time_chapter_1"
+      "authorization": "one_time_chapter_1",
+      "verified_at": "2026-08-04T09:03:42+08:00",
+      "fanqie_draft_id": "7669819754852385305",
+      "fanqie_url": "https://fanqienovel.com/main/writer/7669807761814735897/publish/7669819754852385305/?enter_from=modifydraft",
+      "note": "正文与标题已保存到番茄草稿箱；确认发布弹窗未产生提交结果，章节管理仍显示暂无章节内容。"
     }
   ]
 }

@@ -15,6 +15,9 @@ one_time_submit_chapter: 1
 one_time_submit_authorized_at: 2026-08-03
 one_time_submit_consumed: false
 authorization_note: 用户明确要求上传一章测试流程；此授权仅适用于第1章，不开启后续自动提交。
+last_attempt_at: 2026-08-04T09:03:42+08:00
+last_attempt_status: platform_draft_saved_publish_not_confirmed
+last_draft_id: 7669819754852385305
 
 # 绑定核验
 
