@@ -117,19 +117,19 @@
     "白塔为何预排二十四列转运车处理临川北区二千七百一十四名维修员，以及剩余二十三列将从哪些线路进城"
   ],
   "last_schedule_adjustment": {
-    "mode": "reward_reflow",
-    "batch_id": "20260802-101010-9d9fae0d",
-    "chapter": 38,
+    "mode": "reward_bonus",
+    "batch_id": "20260808-114716-5688d7c6",
+    "chapter": 39,
     "from": {
       "date": "2026-08-11",
       "time": "12:00"
     },
     "to": {
-      "date": "2026-08-10",
-      "time": "12:00"
+      "date": "2026-08-08",
+      "time": "12:40"
     },
     "platform_status": "审核中",
-    "adjusted_at": "2026-08-02T10:14:10.113095+08:00"
+    "adjusted_at": "2026-08-08T11:47:30.669530+08:00"
   },
   "last_reward_reflow": {
     "batch_id": "20260802-101010-9d9fae0d",

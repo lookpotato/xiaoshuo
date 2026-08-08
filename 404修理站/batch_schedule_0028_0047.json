@@ -217,13 +217,28 @@
     },
     {
       "chapter": 39,
-      "date": "2026-08-11",
-      "time": "12:00",
+      "date": "2026-08-08",
+      "time": "12:40",
       "status": "submitted_pending_review",
       "archived_at": "2026-08-02T11:08:00+08:00",
       "job_id": "20260802-110215-6a00b11c",
-      "verified_at": "2026-08-02T11:29:23.705206+08:00",
-      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+      "verified_at": "2026-08-08T11:47:30.669530+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
+      "reward_history": [
+        {
+          "from": {
+            "date": "2026-08-11",
+            "time": "12:00"
+          },
+          "to": {
+            "date": "2026-08-08",
+            "time": "12:40"
+          },
+          "changed_at": "2026-08-08T11:47:30.669530+08:00",
+          "kind": "reward_bonus",
+          "batch_id": "20260808-114716-5688d7c6"
+        }
+      ]
     },
     {
       "chapter": 40,
