@@ -6,6 +6,15 @@
   "retry_delay_minutes": 30,
   "default_failure_policy": "retry_same_day",
   "default_book_id": "cosmic-404",
+  "writing_policy": {
+    "new_item_explanation": {
+      "enabled": true,
+      "first_appearance": "新道具首次出现时先用一句直白说明告诉读者它能做什么，再补必要设定；允许使用角色认知、铭牌、面板或数据化短栏。",
+      "effect_deadline": "原则上在同章快速触发一次可见效果；确需延至下一章时，本章必须展示明确用途或启动征兆。",
+      "cross_chapter_reminder": "跨章或隔日发布后再次使用前，用一句情境化短句回顾用途、当前状态或关键限制，不假设读者仍记得。",
+      "mystery_boundary": "悬念保留在来源、完整上限、隐藏代价和幕后关联；不得把基础用途也藏起来。"
+    }
+  },
   "books": [
     {
       "id": "cosmic-404",

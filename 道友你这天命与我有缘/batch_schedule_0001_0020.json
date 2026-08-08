@@ -1,27 +1,27 @@
 {
   "timezone": "Asia/Shanghai",
   "created_at": "2026-08-03T20:00:00+08:00",
+  "updated_at": "2026-08-08T10:30:46+08:00",
   "chapter_range": [1, 20],
-  "status": "writing",
+  "status": "uploading",
   "content_check": "basic_only",
   "ai_usage": true,
-  "timed_publish": false,
+  "timed_publish": true,
   "daily_target": 2,
   "manual_extra_chapters_supported": false,
   "primary_time": "18:30",
   "secondary_time": "20:30",
   "entries": [
-    {
-      "chapter": 1,
-      "date": "2026-08-03",
-      "time": "immediate_test",
-      "status": "platform_draft_saved_publish_not_confirmed",
-      "archived_at": "2026-08-03T20:00:00+08:00",
-      "authorization": "one_time_chapter_1",
-      "verified_at": "2026-08-04T09:03:42+08:00",
-      "fanqie_draft_id": "7669819754852385305",
-      "fanqie_url": "https://fanqienovel.com/main/writer/7669807761814735897/publish/7669819754852385305/?enter_from=modifydraft",
-      "note": "正文与标题已保存到番茄草稿箱；确认发布弹窗未产生提交结果，章节管理仍显示暂无章节内容。"
-    }
+    {"chapter": 1, "date": "2026-08-03", "time": "immediate", "status": "published", "archived_at": "2026-08-03T20:00:00+08:00", "authorization": "user_confirmed_success_2026-08-08", "verified_at": "2026-08-08T10:30:46+08:00", "fanqie_draft_id": "7669819754852385305", "fanqie_url": "https://fanqienovel.com/main/writer/7669807761814735897/publish/7669819754852385305/?enter_from=modifydraft"},
+    {"chapter": 2, "date": "2026-08-08", "time": "18:30", "status": "not_uploaded", "archived_at": "2026-08-06T20:10:00+08:00"},
+    {"chapter": 3, "date": "2026-08-08", "time": "20:30", "status": "not_uploaded", "archived_at": "2026-08-06T20:20:00+08:00"},
+    {"chapter": 4, "date": "2026-08-09", "time": "18:30", "status": "not_uploaded", "archived_at": "2026-08-06T20:30:00+08:00"},
+    {"chapter": 5, "date": "2026-08-09", "time": "20:30", "status": "not_uploaded", "archived_at": "2026-08-06T20:40:00+08:00"},
+    {"chapter": 6, "date": "2026-08-10", "time": "18:30", "status": "not_uploaded", "archived_at": "2026-08-06T20:50:00+08:00"},
+    {"chapter": 7, "date": "2026-08-10", "time": "20:30", "status": "not_uploaded", "archived_at": "2026-08-06T21:00:00+08:00"},
+    {"chapter": 8, "date": "2026-08-11", "time": "18:30", "status": "not_uploaded", "archived_at": "2026-08-06T21:10:00+08:00"},
+    {"chapter": 9, "date": "2026-08-11", "time": "20:30", "status": "not_uploaded", "archived_at": "2026-08-06T21:20:00+08:00"},
+    {"chapter": 10, "date": "2026-08-12", "time": "18:30", "status": "not_uploaded", "archived_at": "2026-08-06T21:30:00+08:00"},
+    {"chapter": 11, "date": "2026-08-12", "time": "20:30", "status": "not_uploaded", "archived_at": "2026-08-06T21:40:00+08:00"}
   ]
 }

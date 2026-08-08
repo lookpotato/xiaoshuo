@@ -159,6 +159,7 @@ def build_batch_prompt(job: dict) -> str:
 - 无论任何结果，都必须释放管理器锁并调用一次 job-finish。
 - `submit_publish: true` 时，番茄草稿箱不算成功。
 - 使用已经登录的浏览器会话；不得读取或保存 Cookie、Token、密码、验证码。
+- 严格执行 session 输出的 writing_policy：新道具先直说用途，同章尽快触发；跨章再次使用先短句回顾，悬念只留来源、上限或隐藏代价。
 - 浏览器不可用时安全停止并记录 blocked，不得改用其他书号或伪造成功。
 - 只提交本批任务涉及文件，保留无关改动；每批改动按 AGENTS.md 自动推送。
 """
@@ -480,6 +481,7 @@ def cmd_session(data, args):
         },
         "state": state,
         "runtime": runtime.get("books", {}).get(book["id"], {}),
+        "writing_policy": data.get("writing_policy", {}),
         "pending_batch_chapters": pending_publish_entries(project),
         "required_read_order": [
             str(project / "automation_prompt.md"),
@@ -508,6 +510,7 @@ def cmd_session(data, args):
             ),
         },
         "batch_workflow": [
+            "新道具首次出现时先直说用途并尽快触发效果；跨章再用时先做一句情境化回顾，悬念只留来源、上限或代价。",
             "先处理 pending_batch_chapters：从既有番茄草稿继续，不重写、不重复创建章节。",
             "没有待发布草稿时，按 next_chapter_number 严格串行执行“写一章→质检→归档→上传→确认列表状态”。",
             "每章归档后更新 chapter_state.json 与 continuity_ledger.md，再记录 chapter_archived。",

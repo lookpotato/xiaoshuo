@@ -100,6 +100,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 这是由 `python xiaoshuo` 启动的一次性串行批次，job id 为 `{job["id"]}`。
 完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
+同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；

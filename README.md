@@ -36,6 +36,8 @@ python xiaoshuo 2 --all --dry-run
 
 `--all` 不并发写作：全局运行锁要求逐本完成，某本失败时会安全停止，尚未开始的小说不受影响。`mode: write_only` 的新书只在本地写作、质检、归档并同步 Git，不会访问或误用其他作品的番茄后台。
 
+管理器通过 `manager_config.json` 的 `writing_policy.new_item_explanation` 统一约束新道具写法：首次出现先直说用途并尽快触发效果，隔章再用时先做一句情境化回顾；只把来源、上限和隐藏代价留作悬念。该规则会进入 `session` 交接包并由通用质量评分卡复核。
+
 也可以使用带扩展名的等价命令：
 
 ```powershell
