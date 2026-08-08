@@ -28,6 +28,26 @@ ELIGIBLE_STATUSES = manager.SUBMITTED_UPLOAD_STATUSES
 REWARD_JOB_VERSION = 1
 
 
+def latest_published_chapter(project: Path) -> int:
+    """Return the user/platform-confirmed public chapter floor for reward edits."""
+    state = manager.read_json(project / "chapter_state.json", {})
+    try:
+        return max(0, int(state.get("latest_published_chapter", 0) or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def reward_job_crosses_published_floor(job: dict, floor: int) -> bool:
+    if floor <= 0:
+        return False
+    chapters = [
+        int(move.get("chapter", 0) or 0)
+        for move in job.get("moves", [])
+    ]
+    chapters.extend(int(number or 0) for number in job.get("bonus_chapters", []))
+    return any(0 < number <= floor for number in chapters)
+
+
 def default_reward_time(now: datetime) -> str:
     # 番茄要求已提交章节必须在新发布时间至少 30 分钟前完成修改。
     # 预留 45 分钟并向上取整，避免页面操作耗时吃掉平台硬门槛。
@@ -62,6 +82,7 @@ def reward_candidates(
     )
     candidates: list[tuple[Path, dict, Path]] = []
     seen: set[int] = set()
+    published_floor = latest_published_chapter(project)
     ordered = sorted(
         schedule_entries(project),
         key=lambda item: (
@@ -72,7 +93,11 @@ def reward_candidates(
     )
     for schedule_path, entry in ordered:
         number = int(entry.get("chapter", 0))
-        if number in seen or entry.get("status") not in ELIGIBLE_STATUSES:
+        if (
+            number <= published_floor
+            or number in seen
+            or entry.get("status") not in ELIGIBLE_STATUSES
+        ):
             continue
         seen.add(number)
         try:
@@ -96,6 +121,7 @@ def reward_candidates(
 def scheduled_refs(project: Path) -> list[tuple[Path, dict, Path]]:
     refs: list[tuple[Path, dict, Path]] = []
     seen: set[int] = set()
+    published_floor = latest_published_chapter(project)
     for schedule_path, entry in sorted(
         schedule_entries(project),
         key=lambda item: (
@@ -105,7 +131,11 @@ def scheduled_refs(project: Path) -> list[tuple[Path, dict, Path]]:
         ),
     ):
         number = int(entry.get("chapter", 0))
-        if number in seen or entry.get("status") not in ELIGIBLE_STATUSES:
+        if (
+            number <= published_floor
+            or number in seen
+            or entry.get("status") not in ELIGIBLE_STATUSES
+        ):
             continue
         seen.add(number)
         files = list((project / "chapters").glob(f"{number:04d}-*.md"))
@@ -425,8 +455,19 @@ def run(
     if errors:
         raise RuntimeError("项目校验失败：" + "；".join(errors))
     now = manager.now_for(data)
+    published_floor = latest_published_chapter(project)
     active = active_reward_job(book_id)
     job_path: Path | None = None
+    if active and reward_job_crosses_published_floor(active[1], published_floor):
+        stale_path, stale_job = active
+        if not dry_run:
+            stale_job["status"] = "superseded"
+            stale_job["superseded_at"] = now.isoformat()
+            stale_job["superseded_reason"] = (
+                f"线上已公开至第{published_floor}章，旧任务包含已公开章节"
+            )
+            manager.write_json(stale_path, stale_job)
+        active = None
     if active:
         job_path, job = active
         if int(job.get("reward_count", 0)) != count:

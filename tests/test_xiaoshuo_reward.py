@@ -15,6 +15,7 @@ from fanqie_browser_worker import (
 from xiaoshuo_reward import (
     build_new_reward_plan,
     default_reward_time,
+    reward_job_crosses_published_floor,
     record_reward,
     reward_candidates,
     validate_time,
@@ -137,6 +138,21 @@ class RewardScheduleTests(unittest.TestCase):
         now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
         selected = reward_candidates(self.project, 2, now, "15:40")
         self.assertEqual([item[1]["chapter"] for item in selected], [29, 30])
+
+    def test_published_floor_excludes_old_scheduled_chapters(self) -> None:
+        (self.project / "chapter_state.json").write_text(
+            json.dumps({"latest_published_chapter": 29}),
+            encoding="utf-8",
+        )
+        now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
+        plan = build_new_reward_plan(self.project, 1, now, "15:50")
+        self.assertEqual(plan["bonus_chapters"], [30])
+        self.assertTrue(
+            reward_job_crosses_published_floor(
+                {"bonus_chapters": [23], "moves": [{"chapter": 25}]},
+                29,
+            )
+        )
 
     def test_reward_plan_refills_all_later_schedule_slots(self) -> None:
         now = datetime(2026, 8, 1, 15, 3, tzinfo=CN)
