@@ -1,7 +1,101 @@
 # 番茄小说管理器
 
-本目录是“番茄小说管理器”的自动创作与发布总控工作区。当前只启用《404修理站》；
-作品保留独立设定、章节、发布地址和运行状态，禁止复用其他作品的番茄书号。
+本目录是“番茄小说管理器”的自动创作与发布总控工作区。当前启用《404修理站》和
+《道友你这天命与我有缘》；两本作品分别保留独立设定、章节、发布地址和运行状态，
+禁止交叉复用番茄书号。
+
+## 快速命令速查
+
+先在 PowerShell 进入项目根目录：
+
+```powershell
+cd C:\Users\16007\Desktop\小说\xiaoshuo
+```
+
+书籍 ID：
+
+- `cosmic-404`：《404修理站》
+- `free-sky`：《道友你这天命与我有缘》
+
+### 检查与安全预演
+
+```powershell
+# 检查 Codex、专用 Chrome 和书籍绑定
+python xiaoshuo --check
+
+# 只显示计划，不写作、不上传
+python xiaoshuo 1 --book free-sky --dry-run
+python xiaoshuo 1 --book cosmic-404 --dry-run
+
+# 校验全部本地小说项目
+python .\fanqie_novel_manager.py validate
+```
+
+### 正常更新
+
+```powershell
+# 指定作品更新 N 章；每章严格串行完成写作、质检、上传、排期和平台核验
+python xiaoshuo 2 --book free-sky
+python xiaoshuo 2 --book cosmic-404
+
+# 所有已启用作品各更新 2 章；按优先级串行，不并发
+python xiaoshuo 2 --all
+
+# 不写 --book 时，使用 manager_config.json 的 default_book_id
+python xiaoshuo 1
+```
+
+### 查看任务与断点续跑
+
+```powershell
+# 查看全部任务或指定任务
+python .\fanqie_novel_manager.py job-status
+python .\fanqie_novel_manager.py job-status --job <job-id>
+
+# 继续原批次；不会重传已经进入审核中、待发布或已发布的章节
+python xiaoshuo --resume <job-id>
+
+# 调试续跑：出错时保留可见 Chrome 窗口
+python xiaoshuo --resume <job-id> --debug-browser
+```
+
+### 首次登录与浏览器恢复
+
+```powershell
+# 打开项目专用 Chrome，由用户本人登录番茄
+python xiaoshuo --setup-browser
+
+# 登录后重新检查
+python xiaoshuo --check
+```
+
+### 《404修理站》打赏加更
+
+```powershell
+# 建议先预演
+python xiaoshuo --reward 3 --book cosmic-404 --dry-run
+
+# 把未来最早的 3 章提前到今天，并自动补齐后续排期
+python xiaoshuo --reward 3 --book cosmic-404
+
+# 明确指定今天的加更时间
+python xiaoshuo --reward 3 --book cosmic-404 --reward-time 18:30
+```
+
+### 查看单本书状态
+
+```powershell
+python .\fanqie_novel_manager.py session --book free-sky
+python .\fanqie_novel_manager.py pending --book free-sky
+python .\fanqie_novel_manager.py notes --book free-sky
+
+python .\fanqie_novel_manager.py session --book cosmic-404
+python .\fanqie_novel_manager.py pending --book cosmic-404
+python .\fanqie_novel_manager.py notes --book cosmic-404
+```
+
+安全边界：验证码、登录失效、二维码、风控、政策警告或陌生确认框会使任务停止并保留恢复点；
+不要重新创建同章，修复问题后使用原 `job-id` 续跑。
 
 ## 目录
 
@@ -11,7 +105,7 @@
 - `shared/`：跨作品复用的写作方法、质量门槛和复盘记录。
 - `测试本小说/`：已有测试作品，保持独立。
 - `404修理站/`：第一本正式长期作品。
-- `道友你这天命与我有缘/`：《道友你这天命与我有缘》的独立项目目录；未绑定番茄前只做本地创作与 Git 归档。
+- `道友你这天命与我有缘/`：《道友你这天命与我有缘》的独立项目目录；已绑定独立番茄书号，默认每日 18:30、20:30 排期。
 
 ## 常用命令
 
