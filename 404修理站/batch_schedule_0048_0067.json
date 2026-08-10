@@ -71,11 +71,14 @@
     },
     {
       "chapter": 53,
-      "date": "2026-08-16",
+      "date": "2026-08-15",
       "time": "12:00",
-      "status": "not_uploaded",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-10T22:46:00+08:00",
-      "job_id": "20260810-221228-0533003f"
+      "job_id": "20260810-221228-0533003f",
+      "schedule_normalized_at": "2026-08-10T23:14:21.332987+08:00",
+      "verified_at": "2026-08-10T23:14:42.194729+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
     }
   ]
 }
