@@ -24,14 +24,14 @@
       "verified_at": "2026-08-02T15:21:33.316836+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
       "schedule_sync": {
-        "source": "user_confirmed_platform_schedule",
-        "synced_at": "2026-08-08T10:30:46+08:00",
-        "latest_online_publish_at": "2026-08-13T12:00:00+08:00"
+        "source": "browser_verified_platform_schedule",
+        "synced_at": "2026-08-10T20:21:46+08:00",
+        "latest_online_publish_at": "2026-08-14T12:00:00+08:00"
       }
     },
     {
       "chapter": 49,
-      "date": "2026-08-14",
+      "date": "2026-08-13",
       "time": "12:00",
       "status": "submitted_pending_review",
       "archived_at": "2026-08-08T15:18:00+08:00",
@@ -41,7 +41,7 @@
     },
     {
       "chapter": 50,
-      "date": "2026-08-15",
+      "date": "2026-08-14",
       "time": "12:00",
       "status": "submitted_pending_review",
       "archived_at": "2026-08-08T15:20:00+08:00",
@@ -51,7 +51,7 @@
     },
     {
       "chapter": 51,
-      "date": "2026-08-16",
+      "date": "2026-08-14",
       "time": "12:00",
       "status": "submitted_pending_review",
       "archived_at": "2026-08-08T15:36:00+08:00",

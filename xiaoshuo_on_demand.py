@@ -9,7 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import fanqie_novel_manager as manager
@@ -180,6 +180,83 @@ def schedule_entries(project: Path) -> list[tuple[Path, dict]]:
         for entry in payload.get("entries", []):
             output.append((path, entry))
     return output
+
+
+def expected_regular_slot(
+    data: dict,
+    book_id: str,
+    project: Path,
+    chapter_number: int,
+) -> tuple[str, str] | None:
+    """Return the next regular slot, packing each day to its configured target."""
+    book = manager.find_book(data, book_id)
+    target = max(1, int(book.get("daily_chapter_target", 1)))
+    times = list(book.get("default_publish_times") or [book["schedule"]["time"]])
+    if not times:
+        raise ValueError(f"{book_id} 未配置默认发布时间")
+    while len(times) < target:
+        times.append(times[-1])
+
+    allowed_days = set(book.get("schedule", {}).get("days", manager.DAY_KEYS))
+    prior_slots: list[tuple[datetime, str]] = []
+    for _, entry in schedule_entries(project):
+        try:
+            number = int(entry["chapter"])
+            date = datetime.strptime(str(entry["date"]), "%Y-%m-%d")
+        except (KeyError, TypeError, ValueError):
+            continue
+        entry_time = str(entry.get("time", ""))
+        if number >= chapter_number or entry_time not in times:
+            continue
+        prior_slots.append((date, entry_time))
+    if not prior_slots:
+        return None
+
+    latest_date = max(item[0] for item in prior_slots)
+    used = sum(1 for date, _ in prior_slots if date == latest_date)
+    if used < target:
+        return latest_date.strftime("%Y-%m-%d"), times[used]
+
+    next_date = latest_date + timedelta(days=1)
+    while manager.DAY_KEYS[next_date.weekday()] not in allowed_days:
+        next_date += timedelta(days=1)
+    return next_date.strftime("%Y-%m-%d"), times[0]
+
+
+def normalize_schedule_entry(
+    data: dict,
+    book_id: str,
+    project: Path,
+    chapter_number: int,
+) -> Path | None:
+    """Correct a newly archived chapter before any Fanqie upload starts."""
+    expected = expected_regular_slot(data, book_id, project, chapter_number)
+    if expected is None:
+        return None
+    expected_date, expected_time = expected
+    matches = [
+        (path, entry)
+        for path, entry in schedule_entries(project)
+        if int(entry.get("chapter", 0)) == chapter_number
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"第{chapter_number}章排期记录数量异常：期望 1 条，实际 {len(matches)} 条"
+        )
+    schedule_path, entry = matches[0]
+    if (str(entry.get("date")), str(entry.get("time"))) == expected:
+        return None
+
+    payload = manager.read_json(schedule_path)
+    target = next(
+        item for item in payload["entries"]
+        if int(item["chapter"]) == chapter_number
+    )
+    target["date"] = expected_date
+    target["time"] = expected_time
+    target["schedule_normalized_at"] = manager.now_for(data).isoformat()
+    manager.write_json(schedule_path, payload)
+    return schedule_path
 
 
 def pending_chapter(project: Path) -> tuple[Path, dict, Path] | None:
@@ -437,6 +514,15 @@ def run(
                 ]
                 if int(after) != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                normalized_schedule = normalize_schedule_entry(
+                    data, book_id, project, int(after)
+                )
+                if normalized_schedule:
+                    print(
+                        f"已按每天 {book.get('daily_chapter_target', 1)} 章修正"
+                        f"第{after}章排期。",
+                        flush=True,
+                    )
                 pending = pending_chapter(project)
                 if pending is None:
                     raise RuntimeError("新章节未进入待上传排期")
