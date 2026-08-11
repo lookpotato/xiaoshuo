@@ -21,6 +21,13 @@
       "new_entity_rule": "首次出现且会持续影响阅读理解的重要人物、道具、地点、异兽或组织形象必须配图；普通背景物不登记。",
       "reuse_rule": "同名同设定实体沿用本书目录中的既有参考图，禁止重复生图或跨书复用。",
       "verification_rule": "生成后必须由 Codex 回看并完成六项视觉核验；任一关键项不符就重生，未通过不得归档章节或推进状态。"
+    },
+    "reader_comprehension": {
+      "enabled": true,
+      "expansion_rule": "大纲关键句只提供方向，正文必须补齐承接、问题、依据、判断、行动和结果，不得把作者知道的前因后果当成读者常识。",
+      "outline_blind_review": "草稿完成后停止读取大纲与设定，只凭正文回答六项因果问题，并为每项引用逐字存在的正文证据。",
+      "term_rule": "读者理解当前行动所必需的新名词必须在首次使用附近用白话说明；允许隐藏幕后真相，不允许隐藏基础含义。",
+      "failure_rule": "任一问题需要作者额外解释、存在未解释名词、验收文件缺失或正文哈希变化时，只保留草稿，不得归档、推进状态或上传。"
     }
   },
   "books": [
@@ -36,6 +43,7 @@
       "priority": 100,
       "mode": "write_then_upload",
       "daily_chapter_target": 2,
+      "reader_gate_from_chapter": 54,
       "manual_extra_chapters_supported": true,
       "default_publish_times": ["12:00"],
       "note": "正式长篇；所有章节固定在中午12:00发布；用户可临时指定其他时间，未指定时不改变后续常规排期。"
@@ -52,6 +60,7 @@
       "priority": 90,
       "mode": "write_then_upload",
       "daily_chapter_target": 2,
+      "reader_gate_from_chapter": 17,
       "manual_extra_chapters_supported": false,
       "default_publish_times": ["18:30", "20:30"],
       "note": "玄幻新书；已绑定独立番茄书号 7669807761814735897。常规排期为18:30、20:30；自动提交保持关闭，只有用户明确授权时才提交。"

@@ -10,7 +10,7 @@
    `python .\fanqie_novel_manager.py next`。返回空对象时当天无任务，立即结束；
    领取成功后只处理返回的 `cosmic-404`。
 2. 读取根目录 `shared/writing_playbook.md`、`shared\quality_scorecard.md`、
-   `shared/image_workflow.md` 和 `shared\learning_log.md`，再读取本书全部核心设定、`chapter_state.json`、
+   `shared/image_workflow.md`、`shared/reader_gate.md` 和 `shared\learning_log.md`，再读取本书全部核心设定、`chapter_state.json`、
    `continuity_ledger.md`、最近 3 章及最近一次运行日志。
 3. 领取成功后按顺序执行最多两轮。每轮开始时，先检查 `session` 返回的
    `pending_batch_chapters` 以及 `chapter_state.json`。批量排期中存在
@@ -27,6 +27,9 @@
    同时执行本书 `images/catalog.json` 图片工作流：首次出现且会持续影响理解的重要实体
    必须用 Codex imagegen 配图并回看六项核验，同名实体沿用旧图，每章最多 3 张；图片不正确、
    未落盘、未在正文就近引用或目录校验失败时，同样只能保留草稿，不得推进章节状态。
+   第 54 章起还必须执行 `shared/reader_gate.md`：大纲关键句不得直接充当前提，正文补齐
+   “承接→问题→依据→判断→行动→结果”；完稿后停止读取大纲和设定，只读正文完成六题，
+   每题引用原句并清零未解释名词，保存 `reader_checks/NNNN.json`。缺失、哈希不符或未通过不得归档。
 5. 质量通过后保存草稿与正式章节；同步更新 `chapter_state.json` 和
    `continuity_ledger.md`。核对归档最高章节、状态章节号、人物伤势、位置、
    装备、资源、承诺及伏笔状态一致后，执行：

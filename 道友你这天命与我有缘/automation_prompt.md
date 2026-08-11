@@ -6,7 +6,7 @@
 
 1. 根目录 `AGENTS.md`
 2. `fanqie-auto-novel` 技能及其要求的引用文件
-3. 根目录 `shared/writing_playbook.md`、`shared/quality_scorecard.md`、`shared/image_workflow.md`、`shared/learning_log.md`
+3. 根目录 `shared/writing_playbook.md`、`shared/quality_scorecard.md`、`shared/image_workflow.md`、`shared/reader_gate.md`、`shared/learning_log.md`
 4. 本书 `novel_config.md`、`outline.md`、`characters.md`、`world.md`、`destiny_children.md`、`style_guide.md`
 5. `publish_config.md`、`chapter_state.json`、`continuity_ledger.md`
 6. `chapters/` 中最近三章与当前排期文件
@@ -32,3 +32,4 @@
 - 不得泄露 AI、提示词、自动化、账号信息或其他书籍发布数据。
 - 新道具首次出现时先直说基础用途并在同章尽快触发效果；若完整效果延至下一章，本章须出现征兆。隔章再用前用一句情境化短句回顾用途或限制，悬念只保留来源、上限和隐藏代价。
 - 读取本书 `images/catalog.json`；首次出现且会持续影响理解的重要实体必须用 Codex imagegen 配图并回看六项核验，同名实体沿用旧图，每章最多 3 张。图片不正确、未落盘、未在正文就近引用或目录校验失败时，只保留草稿且不得推进章节状态。
+- 从第 17 章起执行 `shared/reader_gate.md`：大纲关键句不得直接充当前提，正文补齐“承接→问题→依据→判断→行动→结果”；完稿后停止读取大纲和设定，只读正文完成六题，每题引用原句并清零未解释名词，保存 `reader_checks/NNNN.json`。缺失、哈希不符或未通过不得归档。

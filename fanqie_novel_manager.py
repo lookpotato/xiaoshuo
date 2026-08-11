@@ -20,6 +20,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from novel_image_system import validate_image_catalog
+from novel_reader_gate import validate_reader_checks
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "manager_config.json"
@@ -33,7 +34,7 @@ REQUIRED_FILES = {
     "novel_config.md", "outline.md", "characters.md", "world.md",
     "style_guide.md", "publish_config.md", "chapter_state.json",
 }
-REQUIRED_DIRS = {"chapters", "drafts", "logs"}
+REQUIRED_DIRS = {"chapters", "drafts", "logs", "reader_checks"}
 DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 INCOMPLETE_UPLOAD_STATUSES = {
     "draft_saved", "not_uploaded", "upload_pending", "failed", "failed_retryable", "blocked_manual",
@@ -163,6 +164,7 @@ def build_batch_prompt(job: dict) -> str:
 - 使用已经登录的浏览器会话；不得读取或保存 Cookie、Token、密码、验证码。
 - 严格执行 session 输出的 writing_policy：新道具先直说用途，同章尽快触发；跨章再次使用先短句回顾，悬念只留来源、上限或隐藏代价。
 - 严格执行图片工作流：调用 imagegen 技能为本章首次出现的重要人物、道具、地点、异兽或组织形象建立图片；每章最多 3 张，生成后必须回看核验，未核验图片不得入库或推进章节状态。
+- 草稿完成后严格执行无大纲读者反向验收：停止读取大纲和设定，只凭正文回答六个因果问题并引用正文证据；任何问题需要作者补充说明时先修文，验收文件缺失或未通过不得归档、上传或推进章节状态。
 - 浏览器不可用时安全停止并记录 blocked，不得改用其他书号或伪造成功。
 - 只提交本批任务涉及文件，保留无关改动；每批改动按 AGENTS.md 自动推送。
 """
@@ -280,6 +282,11 @@ def validate_book(book, require_publish_complete=True):
         if not (path / name).is_dir():
             errors.append(f"缺少目录 {name}/")
     errors.extend(validate_image_catalog(path, str(book.get("id", ""))))
+    reader_gate_from = book.get("reader_gate_from_chapter")
+    if not isinstance(reader_gate_from, int) or reader_gate_from < 1:
+        errors.append("书籍配置缺少正整数 reader_gate_from_chapter")
+    else:
+        errors.extend(validate_reader_checks(path, reader_gate_from))
     state_path = path / "chapter_state.json"
     if state_path.exists():
         try:
@@ -287,6 +294,14 @@ def validate_book(book, require_publish_complete=True):
             for key in ("last_completed_chapter", "next_chapter_number", "last_uploaded_status"):
                 if key not in state:
                     errors.append(f"chapter_state.json 缺少 {key}")
+            if (
+                isinstance(reader_gate_from, int)
+                and isinstance(state.get("next_chapter_number"), int)
+                and reader_gate_from > state["next_chapter_number"]
+            ):
+                errors.append(
+                    "reader_gate_from_chapter 不能晚于下一章，避免新章节绕过无大纲读者验收"
+                )
             if state.get("next_chapter_number", 0) < state.get("last_completed_chapter", 0) + 1:
                 errors.append("next_chapter_number 早于已归档章节")
             chapter_numbers = []
@@ -482,6 +497,7 @@ def cmd_session(data, args):
             "daily_chapter_target": book.get("daily_chapter_target", 1),
             "default_publish_times": book.get("default_publish_times", []),
             "submit_publish": publish_requires_submission(project),
+            "reader_gate_from_chapter": book.get("reader_gate_from_chapter"),
         },
         "state": state,
         "runtime": runtime.get("books", {}).get(book["id"], {}),
@@ -492,6 +508,7 @@ def cmd_session(data, args):
             str(ROOT / "shared" / "writing_playbook.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
             str(ROOT / "shared" / "image_workflow.md"),
+            str(ROOT / "shared" / "reader_gate.md"),
             str(ROOT / "shared" / "learning_log.md"),
             str(project / "novel_config.md"),
             str(project / "outline.md"),
@@ -503,6 +520,7 @@ def cmd_session(data, args):
             str(project / "continuity_ledger.md"),
             str(project / "fanqie_ui_workflow.md"),
             str(project / "images" / "catalog.json"),
+            str(project / "reader_checks"),
         ],
         "start_commands": {
             "inspect": [
@@ -521,6 +539,9 @@ def cmd_session(data, args):
             "本章首次出现且会持续影响理解的重要人物、道具、地点、异兽或组织形象必须配图；每章最多 3 张，因此正文不得引入超过 3 个需要配图的新实体。",
             "使用内置 imagegen 逐张生成，复制最终图到本书 images/ 分类目录，再用 view_image 回看并逐项核验；任何关键项不符就定向重生，未通过不得登记 verified。",
             "首次启用图片体系时，可在 3 张总额度内优先补齐尚无参考图的主角；图片、catalog 和章节归档必须作为同一批原子改动完成。",
+            "大纲关键句只能作为内部计划；正文必须补齐承接、问题、依据、判断、行动和结果，不得把作者知道的前因后果当成读者常识。",
+            "完稿后停止读取大纲与设定，只读最终正文完成六题反向验收；每题引用正文原句，清零 unexplained_terms，并把正文哈希写入 reader_checks/NNNN.json。",
+            "reader gate 未通过时只保留草稿，不得归档、更新 chapter_state、上传或伪造 passed。",
             "先处理 pending_batch_chapters：从既有番茄草稿继续，不重写、不重复创建章节。",
             "没有待发布草稿时，按 next_chapter_number 严格串行执行“写一章→质检→归档→上传→确认列表状态”。",
             "每章归档后更新 chapter_state.json 与 continuity_ledger.md，再记录 chapter_archived。",

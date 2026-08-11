@@ -107,10 +107,11 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 - 逐张生成后把最终文件从 Codex 默认生成目录复制到本书 images/ 对应分类目录，使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印六项核对；
 - 有任一关键项不符就做针对性重生，只有全部通过才能写入 catalog 的 verified 记录；内置生图不可用或连续失败时只保留章节草稿，不得归档正文、推进状态或伪造图片；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
+必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
 
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；
-2. 更新 chapter_state.json、continuity_ledger.md、batch_schedule 和当日日志；
+2. 更新 chapter_state.json、continuity_ledger.md、reader_checks、batch_schedule 和当日日志；
 3. 新排期沿用 manager_config.json 的每日发布时间，未特别指定时固定 12:00；
 4. Metadata 的 upload_status 写为 not_uploaded；
 5. 不访问任何浏览器，不上传番茄，不调用 job-progress/job-finish/claim/finish；
