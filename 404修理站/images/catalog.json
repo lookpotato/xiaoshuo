@@ -11,6 +11,57 @@
       "同一角色后续场景必须以角色参考图锁定面部、体型和标志特征"
     ]
   },
-  "entities": {},
-  "chapter_images": {}
+  "entities": {
+    "character:chen-xu": {
+      "name": "陈序",
+      "type": "character",
+      "first_chapter": 1,
+      "image_created_chapter": 54,
+      "source_excerpt": "犬爪压住他的橙色维修服，冻硬的布料发出撕裂声。",
+      "canonical_description": "二十四岁、偏瘦的中国青年，左眉有一道旧冻伤，穿大两号且磨损冻硬的橙色旧维修服",
+      "distinctive_features": [
+        "左眉旧冻伤",
+        "偏瘦体型",
+        "大两号橙色旧维修服",
+        "胸前名字被剪去后留下歪斜旧针脚痕迹",
+        "机警而略带坏笑的神态"
+      ],
+      "forbidden_features": [
+        "机械义肢",
+        "动力护甲",
+        "额外武器",
+        "可读品牌或徽标",
+        "超能力光效"
+      ],
+      "image": {
+        "path": "images/characters/chen-xu-v1.png",
+        "sha256": "1a6529c4bdb493628d666c98026c18352ba80f081081faa84f9b987649a248d7",
+        "alt_text": "左眉有旧冻伤、穿大两号橙色维修服的偏瘦青年陈序",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说《404修理站》人物设定参考图\nPrimary request: 生成主角陈序的单人全身角色概念设定图，用于后续章节保持人物视觉一致\nScene/backdrop: 简洁的临川冰城废土工业背景，盐尘灰、旧钢铁与暗青色，背景克制，不出现其他人物或重要道具\nSubject: 24岁中国青年男性，偏瘦；左眉有一道清楚可辨的旧冻伤；穿一件明显大两号、磨损冻硬的橙色旧维修服，胸前仅有被剪掉名字后留下的歪斜旧针脚痕迹，不出现可读文字；神态机警，带一点像正盘算怎么拆卖零件的坏笑，但不是夸张喜剧脸\nStyle/medium: 写实感中国末世工业科幻概念插画，结构清楚，人物可辨识，适合作为角色锚点图\nComposition/framing: 单人全身三分之四视角，双手自然可见，人物居中，服装轮廓与左眉伤痕清晰\nLighting/mood: 冷色环境光，有限琥珀警示光点缀，寒冷、坚韧、带黑色幽默气质\nColor palette: 盐尘灰、旧钢铁、暗青为主，橙色维修服为主体色，琥珀光只作少量点缀\nMaterials/textures: 磨损厚布、结霜布边、旧金属环境，真实使用痕迹\nConstraints: 严格保持单人；不得新增武器、徽章、品牌、机械义肢、护甲、超能力光效或额外设定；左眉冻伤必须位于角色左眉；维修服必须宽大两号；不得用相似替代物；无文字、无水印、无边框、无角色名",
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-11T16:45:34+08:00",
+          "attempts": 1,
+          "notes": "肉眼确认画面仅有陈序一人，年龄与偏瘦体型可信；角色左眉旧冻伤清楚可见；橙色宽大旧维修服具有磨损、结霜和胸前剪名后旧针脚痕迹；全身、双手与服装轮廓完整；未出现机械义肢、护甲、武器、能力特效或其他设定冲突；画面无可读文字、角色名和水印。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true
+          }
+        }
+      }
+    }
+  },
+  "chapter_images": {
+    "54": {
+      "entity_ids": [
+        "character:chen-xu"
+      ]
+    }
+  }
 }
