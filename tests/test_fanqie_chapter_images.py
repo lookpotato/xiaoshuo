@@ -11,6 +11,7 @@ from fanqie_browser_worker import (
     author_note_text,
     parse_chapter,
     publish,
+    save_author_note,
     select_author_note_image,
 )
 
@@ -95,6 +96,31 @@ class FanqieImageMarkdownTests(unittest.TestCase):
         page.expect_file_chooser.assert_called_once_with(timeout=5_000)
         upload_control.click.assert_called_once_with()
         chooser_info.value.set_files.assert_called_once_with(str(image_path))
+
+    def test_author_note_save_waits_for_edit_state(self) -> None:
+        page = Mock()
+        scope = MagicMock()
+        save = Mock()
+        config = PublishConfig(
+            writer_url="https://fanqienovel.com/test",
+            book_id="test-book",
+            submit_publish=False,
+        )
+
+        with (
+            patch("fanqie_browser_worker._author_note_scope", return_value=scope),
+            patch(
+                "fanqie_browser_worker._single_visible_control",
+                return_value=save,
+            ),
+            patch("fanqie_browser_worker.visible_matches", return_value=[Mock()]),
+            patch("fanqie_browser_worker.assert_safe_page"),
+        ):
+            save_author_note(page, config)
+
+        scope.get_by_text.assert_any_call("保存", exact=True)
+        save.click.assert_called_once_with()
+        scope.get_by_text.assert_any_call("编辑", exact=True)
 
     def test_publish_uploads_author_note_image_before_next_step(self) -> None:
         project = Path("C:/test-book")

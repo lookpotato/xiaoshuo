@@ -482,6 +482,27 @@ def select_author_note_image(
         ) from exc
 
 
+def save_author_note(page: Page, config: PublishConfig) -> None:
+    scope = _author_note_scope(page)
+    save = _single_visible_control(
+        scope.get_by_text("保存", exact=True), "作者有话说的“保存”按钮"
+    )
+    save.click()
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(500)
+        assert_safe_page(page, config)
+        scope = _author_note_scope(page)
+        edit_controls = visible_matches(scope.get_by_text("编辑", exact=True))
+        if len(edit_controls) == 1:
+            return
+        if len(edit_controls) > 1:
+            raise FanqieRetryable(
+                f"保存后作者有话说的“编辑”状态匹配到 {len(edit_controls)} 个"
+            )
+    raise FanqieRetryable("作者有话说点击保存后未切换到“编辑”状态")
+
+
 def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter) -> None:
     """Upload the chapter's sole image through 作者有话说 → 添加图文."""
     if chapter.image_path is None:
@@ -551,6 +572,7 @@ def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter
         previews_after = _author_note_preview_count(scope)
         filename_visible = chapter.image_path.name in scope.inner_text()
         if previews_after > previews_before or filename_visible:
+            save_author_note(page, config)
             return
     raise FanqieRetryable("作者有话说区域未回显已上传图片，禁止进入下一步")
 
