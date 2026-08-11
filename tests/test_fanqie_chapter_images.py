@@ -5,7 +5,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-from fanqie_browser_worker import Chapter, PublishConfig, parse_chapter, publish
+from fanqie_browser_worker import (
+    Chapter,
+    PublishConfig,
+    author_note_text,
+    parse_chapter,
+    publish,
+)
 
 
 class FanqieImageMarkdownTests(unittest.TestCase):
@@ -50,6 +56,26 @@ class FanqieImageMarkdownTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "最多只能包含 1 张"):
                 parse_chapter(chapter)
+
+    def test_author_note_uses_the_image_description(self) -> None:
+        chapter = Chapter(
+            number=1,
+            title="测试章节",
+            body="正文" * 600,
+            path=Path("C:/test-book/chapters/0001-test.md"),
+            image_path=Path("C:/test-book/images/items/test.png"),
+            image_alt_text="  陈序   在修理站门前  ",
+        )
+        self.assertEqual(author_note_text(chapter), "本章配图：陈序 在修理站门前")
+
+    def test_author_note_falls_back_to_chapter_title(self) -> None:
+        chapter = Chapter(
+            number=1,
+            title="没建成的站不能收人",
+            body="正文" * 600,
+            path=Path("C:/test-book/chapters/0001-test.md"),
+        )
+        self.assertEqual(author_note_text(chapter), "本章配图：没建成的站不能收人")
 
     def test_publish_uploads_author_note_image_before_next_step(self) -> None:
         project = Path("C:/test-book")

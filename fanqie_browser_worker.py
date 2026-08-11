@@ -413,6 +413,41 @@ def _author_note_preview_count(scope: Locator) -> int:
     ).count()
 
 
+def author_note_text(chapter: Chapter) -> str:
+    """Build the required 作者有话说 text from the chapter image description."""
+    description = re.sub(
+        r"\s+", " ", chapter.image_alt_text or chapter.title
+    ).strip()
+    return f"本章配图：{description}"
+
+
+def fill_author_note_text(scope: Locator, chapter: Chapter) -> None:
+    editors = [
+        item
+        for item in scope.locator(
+            "textarea, [contenteditable='true'], input:not([type='file'])"
+        ).all()
+        if item.is_visible() and item.is_enabled()
+    ]
+    if len(editors) != 1:
+        raise FanqieRetryable(
+            f"作者有话说正文输入框匹配到 {len(editors)} 个，期望 1 个"
+        )
+    editor = editors[0]
+    note = author_note_text(chapter)
+    editor.fill(note)
+    tag_name = editor.evaluate("element => element.tagName.toLowerCase()")
+    rendered = (
+        editor.input_value().strip()
+        if tag_name in {"input", "textarea"}
+        else editor.inner_text().strip()
+    )
+    if rendered != note:
+        raise FanqieRetryable(
+            f"作者有话说正文回读不一致：期望“{note}”，实际“{rendered}”"
+        )
+
+
 def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter) -> None:
     """Upload the chapter's sole image through 作者有话说 → 添加图文."""
     if chapter.image_path is None:
@@ -440,6 +475,7 @@ def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter
     assert_safe_page(page, config)
 
     scope = _author_note_scope(page)
+    fill_author_note_text(scope, chapter)
     previews_before = _author_note_preview_count(scope)
     image_button = _author_note_image_button(scope)
     image_button.click()
