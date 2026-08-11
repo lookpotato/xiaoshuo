@@ -449,16 +449,26 @@ def fill_author_note_text(scope: Locator, chapter: Chapter) -> None:
 
 
 def select_author_note_image(
-    page: Page, upload_hint: Locator, image_path: Path
+    page: Page, dialog: Locator, image_path: Path
 ) -> None:
-    """Click the large upload area, then select the exact local image."""
+    """Activate the dropzone's real file input, then select the exact image."""
+    file_inputs = dialog.locator("input[type='file']")
+    if file_inputs.count() != 1:
+        raise FanqieRetryable(
+            f"上传组件内部文件输入控件匹配到 {file_inputs.count()} 个，期望 1 个"
+        )
+    file_input = file_inputs
     try:
         with page.expect_file_chooser(timeout=5_000) as chooser_info:
-            upload_hint.click()
+            # Fanqie's drag-and-drop uploader is not a normal button. The
+            # visible prompt is only a child layer; the component's actual
+            # picker trigger is its file input, which can cover or sit behind
+            # the dropzone.
+            file_input.click(force=True)
         chooser_info.value.set_files(str(image_path))
     except PlaywrightTimeoutError as exc:
         raise FanqieRetryable(
-            "点击大上传区域后未出现本地文件选择器"
+            "点击拖拽上传组件的文件输入控件后未出现本地文件选择器"
         ) from exc
 
 
@@ -497,7 +507,7 @@ def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter
     assert_safe_page(page, config)
 
     dialog, upload_hint = _upload_dialog(page)
-    select_author_note_image(page, upload_hint, chapter.image_path)
+    select_author_note_image(page, dialog, chapter.image_path)
     confirm: Locator | None = None
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
