@@ -387,7 +387,10 @@ def _author_note_image_button(scope: Locator) -> Locator:
 
 def _upload_dialog(page: Page) -> tuple[Locator, Locator]:
     hints = visible_matches(
-        page.get_by_text("点击或拖拽文件到此上传", exact=False)
+        # The live Fanqie UI currently says “点击或拖拽文件到此处上传”.
+        # Match the stable prefix so a minor wording change cannot prevent
+        # the uploader from being recognized before it is clicked.
+        page.get_by_text("点击或拖拽文件", exact=False)
     )
     if len(hints) != 1:
         raise FanqieRetryable(
