@@ -664,6 +664,17 @@ def choose_time(page: Page, target: str) -> None:
                 )
             options[0].scroll_into_view_if_needed()
             options[0].click()
+            # 时间列点击后会异步重渲染。若立刻点击下一列，小时选择可能
+            # 被旧状态覆盖，表现为只改分钟（例如 12:50 回读成 18:50）。
+            page.wait_for_timeout(300)
+            selected = visible_matches(
+                column.locator("li.arco-timepicker-cell-selected")
+            )
+            if len(selected) != 1 or selected[0].inner_text().strip() != value:
+                actual = [item.inner_text().strip() for item in selected]
+                raise FanqieRetryable(
+                    f"发布时间{description}选择未生效：期望 {value}，实际 {actual}"
+                )
         confirms = visible_matches(container.get_by_text("确定", exact=True))
         if len(confirms) != 1:
             raise FanqieRetryable("发布时间面板无法唯一定位“确定”")
@@ -799,13 +810,23 @@ def open_chapter_editor(page: Page, config: PublishConfig, chapter: Chapter) -> 
     assert_safe_page(page, config)
     row = find_chapter_row(page, chapter)
     operation = row.locator("td").last
-    spans = visible_matches(operation.locator("span"))
-    if not spans:
-        raise FanqieRetryable("目标章节操作列中未找到 span 编辑入口")
+    edit_links = visible_matches(
+        operation.locator(
+            "a[href*='/publish/']:has(.icon-edit), "
+            "a[href*='enter_from=modifychapter']"
+        )
+    )
+    if len(edit_links) != 1:
+        raise FanqieRetryable(
+            "目标章节操作列中无法唯一定位编辑入口："
+            f"实际找到 {len(edit_links)} 个"
+        )
     before = page.url
     # 章节列表偶尔残留 byte-popconfirm 浮层并错误拦截指针。目标行和
-    # icon-edit span 已按章节身份唯一核验，直接触发该入口自身事件。
-    spans[-1].evaluate("element => element.click()")
+    # 编辑链接已按章节身份及 href 唯一核验，直接触发该入口自身事件。
+    # 不可再按 span 顺序取最后一个：当前操作列会同时包含外层容器、
+    # 编辑图标和删除图标，最后一个 span 实际是删除入口。
+    edit_links[0].evaluate("element => element.click()")
     try:
         page.wait_for_url(re.compile(r".*/publish/.*"), timeout=45_000)
         page.wait_for_selector(
@@ -834,7 +855,9 @@ def verify_editor_identity(page: Page, chapter: Chapter) -> None:
         )
         actual_number = serial.input_value().strip()
         actual_title = title.input_value().strip()
-        if actual_number or actual_title:
+        # 新版编辑页会先回填标题、稍后再回填章节号。只有两者都出现时
+        # 才能进行身份核验，否则会把同一章节误报成“第章”。
+        if actual_number and actual_title:
             break
         page.wait_for_timeout(500)
         assert_safe_page(page, parse_publish_config(chapter.path.parents[1]))
