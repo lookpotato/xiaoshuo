@@ -5,7 +5,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from xiaoshuo_on_demand import expected_regular_slot, normalize_schedule_entry
+from xiaoshuo_on_demand import (
+    _codex_result_detail,
+    expected_regular_slot,
+    normalize_schedule_entry,
+)
 
 
 class RegularScheduleTests(unittest.TestCase):
@@ -93,6 +97,14 @@ class RegularScheduleTests(unittest.TestCase):
         entry = json.loads(self.schedule.read_text(encoding="utf-8"))["entries"][2]
         self.assertEqual((entry["date"], entry["time"]), ("2026-08-14", "12:00"))
         self.assertIn("schedule_normalized_at", entry)
+
+    def test_codex_result_detail_exposes_image_gate_failure(self) -> None:
+        result = self.project / "result.md"
+        result.write_text(
+            "已调用 ImageGen，但道具孔位数量未通过视觉核验，因此只保留草稿。",
+            encoding="utf-8",
+        )
+        self.assertIn("孔位数量未通过", _codex_result_detail(result))
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ class ImageCatalogTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.catalog = {
-            "schema_version": 1,
+            "schema_version": 2,
             "book_id": "test-book",
             "max_images_per_chapter": 1,
             "style_bible": {"visual_style": "test"},
@@ -49,6 +49,12 @@ class ImageCatalogTests(unittest.TestCase):
                         "alt_text": "四棱乌黑锁魂钉，尾端有暗红刻痕",
                         "generated_with": "codex-imagegen",
                         "prompt": "小说道具参考图：四棱乌黑锁魂钉",
+                        "display": {
+                            "content_kind": "item",
+                            "generation_aspect_ratio": "1:1",
+                            "fanqie_crop_ratio": "1:1",
+                            "safe_area": "道具完整居中，四周保留至少百分之十安全边距",
+                        },
                         "verification": {
                             "status": "verified",
                             "reviewer": "codex-visual-review",
@@ -62,6 +68,7 @@ class ImageCatalogTests(unittest.TestCase):
                                 "shape_and_parts": True,
                                 "no_contradictions": True,
                                 "no_unrequested_text_or_watermark": True,
+                                "crop_safe_composition": True,
                             },
                         },
                     },
@@ -112,6 +119,27 @@ class ImageCatalogTests(unittest.TestCase):
         self.write_catalog()
         errors = validate_image_catalog(self.project, "test-book")
         self.assertTrue(any("shape_and_parts" in error for error in errors))
+
+    def test_missing_display_metadata_is_rejected(self) -> None:
+        del self.catalog["entities"]["item:soul-lock"]["image"]["display"]
+        self.write_catalog()
+        errors = validate_image_catalog(self.project, "test-book")
+        self.assertTrue(any("image.display" in error for error in errors))
+
+    def test_unsupported_crop_ratio_is_rejected(self) -> None:
+        display = self.catalog["entities"]["item:soul-lock"]["image"]["display"]
+        display["fanqie_crop_ratio"] = "4:5"
+        self.write_catalog()
+        errors = validate_image_catalog(self.project, "test-book")
+        self.assertTrue(any("fanqie_crop_ratio" in error for error in errors))
+
+    def test_actual_pixel_ratio_must_match_generation_ratio(self) -> None:
+        display = self.catalog["entities"]["item:soul-lock"]["image"]["display"]
+        display["generation_aspect_ratio"] = "2:3"
+        display["fanqie_crop_ratio"] = "2:3"
+        self.write_catalog()
+        errors = validate_image_catalog(self.project, "test-book")
+        self.assertTrue(any("实际尺寸 1x1" in error for error in errors))
 
     def test_changed_image_hash_is_rejected(self) -> None:
         chunk_type = b"tEXt"

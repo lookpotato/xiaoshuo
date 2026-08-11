@@ -89,6 +89,18 @@ class Chapter:
     path: Path
     image_path: Path | None = None
     image_alt_text: str | None = None
+    image_crop_ratio: str | None = None
+
+
+FANQIE_CROP_RATIOS = {"16:9", "9:16", "1:1", "2:3", "3:2"}
+FOLDER_DEFAULT_CROP_RATIO = {
+    "characters": "2:3",
+    "items": "1:1",
+    "locations": "16:9",
+    "creatures": "3:2",
+    "organizations": "1:1",
+    "scenes": "16:9",
+}
 
 
 def emit(payload: dict) -> None:
@@ -156,6 +168,7 @@ def parse_chapter(path: Path) -> Chapter:
         raise ValueError("每章最多只能包含 1 张本地图片")
     image_path: Path | None = None
     image_alt_text: str | None = None
+    image_crop_ratio: str | None = None
     if image_matches:
         image_alt_text = image_matches[0].group(1).strip() or None
         relative = image_matches[0].group(2)
@@ -165,6 +178,7 @@ def parse_chapter(path: Path) -> Chapter:
         if image_root not in candidate.parents or not candidate.is_file():
             raise ValueError(f"章节图片不存在或越出本书 images/ 目录：{relative}")
         image_path = candidate
+        image_crop_ratio = image_display_crop_ratio(project, candidate)
     # Project-local illustrations are rendered by Markdown readers. Fanqie's
     # editor receives plain text, so never leak a local path as visible prose.
     body = image_pattern.sub("", body)
@@ -178,7 +192,37 @@ def parse_chapter(path: Path) -> Chapter:
         path=path.resolve(),
         image_path=image_path,
         image_alt_text=image_alt_text,
+        image_crop_ratio=image_crop_ratio,
     )
+
+
+def image_display_crop_ratio(project: Path, image_path: Path) -> str:
+    """Resolve the exact Fanqie crop ratio recorded for a local illustration."""
+    catalog_path = project / "images" / "catalog.json"
+    if catalog_path.is_file():
+        try:
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"无法读取图片目录的番茄裁剪比例：{exc}") from exc
+        for entity in catalog.get("entities", {}).values():
+            if not isinstance(entity, dict):
+                continue
+            image = entity.get("image")
+            if not isinstance(image, dict) or not isinstance(image.get("path"), str):
+                continue
+            catalog_image = (project / Path(image["path"])).resolve()
+            if catalog_image != image_path.resolve():
+                continue
+            display = image.get("display")
+            ratio = display.get("fanqie_crop_ratio") if isinstance(display, dict) else None
+            if ratio not in FANQIE_CROP_RATIOS:
+                raise ValueError(f"图片目录中的番茄裁剪比例无效：{ratio!r}")
+            return ratio
+
+    ratio = FOLDER_DEFAULT_CROP_RATIO.get(image_path.parent.name)
+    if ratio is None:
+        raise ValueError(f"无法判断图片的番茄裁剪比例：{image_path}")
+    return ratio
 
 
 def launch_context(playwright: Playwright) -> BrowserContext:
@@ -482,6 +526,22 @@ def select_author_note_image(
         ) from exc
 
 
+def select_fanqie_crop_ratio(dialog: Locator, ratio: str | None) -> None:
+    """Select the catalog-declared crop after Fanqie finishes loading the image."""
+    if ratio not in FANQIE_CROP_RATIOS:
+        raise FanqieRetryable(f"本章图片缺少有效的番茄裁剪比例：{ratio!r}")
+    candidates = [
+        item
+        for item in dialog.get_by_text(ratio, exact=True).all()
+        if item.is_visible() and item.is_enabled()
+    ]
+    if len(candidates) != 1:
+        raise FanqieRetryable(
+            f"图片上传弹窗的裁剪比例“{ratio}”匹配到 {len(candidates)} 个，期望 1 个"
+        )
+    candidates[0].click()
+
+
 def save_author_note(page: Page, config: PublishConfig) -> None:
     scope = _author_note_scope(page)
     save = _single_visible_control(
@@ -559,6 +619,7 @@ def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter
             raise FanqieRetryable("图片上传弹窗的“确定”按钮不唯一")
     if confirm is None:
         raise FanqieRetryable("等待本地图片上传完成超时，“确定”按钮仍不可用")
+    select_fanqie_crop_ratio(dialog, chapter.image_crop_ratio)
     confirm.click()
     try:
         upload_control.wait_for(state="hidden", timeout=15_000)

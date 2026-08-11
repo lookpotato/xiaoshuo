@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +14,7 @@ from fanqie_browser_worker import (
     publish,
     save_author_note,
     select_author_note_image,
+    select_fanqie_crop_ratio,
 )
 
 
@@ -40,6 +42,38 @@ class FanqieImageMarkdownTests(unittest.TestCase):
             self.assertEqual(parsed.body.count(prose), 2)
             self.assertEqual(parsed.image_path, image.resolve())
             self.assertEqual(parsed.image_alt_text, "锁魂钉")
+            self.assertEqual(parsed.image_crop_ratio, "1:1")
+
+    def test_catalog_crop_ratio_overrides_folder_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            (project / "chapters").mkdir()
+            (project / "images" / "characters").mkdir(parents=True)
+            image = project / "images" / "characters" / "hero.png"
+            image.write_bytes(b"test")
+            (project / "images" / "catalog.json").write_text(
+                json.dumps(
+                    {
+                        "entities": {
+                            "character:hero": {
+                                "image": {
+                                    "path": "images/characters/hero.png",
+                                    "display": {"fanqie_crop_ratio": "9:16"},
+                                }
+                            }
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            chapter = project / "chapters" / "0001-test.md"
+            chapter.write_text(
+                "# 第1章 测试章节\n\n" + "正文" * 600
+                + "\n\n![主角](../images/characters/hero.png)\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(parse_chapter(chapter).image_crop_ratio, "9:16")
 
     def test_more_than_one_local_image_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -96,6 +130,18 @@ class FanqieImageMarkdownTests(unittest.TestCase):
         page.expect_file_chooser.assert_called_once_with(timeout=5_000)
         upload_control.click.assert_called_once_with()
         chooser_info.value.set_files.assert_called_once_with(str(image_path))
+
+    def test_crop_selector_clicks_exact_catalog_ratio(self) -> None:
+        dialog = MagicMock()
+        option = Mock()
+        option.is_visible.return_value = True
+        option.is_enabled.return_value = True
+        dialog.get_by_text.return_value.all.return_value = [option]
+
+        select_fanqie_crop_ratio(dialog, "2:3")
+
+        dialog.get_by_text.assert_called_once_with("2:3", exact=True)
+        option.click.assert_called_once_with()
 
     def test_author_note_save_waits_for_edit_state(self) -> None:
         page = Mock()

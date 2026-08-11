@@ -102,10 +102,12 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 必须读取 shared/image_workflow.md 与本书 images/catalog.json，并使用 imagegen 技能执行本章图片工作流：
-- 对本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象逐一配图；同名同设定实体沿用目录，不重复生图；
+- 列出本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象作为候选；同名同设定实体沿用目录，不重复生图；
 - 每章总计最多 1 张，只选择最需要视觉解释的新实体；同章其他新实体必须用正文白话解释。首次启用且本章没有更高优先级新实体时，可用唯一名额补齐主角参考图；
-- 逐张生成后把最终文件从 Codex 默认生成目录复制到本书 images/ 对应分类目录，使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印六项核对；
+- 生图前先确定目标画幅并写入提示词：人物默认 2:3，道具或徽记 1:1，宽场景或地点 16:9，横向异兽或动作画面 3:2，仅明确超长竖构图使用 9:16；catalog 的 generation_aspect_ratio 与 fanqie_crop_ratio 必须一致，并写清主体安全区；
+- 逐张生成后把最终文件从 Codex 默认生成目录复制到本书 images/ 对应分类目录，使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印和裁剪安全构图七项核对；
 - 有任一关键项不符就做针对性重生，只有全部通过才能写入 catalog 的 verified 记录；内置生图不可用或连续失败时只保留章节草稿，不得归档正文、推进状态或伪造图片；
+- 精确数量或复杂结构连续失败时，改用正投影、俯视、孤立道具或结构更清楚的表现方式重试，不得降低正确性标准；仍失败时在最终回复明确说明“已调用生图但未通过”的具体项目；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
 必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
 
@@ -119,6 +121,19 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 7. 按 AGENTS.md 只提交并推送本章涉及的文件。
 
 完成一章后立即结束，不得生成第二章。"""
+
+
+def _codex_result_detail(result_file: Path) -> str:
+    if not result_file.is_file():
+        return "Codex 未写入任务结果文件"
+    text = re.sub(
+        r"\s+",
+        " ",
+        result_file.read_text(encoding="utf-8", errors="replace"),
+    ).strip()
+    if not text:
+        return "Codex 任务结果为空"
+    return text if len(text) <= 800 else text[-800:]
 
 
 def write_one(book_id: str, job: dict) -> None:
@@ -160,7 +175,13 @@ def write_one(book_id: str, job: dict) -> None:
             errors="replace",
         )
         if not process.returncode:
-            return
+            state = manager.read_json(project / "chapter_state.json", {})
+            if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
+                return
+            raise RuntimeError(
+                "Codex 已结束但章节未通过归档门禁。"
+                f"任务报告：{_codex_result_detail(result_file)}"
+            )
 
         state = manager.read_json(project / "chapter_state.json", {})
         if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:

@@ -10,8 +10,9 @@ import zlib
 from pathlib import Path, PurePosixPath
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 MAX_IMAGES_PER_CHAPTER = 1
+ALLOWED_CROP_RATIOS = {"16:9", "9:16", "1:1", "2:3", "3:2"}
 CATALOG_RELATIVE_PATH = Path("images") / "catalog.json"
 ALLOWED_ENTITY_TYPES = {
     "character": "characters",
@@ -28,6 +29,7 @@ REQUIRED_VISUAL_CHECKS = {
     "shape_and_parts",
     "no_contradictions",
     "no_unrequested_text_or_watermark",
+    "crop_safe_composition",
 }
 IMAGE_SIGNATURES = {
     ".png": (b"\x89PNG\r\n\x1a\n",),
@@ -109,6 +111,59 @@ def _valid_image_signature(path: Path) -> bool:
             and struct.unpack("<I", data[4:8])[0] + 8 == len(data)
         )
     return False
+
+
+def _image_dimensions(path: Path) -> tuple[int, int] | None:
+    """Read raster dimensions without adding a Pillow runtime dependency."""
+    data = path.read_bytes()
+    suffix = path.suffix.lower()
+    if suffix == ".png" and len(data) >= 24:
+        return struct.unpack(">II", data[16:24])
+    if suffix in {".jpg", ".jpeg"}:
+        offset = 2
+        sof_markers = {
+            0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+            0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF,
+        }
+        while offset + 4 <= len(data):
+            if data[offset] != 0xFF:
+                offset += 1
+                continue
+            marker = data[offset + 1]
+            offset += 2
+            if marker in {0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
+                continue
+            if offset + 2 > len(data):
+                return None
+            length = struct.unpack(">H", data[offset : offset + 2])[0]
+            if length < 2 or offset + length > len(data):
+                return None
+            if marker in sof_markers and length >= 7:
+                height, width = struct.unpack(">HH", data[offset + 3 : offset + 7])
+                return width, height
+            offset += length
+    if suffix == ".webp" and len(data) >= 30:
+        chunk = data[12:16]
+        payload = data[20:]
+        if chunk == b"VP8X" and len(payload) >= 10:
+            width = 1 + int.from_bytes(payload[4:7], "little")
+            height = 1 + int.from_bytes(payload[7:10], "little")
+            return width, height
+        if chunk == b"VP8L" and len(payload) >= 5 and payload[0] == 0x2F:
+            bits = int.from_bytes(payload[1:5], "little")
+            return 1 + (bits & 0x3FFF), 1 + ((bits >> 14) & 0x3FFF)
+        if chunk == b"VP8 ":
+            frame = payload.find(b"\x9d\x01\x2a")
+            if frame >= 0 and frame + 7 <= len(payload):
+                width, height = struct.unpack("<HH", payload[frame + 3 : frame + 7])
+                return width & 0x3FFF, height & 0x3FFF
+    return None
+
+
+def _matches_aspect_ratio(width: int, height: int, ratio: str) -> bool:
+    numerator, denominator = (int(value) for value in ratio.split(":"))
+    target = numerator / denominator
+    return abs((width / height) - target) / target <= 0.02
 
 
 def validate_image_catalog(project: Path, expected_book_id: str | None = None) -> list[str]:
@@ -229,6 +284,40 @@ def validate_image_catalog(project: Path, expected_book_id: str | None = None) -
             errors.append(f"{label}.image.alt_text 不能为空")
         if not isinstance(image.get("prompt"), str) or not image.get("prompt", "").strip():
             errors.append(f"{label}.image.prompt 不能为空")
+        display = image.get("display")
+        if not isinstance(display, dict):
+            errors.append(f"{label}.image.display 必须是对象")
+        else:
+            content_kind = display.get("content_kind")
+            if not isinstance(content_kind, str) or not content_kind.strip():
+                errors.append(f"{label}.image.display.content_kind 不能为空")
+            generation_ratio = display.get("generation_aspect_ratio")
+            crop_ratio = display.get("fanqie_crop_ratio")
+            if generation_ratio not in ALLOWED_CROP_RATIOS:
+                errors.append(
+                    f"{label}.image.display.generation_aspect_ratio 不受支持: {generation_ratio!r}"
+                )
+            if crop_ratio not in ALLOWED_CROP_RATIOS:
+                errors.append(
+                    f"{label}.image.display.fanqie_crop_ratio 不受支持: {crop_ratio!r}"
+                )
+            if generation_ratio in ALLOWED_CROP_RATIOS and crop_ratio in ALLOWED_CROP_RATIOS:
+                if generation_ratio != crop_ratio:
+                    errors.append(
+                        f"{label}.image.display 的生成画幅与番茄裁剪比例必须一致"
+                    )
+                elif asset_path is not None and asset_path.is_file():
+                    dimensions = _image_dimensions(asset_path)
+                    if dimensions is None:
+                        errors.append(f"{label} 无法读取图片像素尺寸")
+                    elif not _matches_aspect_ratio(*dimensions, generation_ratio):
+                        errors.append(
+                            f"{label} 图片实际尺寸 {dimensions[0]}x{dimensions[1]} "
+                            f"不符合目标画幅 {generation_ratio}"
+                        )
+            safe_area = display.get("safe_area")
+            if not isinstance(safe_area, str) or len(safe_area.strip()) < 8:
+                errors.append(f"{label}.image.display.safe_area 必须说明安全构图范围")
         verification = image.get("verification")
         if not isinstance(verification, dict) or verification.get("status") != "verified":
             errors.append(f"{label} 图片尚未通过 verified 核验")
