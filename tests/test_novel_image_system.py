@@ -31,7 +31,7 @@ class ImageCatalogTests(unittest.TestCase):
         self.catalog = {
             "schema_version": 1,
             "book_id": "test-book",
-            "max_images_per_chapter": 3,
+            "max_images_per_chapter": 1,
             "style_bible": {"visual_style": "test"},
             "entities": {
                 "item:soul-lock": {
@@ -82,9 +82,9 @@ class ImageCatalogTests(unittest.TestCase):
     def test_valid_verified_asset_passes(self) -> None:
         self.assertEqual(validate_image_catalog(self.project, "test-book"), [])
 
-    def test_more_than_three_images_in_one_chapter_fails(self) -> None:
+    def test_more_than_one_image_in_one_chapter_fails(self) -> None:
         source = self.catalog["entities"]["item:soul-lock"]
-        for index in range(2, 5):
+        for index in range(2, 3):
             entity_id = f"item:test-{index}"
             entity = json.loads(json.dumps(source, ensure_ascii=False))
             entity["name"] = f"测试道具{index}"
@@ -102,7 +102,7 @@ class ImageCatalogTests(unittest.TestCase):
             )
         self.write_catalog()
         errors = validate_image_catalog(self.project, "test-book")
-        self.assertTrue(any("图片超过 3 张" in error for error in errors))
+        self.assertTrue(any("图片超过 1 张" in error for error in errors))
 
     def test_failed_visual_check_is_rejected(self) -> None:
         checks = self.catalog["entities"]["item:soul-lock"]["image"]["verification"][

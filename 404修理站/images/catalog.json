@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "book_id": "cosmic-404",
-  "max_images_per_chapter": 3,
+  "max_images_per_chapter": 1,
   "style_bible": {
     "visual_style": "写实感中国末世工业科幻概念插画，结构清楚，人物与物件可辨识",
     "palette": "盐尘灰、旧钢铁、暗青为主，琥珀警示光作有限点缀",

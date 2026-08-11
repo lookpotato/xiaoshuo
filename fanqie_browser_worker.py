@@ -87,6 +87,8 @@ class Chapter:
     title: str
     body: str
     path: Path
+    image_path: Path | None = None
+    image_alt_text: str | None = None
 
 
 def emit(payload: dict) -> None:
@@ -146,13 +148,26 @@ def parse_chapter(path: Path) -> Chapter:
     body_start = title_match.end()
     body_end = metadata.start() if metadata else len(text)
     body = text[body_start:body_end].strip()
+    image_pattern = re.compile(
+        r"(?m)^[ \t]*!\[([^\]\r\n]*)\]\((\.\./images/[^)\r\n]+)\)[ \t]*\r?\n?"
+    )
+    image_matches = list(image_pattern.finditer(body))
+    if len(image_matches) > 1:
+        raise ValueError("每章最多只能包含 1 张本地图片")
+    image_path: Path | None = None
+    image_alt_text: str | None = None
+    if image_matches:
+        image_alt_text = image_matches[0].group(1).strip() or None
+        relative = image_matches[0].group(2)
+        candidate = (path.parent / Path(relative)).resolve()
+        project = path.resolve().parents[1]
+        image_root = (project / "images").resolve()
+        if image_root not in candidate.parents or not candidate.is_file():
+            raise ValueError(f"章节图片不存在或越出本书 images/ 目录：{relative}")
+        image_path = candidate
     # Project-local illustrations are rendered by Markdown readers. Fanqie's
     # editor receives plain text, so never leak a local path as visible prose.
-    body = re.sub(
-        r"(?m)^[ \t]*!\[[^\]\r\n]*\]\(\.\./images/[^)\r\n]+\)[ \t]*\r?\n?",
-        "",
-        body,
-    )
+    body = image_pattern.sub("", body)
     body = re.sub(r"\n{3,}", "\n\n", body).strip()
     if len(body) < 1000:
         raise ValueError(f"章节正文过短：{path}")
@@ -161,6 +176,8 @@ def parse_chapter(path: Path) -> Chapter:
         title=title_match.group(2).strip(),
         body=body,
         path=path.resolve(),
+        image_path=image_path,
+        image_alt_text=image_alt_text,
     )
 
 
@@ -310,6 +327,175 @@ def fill_editor(page: Page, chapter: Chapter) -> None:
         raise FanqieRetryable("正文首尾回读不一致")
     if len(rendered) < max(1000, int(len(chapter.body) * 0.75)):
         raise FanqieRetryable("平台正文长度明显偏离本地章节")
+
+
+def _author_note_scope(page: Page) -> Locator:
+    labels = visible_matches(page.get_by_text("作者有话说", exact=True))
+    if len(labels) != 1:
+        raise FanqieRetryable(
+            f"“作者有话说”区域标题匹配到 {len(labels)} 个，期望 1 个"
+        )
+    scope = labels[0]
+    for _ in range(8):
+        scope = scope.locator("xpath=..")
+        if scope.count() != 1:
+            break
+        has_add = bool(visible_matches(scope.get_by_text("添加", exact=True)))
+        has_editor = bool(
+            visible_matches(
+                scope.locator("textarea, [contenteditable='true'], input[type='file']")
+            )
+        )
+        if has_add or has_editor:
+            return scope
+    raise FanqieRetryable("无法定位“作者有话说”完整操作区域")
+
+
+def _single_visible_control(locator: Locator, description: str) -> Locator:
+    matches = [item for item in locator.all() if item.is_visible() and item.is_enabled()]
+    if len(matches) != 1:
+        raise FanqieRetryable(f"{description}匹配到 {len(matches)} 个，期望 1 个")
+    return matches[0]
+
+
+def _author_note_image_button(scope: Locator) -> Locator:
+    selectors = (
+        "button[aria-label*='图片'], button[title*='图片'], "
+        "[role='button'][aria-label*='图片'], [role='button'][title*='图片'], "
+        "button:has([class*='image']), button:has([class*='picture']), "
+        "[role='button']:has([class*='image']), [role='button']:has([class*='picture'])"
+    )
+    matches = [
+        item
+        for item in scope.locator(selectors).all()
+        if item.is_visible() and item.is_enabled()
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    text_matches = [
+        item
+        for item in scope.get_by_text("图片", exact=True).all()
+        if item.is_visible()
+    ]
+    if len(text_matches) == 1:
+        return text_matches[0]
+    raise FanqieRetryable(
+        f"作者有话说区域的图片按钮无法唯一定位：图标候选 {len(matches)} 个，"
+        f"文字候选 {len(text_matches)} 个"
+    )
+
+
+def _upload_dialog(page: Page) -> tuple[Locator, Locator]:
+    hints = visible_matches(
+        page.get_by_text("点击或拖拽文件到此上传", exact=False)
+    )
+    if len(hints) != 1:
+        raise FanqieRetryable(
+            f"本地图片上传提示匹配到 {len(hints)} 个，期望 1 个"
+        )
+    hint = hints[0]
+    scope = hint
+    for _ in range(8):
+        scope = scope.locator("xpath=..")
+        if scope.count() != 1:
+            break
+        has_file_input = scope.locator("input[type='file']").count() > 0
+        has_confirm = bool(visible_matches(scope.get_by_text("确定", exact=True)))
+        if has_file_input or has_confirm:
+            return scope, hint
+    raise FanqieRetryable("无法定位本地图片上传弹窗")
+
+
+def _author_note_preview_count(scope: Locator) -> int:
+    return scope.locator(
+        "img[src], [style*='background-image'], [data-src], [data-url], "
+        "[class*='image-preview'], [class*='upload-item']"
+    ).count()
+
+
+def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter) -> None:
+    """Upload the chapter's sole image through 作者有话说 → 添加图文."""
+    if chapter.image_path is None:
+        return
+    if not chapter.image_path.is_file():
+        raise FanqieRetryable(f"本地章节图片不存在：{chapter.image_path}")
+
+    scope = _author_note_scope(page)
+    add_candidates = [
+        item
+        for item in scope.get_by_text("添加", exact=True).all()
+        if item.is_visible() and item.is_enabled()
+    ]
+    if len(add_candidates) != 1:
+        raise FanqieRetryable(
+            f"作者有话说的“添加”按钮匹配到 {len(add_candidates)} 个，期望 1 个"
+        )
+    add_candidates[0].hover()
+    page.wait_for_timeout(300)
+    add_rich = _single_visible_control(
+        page.get_by_text("添加图文", exact=True), "“添加图文”选项"
+    )
+    add_rich.click()
+    page.wait_for_timeout(500)
+    assert_safe_page(page, config)
+
+    scope = _author_note_scope(page)
+    previews_before = _author_note_preview_count(scope)
+    image_button = _author_note_image_button(scope)
+    image_button.click()
+    page.wait_for_timeout(400)
+    assert_safe_page(page, config)
+
+    dialog, upload_hint = _upload_dialog(page)
+    file_inputs = dialog.locator("input[type='file']")
+    if file_inputs.count() == 1:
+        file_inputs.set_input_files(str(chapter.image_path))
+    elif file_inputs.count() == 0:
+        try:
+            with page.expect_file_chooser(timeout=5_000) as chooser_info:
+                upload_hint.click()
+            chooser_info.value.set_files(str(chapter.image_path))
+        except PlaywrightTimeoutError as exc:
+            raise FanqieRetryable("点击上传区域后未出现本地文件选择器") from exc
+    else:
+        raise FanqieRetryable(
+            f"本地图片上传控件匹配到 {file_inputs.count()} 个，期望 1 个"
+        )
+    confirm: Locator | None = None
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(500)
+        assert_safe_page(page, config)
+        dialog_text = dialog.inner_text()
+        if re.search(r"上传失败|文件格式不支持|图片过大|上传异常", dialog_text):
+            raise FanqieRetryable(f"番茄图片上传失败：{dialog_text[:300]}")
+        candidates = [
+            item
+            for item in dialog.get_by_text("确定", exact=True).all()
+            if item.is_visible() and item.is_enabled()
+        ]
+        if len(candidates) == 1:
+            confirm = candidates[0]
+            break
+        if len(candidates) > 1:
+            raise FanqieRetryable("图片上传弹窗的“确定”按钮不唯一")
+    if confirm is None:
+        raise FanqieRetryable("等待本地图片上传完成超时，“确定”按钮仍不可用")
+    confirm.click()
+    try:
+        upload_hint.wait_for(state="hidden", timeout=15_000)
+    except PlaywrightTimeoutError as exc:
+        raise FanqieRetryable("点击图片上传“确定”后弹窗未关闭") from exc
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        page.wait_for_timeout(500)
+        assert_safe_page(page, config)
+        scope = _author_note_scope(page)
+        previews_after = _author_note_preview_count(scope)
+        filename_visible = chapter.image_path.name in scope.inner_text()
+        if previews_after > previews_before or filename_visible:
+            return
+    raise FanqieRetryable("作者有话说区域未回显已上传图片，禁止进入下一步")
 
 
 def visible_button(page: Page, name: str) -> Locator | None:
@@ -1066,12 +1252,15 @@ def publish(
     config = parse_publish_config(project)
     chapter = parse_chapter(chapter_path)
     confirm_started = False
+    author_note_started = False
     with sync_playwright() as playwright:
         context = launch_context(playwright)
         try:
             page = active_page(context)
             wait_editor(page, config)
             fill_editor(page, chapter)
+            author_note_started = chapter.image_path is not None
+            upload_author_note_image(page, config, chapter)
             assert_safe_page(page, config)
             next_button = visible_button(page, "下一步")
             if not next_button:
@@ -1086,6 +1275,7 @@ def publish(
                     "chapter": chapter.number,
                     "status": "draft_saved",
                     "url": page.url,
+                    "author_note_image_uploaded": chapter.image_path is not None,
                 }
             choose_ai_yes(page)
             enable_timed_publish(page)
@@ -1113,9 +1303,17 @@ def publish(
             confirm_started = True
             submit_publish_confirmation(page, confirm)
             result = verify_list(page, chapter)
-            return {"chapter": chapter.number, **result}
+            return {
+                "chapter": chapter.number,
+                "author_note_image_uploaded": chapter.image_path is not None,
+                **result,
+            }
         except Exception as exc:
-            if isinstance(exc, FanqieRetryable) and not confirm_started:
+            if (
+                isinstance(exc, FanqieRetryable)
+                and not confirm_started
+                and not author_note_started
+            ):
                 exc.safe_to_retry = True
             if debug_browser:
                 print(

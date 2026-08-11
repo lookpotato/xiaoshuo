@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "book_id": "free-sky",
-  "max_images_per_chapter": 3,
+  "max_images_per_chapter": 1,
   "style_bible": {
     "visual_style": "写实感中国仙侠叙事概念插画，东方服饰与器物结构清楚，克制的电影光影",
     "palette": "墨青、云灰、旧金为主，法术颜色严格服从正文设定",

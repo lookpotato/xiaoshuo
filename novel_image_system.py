@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 
 
 SCHEMA_VERSION = 1
-MAX_IMAGES_PER_CHAPTER = 3
+MAX_IMAGES_PER_CHAPTER = 1
 CATALOG_RELATIVE_PATH = Path("images") / "catalog.json"
 ALLOWED_ENTITY_TYPES = {
     "character": "characters",
