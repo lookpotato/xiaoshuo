@@ -448,6 +448,20 @@ def fill_author_note_text(scope: Locator, chapter: Chapter) -> None:
         )
 
 
+def select_author_note_image(
+    page: Page, upload_hint: Locator, image_path: Path
+) -> None:
+    """Click the large upload area, then select the exact local image."""
+    try:
+        with page.expect_file_chooser(timeout=5_000) as chooser_info:
+            upload_hint.click()
+        chooser_info.value.set_files(str(image_path))
+    except PlaywrightTimeoutError as exc:
+        raise FanqieRetryable(
+            "点击大上传区域后未出现本地文件选择器"
+        ) from exc
+
+
 def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter) -> None:
     """Upload the chapter's sole image through 作者有话说 → 添加图文."""
     if chapter.image_path is None:
@@ -483,20 +497,7 @@ def upload_author_note_image(page: Page, config: PublishConfig, chapter: Chapter
     assert_safe_page(page, config)
 
     dialog, upload_hint = _upload_dialog(page)
-    file_inputs = dialog.locator("input[type='file']")
-    if file_inputs.count() == 1:
-        file_inputs.set_input_files(str(chapter.image_path))
-    elif file_inputs.count() == 0:
-        try:
-            with page.expect_file_chooser(timeout=5_000) as chooser_info:
-                upload_hint.click()
-            chooser_info.value.set_files(str(chapter.image_path))
-        except PlaywrightTimeoutError as exc:
-            raise FanqieRetryable("点击上传区域后未出现本地文件选择器") from exc
-    else:
-        raise FanqieRetryable(
-            f"本地图片上传控件匹配到 {file_inputs.count()} 个，期望 1 个"
-        )
+    select_author_note_image(page, upload_hint, chapter.image_path)
     confirm: Locator | None = None
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:

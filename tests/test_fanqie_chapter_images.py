@@ -11,6 +11,7 @@ from fanqie_browser_worker import (
     author_note_text,
     parse_chapter,
     publish,
+    select_author_note_image,
 )
 
 
@@ -76,6 +77,20 @@ class FanqieImageMarkdownTests(unittest.TestCase):
             path=Path("C:/test-book/chapters/0001-test.md"),
         )
         self.assertEqual(author_note_text(chapter), "本章配图：没建成的站不能收人")
+
+    def test_image_selection_clicks_large_upload_area_first(self) -> None:
+        page = MagicMock()
+        upload_hint = Mock()
+        chooser_info = MagicMock()
+        page.expect_file_chooser.return_value = chooser_info
+        chooser_info.__enter__.return_value = chooser_info
+        image_path = Path("C:/test-book/images/items/test.png")
+
+        select_author_note_image(page, upload_hint, image_path)
+
+        page.expect_file_chooser.assert_called_once_with(timeout=5_000)
+        upload_hint.click.assert_called_once_with()
+        chooser_info.value.set_files.assert_called_once_with(str(image_path))
 
     def test_publish_uploads_author_note_image_before_next_step(self) -> None:
         project = Path("C:/test-book")
