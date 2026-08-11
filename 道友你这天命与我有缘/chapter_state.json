@@ -55,5 +55,20 @@
     "protagonist": "嘴欠、胆大、会装怂和规则反杀；对弱者有底线",
     "payoff_rhythm": "每3章小兑现、每10章大变化，眼前压制最迟3章内回击",
     "signature_line": "规矩是你定的，我只负责让你也守。"
+  },
+  "last_schedule_adjustment": {
+    "mode": "reward_bonus",
+    "batch_id": "20260811-120512-96b27710",
+    "chapter": 10,
+    "from": {
+      "date": "2026-08-12",
+      "time": "18:30"
+    },
+    "to": {
+      "date": "2026-08-11",
+      "time": "13:20"
+    },
+    "platform_status": "审核中",
+    "adjusted_at": "2026-08-11T12:19:44.575487+08:00"
   }
 }
