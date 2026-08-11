@@ -78,22 +78,22 @@ class FanqieImageMarkdownTests(unittest.TestCase):
         )
         self.assertEqual(author_note_text(chapter), "本章配图：没建成的站不能收人")
 
-    def test_image_selection_activates_dropzone_file_input(self) -> None:
+    def test_image_selection_clicks_visible_dropzone(self) -> None:
         page = MagicMock()
-        dialog = MagicMock()
-        file_input = Mock()
-        dialog.locator.return_value = file_input
-        file_input.count.return_value = 1
+        upload_control = MagicMock()
+        file_inputs = Mock()
+        upload_control.locator.return_value = file_inputs
+        file_inputs.count.return_value = 1
         chooser_info = MagicMock()
         page.expect_file_chooser.return_value = chooser_info
         chooser_info.__enter__.return_value = chooser_info
         image_path = Path("C:/test-book/images/items/test.png")
 
-        select_author_note_image(page, dialog, image_path)
+        select_author_note_image(page, upload_control, image_path)
 
-        dialog.locator.assert_called_once_with("input[type='file']")
+        upload_control.locator.assert_called_once_with("input[type='file']")
         page.expect_file_chooser.assert_called_once_with(timeout=5_000)
-        file_input.click.assert_called_once_with(force=True)
+        upload_control.click.assert_called_once_with()
         chooser_info.value.set_files.assert_called_once_with(str(image_path))
 
     def test_publish_uploads_author_note_image_before_next_step(self) -> None:
