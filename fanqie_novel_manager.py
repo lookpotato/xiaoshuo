@@ -19,6 +19,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from novel_image_system import validate_image_catalog
+
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "manager_config.json"
 RUNTIME = ROOT / ".manager_runtime.json"
@@ -160,6 +162,7 @@ def build_batch_prompt(job: dict) -> str:
 - `submit_publish: true` 时，番茄草稿箱不算成功。
 - 使用已经登录的浏览器会话；不得读取或保存 Cookie、Token、密码、验证码。
 - 严格执行 session 输出的 writing_policy：新道具先直说用途，同章尽快触发；跨章再次使用先短句回顾，悬念只留来源、上限或隐藏代价。
+- 严格执行图片工作流：调用 imagegen 技能为本章首次出现的重要人物、道具、地点、异兽或组织形象建立图片；每章最多 3 张，生成后必须回看核验，未核验图片不得入库或推进章节状态。
 - 浏览器不可用时安全停止并记录 blocked，不得改用其他书号或伪造成功。
 - 只提交本批任务涉及文件，保留无关改动；每批改动按 AGENTS.md 自动推送。
 """
@@ -276,6 +279,7 @@ def validate_book(book, require_publish_complete=True):
     for name in sorted(REQUIRED_DIRS):
         if not (path / name).is_dir():
             errors.append(f"缺少目录 {name}/")
+    errors.extend(validate_image_catalog(path, str(book.get("id", ""))))
     state_path = path / "chapter_state.json"
     if state_path.exists():
         try:
@@ -487,6 +491,7 @@ def cmd_session(data, args):
             str(project / "automation_prompt.md"),
             str(ROOT / "shared" / "writing_playbook.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
+            str(ROOT / "shared" / "image_workflow.md"),
             str(ROOT / "shared" / "learning_log.md"),
             str(project / "novel_config.md"),
             str(project / "outline.md"),
@@ -497,6 +502,7 @@ def cmd_session(data, args):
             str(project / "chapter_state.json"),
             str(project / "continuity_ledger.md"),
             str(project / "fanqie_ui_workflow.md"),
+            str(project / "images" / "catalog.json"),
         ],
         "start_commands": {
             "inspect": [
@@ -511,6 +517,10 @@ def cmd_session(data, args):
         },
         "batch_workflow": [
             "新道具首次出现时先直说用途并尽快触发效果；跨章再用时先做一句情境化回顾，悬念只留来源、上限或代价。",
+            "写作前读取本书 images/catalog.json；同名同设定实体沿用既有图片，不重复生成。",
+            "本章首次出现且会持续影响理解的重要人物、道具、地点、异兽或组织形象必须配图；每章最多 3 张，因此正文不得引入超过 3 个需要配图的新实体。",
+            "使用内置 imagegen 逐张生成，复制最终图到本书 images/ 分类目录，再用 view_image 回看并逐项核验；任何关键项不符就定向重生，未通过不得登记 verified。",
+            "首次启用图片体系时，可在 3 张总额度内优先补齐尚无参考图的主角；图片、catalog 和章节归档必须作为同一批原子改动完成。",
             "先处理 pending_batch_chapters：从既有番茄草稿继续，不重写、不重复创建章节。",
             "没有待发布草稿时，按 next_chapter_number 严格串行执行“写一章→质检→归档→上传→确认列表状态”。",
             "每章归档后更新 chapter_state.json 与 continuity_ledger.md，再记录 chapter_archived。",

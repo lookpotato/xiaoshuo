@@ -101,6 +101,12 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
+必须读取 shared/image_workflow.md 与本书 images/catalog.json，并使用 imagegen 技能执行本章图片工作流：
+- 对本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象逐一配图；同名同设定实体沿用目录，不重复生图；
+- 每章总计最多 3 张，因此写作阶段不得引入超过 3 个需要配图的新实体；首次启用时可在总额度内优先补齐主角参考图；
+- 逐张生成后把最终文件从 Codex 默认生成目录复制到本书 images/ 对应分类目录，使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印六项核对；
+- 有任一关键项不符就做针对性重生，只有全部通过才能写入 catalog 的 verified 记录；内置生图不可用或连续失败时只保留章节草稿，不得归档正文、推进状态或伪造图片；
+- 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
 
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；

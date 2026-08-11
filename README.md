@@ -132,6 +132,20 @@ python xiaoshuo 2 --all --dry-run
 
 管理器通过 `manager_config.json` 的 `writing_policy.new_item_explanation` 统一约束新道具写法：首次出现先直说用途并尽快触发效果，隔章再用时先做一句情境化回顾；只把来源、上限和隐藏代价留作悬念。该规则会进入 `session` 交接包并由通用质量评分卡复核。
 
+### 每本书独立的图片资产体系
+
+两个正式作品现在各自维护 `images/catalog.json`，图片只保存在对应小说的 `images/characters`、`items`、`locations`、`creatures`、`organizations` 或 `scenes` 分类目录中，禁止跨书复用。新增作品注册到 `manager_config.json` 时也必须建立自己的 `images/catalog.json`，否则 `validate` 会直接报错。
+
+Codex 写每章前会先查本书图片目录。首次出现且会持续影响理解的重要人物、关键道具、地点、异兽或组织形象必须配图；普通背景物不登记。同一实体已有参考图时直接沿用，不会再次生图。每章最多 3 张，所以写作阶段也会限制本章最多引入 3 个需要配图的新实体。图片会插在正文首次解释之后，Markdown 使用 `../images/...` 的本书相对路径。
+
+生图固定使用 Codex 内置 `imagegen`，不要求 API Key。成图必须复制回本书目录，再由 Codex 用 `view_image` 回看身份、标志特征、颜色材质、形状部件、设定冲突、文字水印六项；任一项不符就定向重生。只有六项全通过，才允许在目录中记录 `verified`。程序还会复核文件头、SHA-256、分类目录、章节清单、三图上限和正文引用；失败时只能保留草稿，不会归档章节或推进章节号。完整规范见 `shared/image_workflow.md`。
+
+首次运行升级后的任一本书时，系统可在当章 3 张总额度内优先补齐尚无参考图的主角。检查所有书的图片目录与章节状态：
+
+```powershell
+python .\fanqie_novel_manager.py validate
+```
+
 也可以使用带扩展名的等价命令：
 
 ```powershell

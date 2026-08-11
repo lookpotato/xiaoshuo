@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "book_id": "cosmic-404",
+  "max_images_per_chapter": 3,
+  "style_bible": {
+    "visual_style": "写实感中国末世工业科幻概念插画，结构清楚，人物与物件可辨识",
+    "palette": "盐尘灰、旧钢铁、暗青为主，琥珀警示光作有限点缀",
+    "consistency_rules": [
+      "机械结构和部件数量必须符合正文",
+      "不擅自增加赛博霓虹、品牌文字、徽标或无关武器",
+      "同一角色后续场景必须以角色参考图锁定面部、体型和标志特征"
+    ]
+  },
+  "entities": {},
+  "chapter_images": {}
+}

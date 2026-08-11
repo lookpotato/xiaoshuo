@@ -146,6 +146,14 @@ def parse_chapter(path: Path) -> Chapter:
     body_start = title_match.end()
     body_end = metadata.start() if metadata else len(text)
     body = text[body_start:body_end].strip()
+    # Project-local illustrations are rendered by Markdown readers. Fanqie's
+    # editor receives plain text, so never leak a local path as visible prose.
+    body = re.sub(
+        r"(?m)^[ \t]*!\[[^\]\r\n]*\]\(\.\./images/[^)\r\n]+\)[ \t]*\r?\n?",
+        "",
+        body,
+    )
+    body = re.sub(r"\n{3,}", "\n\n", body).strip()
     if len(body) < 1000:
         raise ValueError(f"章节正文过短：{path}")
     return Chapter(

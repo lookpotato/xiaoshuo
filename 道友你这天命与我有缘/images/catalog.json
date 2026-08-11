@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "book_id": "free-sky",
+  "max_images_per_chapter": 3,
+  "style_bible": {
+    "visual_style": "写实感中国仙侠叙事概念插画，东方服饰与器物结构清楚，克制的电影光影",
+    "palette": "墨青、云灰、旧金为主，法术颜色严格服从正文设定",
+    "consistency_rules": [
+      "服饰时代感、兵器形制、伤势和命灯等设定必须与正文一致",
+      "不擅自添加仙气光环、宗门徽记、文字或无关法宝",
+      "同一角色后续场景必须以角色参考图锁定面部、体型和标志特征"
+    ]
+  },
+  "entities": {},
+  "chapter_images": {}
+}

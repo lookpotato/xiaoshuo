@@ -13,6 +13,14 @@
       "effect_deadline": "原则上在同章快速触发一次可见效果；确需延至下一章时，本章必须展示明确用途或启动征兆。",
       "cross_chapter_reminder": "跨章或隔日发布后再次使用前，用一句情境化短句回顾用途、当前状态或关键限制，不假设读者仍记得。",
       "mystery_boundary": "悬念保留在来源、完整上限、隐藏代价和幕后关联；不得把基础用途也藏起来。"
+    },
+    "image_assets": {
+      "enabled": true,
+      "generator": "codex-imagegen",
+      "max_images_per_chapter": 3,
+      "new_entity_rule": "首次出现且会持续影响阅读理解的重要人物、道具、地点、异兽或组织形象必须配图；普通背景物不登记。",
+      "reuse_rule": "同名同设定实体沿用本书目录中的既有参考图，禁止重复生图或跨书复用。",
+      "verification_rule": "生成后必须由 Codex 回看并完成六项视觉核验；任一关键项不符就重生，未通过不得归档章节或推进状态。"
     }
   },
   "books": [
