@@ -95,9 +95,12 @@
       "chapter": 55,
       "date": "2026-08-16",
       "time": "12:00",
-      "status": "not_uploaded",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-12T09:10:00+08:00",
-      "job_id": "20260812-085453-f4ee0c1a"
+      "job_id": "20260812-085453-f4ee0c1a",
+      "verified_at": "2026-08-12T09:31:30.103565+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
+      "author_note_image_uploaded": false
     }
   ]
 }
