@@ -112,6 +112,57 @@
           }
         }
       }
+    },
+    "item:responsibility-slice-clip": {
+      "name": "责任切片夹",
+      "type": "item",
+      "first_chapter": 57,
+      "image_created_chapter": 57,
+      "source_excerpt": "夹住一段连续记录的起止刻线，只让被夹住的那一小段进入追责",
+      "canonical_description": "一只由两片扁平旧钢叶通过中央铰链连接的机械夹，夹口各有一道相对锯齿刻线，中央嵌一枚带七个定位孔的琥珀色机械计时轮",
+      "distinctive_features": [
+        "且仅有两片扁平旧钢叶",
+        "两条彼此相对的连续锯齿夹边",
+        "中央单一圆形铰链轴",
+        "唯一琥珀色机械计时轮",
+        "计时轮准确七个圆形定位孔"
+      ],
+      "forbidden_features": [
+        "第三片钢叶或额外齿条",
+        "多个轮盘或非七孔结构",
+        "钟表数字、指针、文字、符号或显示屏",
+        "纸张、人物或手",
+        "赛博霓虹、魔法符文或能力光效"
+      ],
+      "image": {
+        "path": "images/items/responsibility-slice-clip-v1.png",
+        "sha256": "99bb97b4083599479f0f5bf839c4c958772bba4ef60de651b8d796c244e8bad5",
+        "alt_text": "两片相对锯齿旧钢叶与七孔琥珀索引轮组成的责任切片夹",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说《404修理站》关键道具设定参考图，精确结构正投影重试\nPrimary request: 生成孤立道具‘责任切片夹’的清晰俯视正投影结构图。它是一只用于截取纸质记录时间区间的机械夹，必须能一眼数清全部部件\nScene/backdrop: 均匀暗青灰哑光工业台面，仅一只道具，无纸张、人物、手或其他物体\nSubject: 一只扁平夹子，仅两片长方形磨损旧钢叶，由中央一个圆形铰链轴连接，夹口张开约三十度。上钢叶面向夹口的一边只有一条连续锯齿边，下钢叶面向夹口的一边也只有一条连续锯齿边，两条齿边彼此相对。中央铰链上是一枚纯琥珀色圆形机械索引轮；索引轮上准确且仅有七个大而清楚、等距排列的圆形定位孔，七孔必须逐个可数；没有指针，没有其他凹槽或刻线\nStyle/medium: 写实感中国末世工业科幻道具概念插画，俯视正投影，像清楚的维修零件目录照片，结构优先于戏剧性\nComposition/framing: 准确1:1正方形画幅，严格俯视近正投影，单个道具完整居中，四周至少15%安全边距；两片钢叶、两条相对齿边、中央铰链和七孔琥珀轮全部清晰无遮挡，1:1裁剪后完整\nLighting/mood: 均匀冷色无强阴影工作灯，便于辨认部件；琥珀轮为唯一暖色\nColor palette: 盐尘灰、磨损旧钢、暗青，仅索引轮为琥珀色\nMaterials/textures: 旧钢划痕与少量霜尘，机械结构真实可用\nConstraints: 准确数量是硬要求：只有一只夹子、两片钢叶、一个中央铰链、两条相对锯齿边、一枚琥珀轮、琥珀轮上准确且仅有七个圆形定位孔。七孔之外轮面完全光滑。不得出现十二刻度或钟表外观，不得出现指针、数字、字母、文字、符号、图标、花纹、显示屏、额外轮盘、额外钢叶、额外齿条、按钮、旋钮、纸张、人物、手、武器、徽标、能力光效；不得用订书机、老虎钳、夹钳替代；无文字、无水印、无边框\nAvoid: 钟面，表盘，十二刻度，复杂齿轮，赛博霓虹，魔法符文，可读标签，多余零件，水印",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，四周保留至少百分之十五安全边距，两片钢叶、相对齿边、中央铰链与七孔琥珀轮均不贴边"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T16:32:00+08:00",
+          "attempts": 3,
+          "notes": "前两次分别因琥珀轮出现疑似字符、以及十二刻槽而未通过；第三次改用俯视正投影后，肉眼确认画面只有一只责任切片夹，由且仅由两片旧钢叶、两条相对连续锯齿夹边、一个中央铰链和唯一琥珀轮构成；轮上准确可数七个圆形定位孔，未出现额外钢叶、齿条、轮盘、指针、文字、数字、符号、人物、纸张或水印；原图1254×1254准确1:1，主体与全部关键部件留边充分，按1:1裁剪安全。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -123,6 +174,11 @@
     "56": {
       "entity_ids": [
         "item:rotating-responsibility-plate"
+      ]
+    },
+    "57": {
+      "entity_ids": [
+        "item:responsibility-slice-clip"
       ]
     }
   }
