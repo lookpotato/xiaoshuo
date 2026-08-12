@@ -59,12 +59,68 @@
           }
         }
       }
+    },
+    "location:well-bottom-eye-chamber": {
+      "name": "井底瞳室",
+      "type": "location",
+      "first_chapter": 18,
+      "image_created_chapter": 18,
+      "source_excerpt": "第二枚断视楔正钉在巨大青眼中央。",
+      "canonical_description": "镇天碑窟深井底部的石质瞳室，中央是被一枚断视楔钉住的闭合青色巨眼，北侧有横穿山腹的隐蔽视路",
+      "distinctive_features": [
+        "完全闭合的青色石质巨眼",
+        "眼缝中央一枚灰银扁平三角断视楔",
+        "楔尾单圈旧金软铜与半截烧焦木鸢铜扣",
+        "北侧石壁横向暗路",
+        "井壁垂落的黑色根须"
+      ],
+      "forbidden_features": [
+        "睁开的眼睛或可见瞳孔",
+        "多枚断视楔",
+        "人物或人影",
+        "文字铭文或水印",
+        "额外法宝或华丽法术"
+      ],
+      "image": {
+        "path": "images/locations/well-bottom-eye-chamber-v3.png",
+        "sha256": "303a7b8e547b41aadc72dfc74a63e6879b9e832eb08531751089f2d527f26820",
+        "alt_text": "井底闭合青色石眼中央嵌着断视楔，北侧暗路横入山腹",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说地点设定参考图，采用正面剖视式清晰空间展示\nPrimary request: 第三次生成“井底瞳室”。优先保证既有断视楔的精确三角形结构、插入关系与北向暗路空间清楚，不追求复杂透视。\nScene/backdrop: 正面略俯视的镇天碑窟井底石室，墨青云灰旧石；画面上方有少量无光黑色根须沿井壁汇向中央；左上或右上可见一个深入北侧石壁的狭窄黑暗通道入口。\nSubject: 画面中央是一只巨大、完全闭合的青色石质眼形裂纹。闭合眼缝是一条清晰横向石缝，绝无瞳孔、虹膜或睁眼结构。正中央严格只有一枚“扁平三角形”断视楔：轮廓必须是宽尾、尖端朝下插入石缝的扁平三角楔片，不能是长方柱、钥匙、剑、钉棒或箭头。三角楔片约半掌长、灰银旧金属，正面只有一道完全闭合、槽底有金属的细眼缝浅槽。宽尾处严格只缠一圈旧金色软铜环；铜环仅连一小片半截烧焦、边缘残缺的铜扣片，不能是完整吊牌，绝无流苏、绳穗、羽毛、布条。楔尖明确嵌入横向闭合石缝，楔身大部分突出石面，使“钉在眼缝中央”一眼可见。\nSpatial relationship: 从闭合巨眼的北侧向石壁黑暗通道延伸一条极淡的横向青色裂纹轮廓，表示被遮住的北向视路；不出现任何人物或人影。\nStyle/medium: 写实感中国仙侠叙事概念插画，结构优先、克制电影光影，像清晰的遗迹设定剖视图而不是抽象梦境；墨青、云灰、旧金。\nComposition/framing: 准确16:9横向画幅，近似正面剖视、轻微俯视。闭合巨眼、三角断视楔、北向暗路入口全部在中央80%安全区；左右各至少10%留白；16:9裁剪后关键特征完整。断视楔占画面足够比例，三角轮廓、闭合浅槽、单一铜环、残缺铜扣片均可肉眼辨认。\nConstraints: 巨眼完全闭合；严格一枚扁平三角断视楔；尖端插入横向眼缝；不能出现长方柱体；尾部严格一圈软铜环加半截残缺烧焦铜扣片；不得新增设定或相似替代物；不得添加人物、武器、文字、铭文、徽记、额外法宝、睁开的瞳孔、血迹、完整吊牌、流苏、绳穗、羽毛或华丽法术；无文字，无水印。",
+        "display": {
+          "content_kind": "location",
+          "generation_aspect_ratio": "16:9",
+          "fanqie_crop_ratio": "16:9",
+          "safe_area": "闭合巨眼、断视楔与北向暗路入口均位于中央百分之八十，左右各保留至少百分之十裁剪余量"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T12:12:23+08:00",
+          "attempts": 3,
+          "notes": "原始1672×941分辨率回看确认16:9画幅；中央为完全闭合的青色石眼，严格只有一枚灰银扁平三角断视楔贴合眼缝中央呈嵌入状态，楔面闭合浅槽、单一旧金铜环及半截残缺烧焦铜扣可辨；北侧横向暗路与黑色根须空间关系清楚；无人物、额外法宝、文字或水印，所有关键特征位于中央安全区。前两次因楔子平放带流苏、继而误成直条柱体未采用。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
     "17": {
       "entity_ids": [
         "item:sight-breaking-wedge"
+      ]
+    },
+    "18": {
+      "entity_ids": [
+        "location:well-bottom-eye-chamber"
       ]
     }
   }
