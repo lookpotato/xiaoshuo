@@ -11,6 +11,61 @@
       "同一角色后续场景必须以角色参考图锁定面部、体型和标志特征"
     ]
   },
-  "entities": {},
-  "chapter_images": {}
+  "entities": {
+    "item:sight-breaking-wedge": {
+      "name": "断视楔",
+      "type": "item",
+      "first_chapter": 17,
+      "image_created_chapter": 17,
+      "source_excerpt": "一枚灰银色三角楔。它只有半掌长，楔身扁平，正面开着一道闭合眼缝般的凹槽，尾端缠着一圈旧金色软铜。",
+      "canonical_description": "半掌长的灰银色扁平三角检修楔，正面有一道闭合眼缝浅槽，尾端缠一圈旧金色软铜",
+      "distinctive_features": [
+        "灰银色扁平三角楔身",
+        "正面一道无孔洞的闭合眼缝浅槽",
+        "尾端一圈旧金色软铜"
+      ],
+      "forbidden_features": [
+        "眼缝镂空或张开",
+        "剑刃或匕首柄",
+        "文字铭文或发光特效",
+        "额外零件"
+      ],
+      "image": {
+        "path": "images/items/sight-breaking-wedge-v1.png",
+        "sha256": "a05b714f60b4c6ffc62546cfb6e9e49beb39f14d7a75f0a73610f04a4cab42d8",
+        "alt_text": "灰银色扁平三角断视楔，正面有闭合眼缝浅槽，尾端缠旧金软铜",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说设定参考图\nPrimary request: 重新生成关键道具“断视楔”，修正上一版眼缝结构错误。\nScene/backdrop: 克制的云灰色中性背景，不出现地点、人物或额外器物。\nSubject: 严格只有一枚半掌长、灰银色、扁平的三角形检修楔。正面只有一道非常细窄、完全闭合的眼缝形浅凹刻槽：它应像一条两端尖、中心仅略宽的压痕，槽底仍有金属，绝不能形成孔洞、开口、镂空或张开的眼睛。尾端只缠一圈旧金色软铜，不是绳索，不附木柄。\nStyle/medium: 写实感中国仙侠叙事概念插画，东方器物结构清楚，克制电影光影；墨青、云灰、旧金配色。\nMaterials/textures: 灰银旧金属楔身，轻微磨损；旧金色软铜尾环；不得出现发光法术特效。\nComposition/framing: 准确 1:1 正方形画幅，孤立道具，正投影视角，完整居中；主体与闭合眼缝浅槽、尾端软铜全部位于中央 80% 安全区，四周至少保留 10% 空白，按 1:1 裁剪后关键特征完整。\nConstraints: 三角扁平结构；正面一道闭合细缝浅槽且绝无孔洞；尾端一圈旧金软铜；不得新增设定，不得用相似替代物，不得添加剑刃、匕首柄、文字、符号铭文、人物、徽记、额外零件、血迹；无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，眼缝浅槽与尾端软铜均位于中央百分之八十，四周至少保留百分之十安全边距"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T11:25:00+08:00",
+          "attempts": 2,
+          "notes": "原始分辨率回看确认仅有一枚灰银扁平三角检修楔；正面为有金属槽底的闭合细缝浅槽而非孔洞，尾端仅一圈旧金软铜；无剑柄、文字、水印、人物或额外部件；主体及全部标志特征完整位于1:1中央安全区。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
+    }
+  },
+  "chapter_images": {
+    "17": {
+      "entity_ids": [
+        "item:sight-breaking-wedge"
+      ]
+    }
+  }
 }

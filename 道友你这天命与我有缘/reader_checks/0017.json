@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "chapter_number": 17,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-12T11:25:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "347fa796bbb97f2576baa54ae5c6670c540b4e352161c95da2b09101dc501b06",
+  "questions": {
+    "previous_context": {
+      "answer": "青色裂纹刚留下明日午时的未来警告，陆遥随即决定追查声音并阻止镇碑视线。",
+      "evidence": [
+        "青色裂纹熄灭不到三息，陆遥便把话说死。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "明日午时镇天碑可能通过陆遥左眼锁定二十七名村民，使他们成为直接抽取地气的落点。",
+      "evidence": [
+        "若那二十七个人也被碑记住，他们很可能会从“村名”变成镇天碑下一批直接抽取的落点。"
+      ]
+    },
+    "decision_basis": {
+      "answer": "声音同时带有陆遥的血味和碑灰味，且回声与石灰逆着地气抽取方向沿青缝上返，因此众人判断留音来自碑窟更深处。",
+      "evidence": [
+        "碑窟里的地气正在向下流，声音却能沿青缝逆着抽取方向往上走。"
+      ]
+    },
+    "action_logic": {
+      "answer": "众人先在只连接无名碎石的细纹上试楔，发现反向插入会增开视路，纠正方向后才验证闭眼效果，避免直接拿村民主纹冒险。",
+      "evidence": [
+        "错误方向不是闭眼，而是在给镇天碑多开一条视路。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "断视楔成功让镇碑失去一条连接一刻，但软铜被回流熏黑，且陆遥在错误短试时左眼出血加重。",
+      "evidence": [
+        "眼缝重新张开，碎石到井底的光丝也随之接回。韩照夜拔下断视楔，楔身没有碎，只在旧金软铜上多了一点焦黑。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "井底第二枚断视楔可能正在阻止镇碑看见陆沉舟，救村民与追查父亲由此形成新的选择压力。",
+      "evidence": [
+        "那只被迫闭上的眼睛正在看的，可能是陆沉舟。"
+      ]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "断视楔",
+      "plain_explanation": "钉进镇碑青色眼纹后，可让镇碑暂时看不见该路线连接的人与地点。",
+      "evidence": "“断视楔：检修镇碑时钉入青色眼纹，可让镇碑暂时看不见该路连接的人与地。”"
+    }
+  ],
+  "unexplained_terms": []
+}
