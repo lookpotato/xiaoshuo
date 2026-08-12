@@ -62,12 +62,67 @@
           }
         }
       }
+    },
+    "item:rotating-responsibility-plate": {
+      "name": "轮值责任牌",
+      "type": "item",
+      "first_chapter": 56,
+      "image_created_chapter": 56,
+      "source_excerpt": "它叫轮值责任牌，用途很直白：记录“这一段时间、这一项故障出了问题该找谁”",
+      "canonical_description": "一块巴掌大的旧钢制矩形责任牌，正面有上下两道平行机械滑槽，右侧有一枚暗青色止动扣；上槽夹当前维修员报码片，下槽夹具体故障片，故障回查完成后允许同槽交接",
+      "distinctive_features": [
+        "巴掌大的旧钢矩形牌体",
+        "上下两道且仅两道平行机械滑槽",
+        "右侧一枚暗青色止动扣",
+        "滑槽两端开放以支持新片推进、旧片推出"
+      ],
+      "forbidden_features": [
+        "第三道滑槽",
+        "多个止动扣或额外控制按钮",
+        "显示屏或可读文字",
+        "人物或手",
+        "赛博霓虹或魔法符文"
+      ],
+      "image": {
+        "path": "images/items/rotating-responsibility-plate-v1.png",
+        "sha256": "baf234c3e62f6cc4fbed865a9e4650c44a36ef564a09c9b266614527a0688057",
+        "alt_text": "上下两道机械滑槽、右侧一枚暗青止动扣的旧钢轮值责任牌",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说《404修理站》关键道具设定参考图\nPrimary request: 生成关键道具‘轮值责任牌’的孤立道具概念设定图，用于解释它如何记录一段时间内一项故障的当前责任人，并通过机械结构完成无空档交接\nScene/backdrop: 简洁的盐尘灰旧工业台面或暗青灰中性背景，只用于衬托道具，不出现人物、手、其他重要设备或叙事场景\nSubject: 一块巴掌大的旧钢制矩形责任牌，牌面无文字；正面有上下两道清楚、彼此平行的横向机械滑槽，上槽用于夹维修员报码片，下槽用于夹具体故障片；右侧只有一枚暗青色机械止动扣；滑槽两端开放，体现一张薄片从一端推进时会把旧片从另一端推出的单槽交接结构\nStyle/medium: 写实感中国末世工业科幻概念插画，结构清楚，道具部件可辨识，适合作为小说道具锚点图\nComposition/framing: 准确1:1正方形画幅，近正投影的轻微三分之四俯视，单个道具完整居中，四周至少保留10%安全边距；两道滑槽、右侧唯一止动扣和牌体边缘全部位于中央安全区，按1:1裁剪后仍完整\nLighting/mood: 冷色柔和工业环境光，少量琥珀警示反光，克制、实用、寒冷\nColor palette: 盐尘灰、旧钢铁、暗青为主，有限琥珀反光\nMaterials/textures: 磨损旧钢、细小划痕、边缘霜尘；结构真实可用\nConstraints: 必须只有一块责任牌；必须准确为上下两道平行机械滑槽和右侧一枚暗青色止动扣；牌面不得有文字、数字、符号、徽标或显示屏；不得新增按钮、旋钮、第三道滑槽、武器、人物、手、品牌、能力光效或额外设定；不得用相似替代物；无文字、无水印、无边框；准确1:1构图并保留裁剪安全区\nAvoid: 赛博霓虹，魔法符文，复杂电子界面，可读标签，多余零件，文字，水印",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，四周保留至少百分之十安全边距，两道滑槽、右侧止动扣与牌体边缘均不贴边"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T12:20:00+08:00",
+          "attempts": 1,
+          "notes": "肉眼确认画面只有一块旧钢矩形责任牌；正面清楚呈现上下两道且仅两道平行横向滑槽，右侧只有一枚暗青色止动扣；牌体为盐尘灰旧钢并有真实磨损，未出现第三滑槽、额外按钮、人物、显示屏、文字、符号或水印；原图为1254×1254准确1:1，主体与全部关键部件四周留边充分，按1:1裁剪安全。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
     "54": {
       "entity_ids": [
         "character:chen-xu"
+      ]
+    },
+    "56": {
+      "entity_ids": [
+        "item:rotating-responsibility-plate"
       ]
     }
   }
