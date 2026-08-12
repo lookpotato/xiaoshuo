@@ -213,6 +213,56 @@
           }
         }
       }
+    },
+    "location:underground-guarantee-routing-well": {
+      "name": "地下担保分配井",
+      "type": "location",
+      "first_chapter": 59,
+      "image_created_chapter": 59,
+      "source_excerpt": "井壁三面各伸出一道旧钢导轨：左路接黑砖吐纸机构，右路通向三号返修回路，向下的一路埋进二十年前的旧市政管网。",
+      "canonical_description": "旧公交维修厂黑砖下方一口两人深的方形地下机械井，井壁左、右、下三面各有一道旧钢导轨汇聚到中央无刻字三叉拨盘，用于转送线路已有的机械担保",
+      "distinctive_features": [
+        "两人深的方形旧工业井",
+        "中央唯一无文字无刻度的三叉机械拨盘",
+        "准确三道且仅三道旧钢导轨",
+        "三道导轨分别从左侧、右侧和正下方汇聚中央"
+      ],
+      "forbidden_features": [
+        "第四道导轨或分叉支路",
+        "多个拨盘或电子显示屏",
+        "文字、数字、符号或线路标签",
+        "人物、手、车辆或武器",
+        "赛博霓虹、魔法符文或能力光效"
+      ],
+      "image": {
+        "path": "images/locations/underground-guarantee-routing-well-v1.png",
+        "sha256": "d08704e9a6852f30d3987b4cf8ad9864b03a49370c5b383d8ad01d34d014f5cb",
+        "alt_text": "左、右、下三道旧钢导轨汇聚中央三叉拨盘的地下方形分配井",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说《404修理站》重要地点与机械结构设定参考图，画幅精确重试\nPrimary request: 生成“地下担保分配井”的清晰宽幅结构概念图；它是旧公交维修厂黑砖下方一口两人深的方形地下机械井，只把一条线路已有的机械担保按拨盘位置转送到另一条待处理线路，本身不产生命令\nScene/backdrop: 寒冷盐尘覆盖的旧工业地下方井，井壁为磨损旧钢与混凝土；只出现井体和固定机械结构\nSubject: 方井中央准确只有一只无文字无刻度的三叉机械拨盘；井壁准确三面各伸出且仅伸出一道旧钢导轨，总数准确三道，分别从画面左侧、右侧和正下方汇聚中央；不得出现第四路或分叉支路\nStyle/medium: 写实感中国末世工业科幻概念插画，结构清楚，寒冷克制，维修地点锚点图\nComposition/framing: 必须输出严格、数学上准确的16:9横向图像，不接受近似比例；宽高像素比必须正好等于16:9，例如1536×864或其他可被16和9整除的准确尺寸。从井口斜俯视；方井、拨盘、三道导轨全部位于中央75%安全区，四边留足边距，按准确16:9裁剪后关键结构完整\nLighting/mood: 冷青灰工业检修灯，少量琥珀警示反光，阴影不遮挡部件\nColor palette: 盐尘灰、暗青、磨损旧钢，有限暗红锈迹和琥珀反光\nMaterials/textures: 磨损旧钢、旧混凝土、盐霜、真实机械油污\nConstraints: 硬要求为准确一口方井、一只中央三叉拨盘、准确三道且仅三道来自左/右/下的导轨；准确16:9像素画幅，不得近似；不得新增第四路、额外拨盘、人物、手、纸张、车辆、武器、显示屏、文字、数字、符号、标签、徽标、魔法符文或能力光效；不得新增设定或用相似替代物；无文字、无水印、无边框\nAvoid: 近似而非准确的16:9，赛博霓虹，复杂电子界面，多余管线遮挡核心结构，第四路，文字，水印",
+        "display": {
+          "content_kind": "location",
+          "generation_aspect_ratio": "16:9",
+          "fanqie_crop_ratio": "16:9",
+          "safe_area": "方井、中央三叉拨盘与左、右、下三道导轨均位于中央安全区，四边留有充分余量"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T18:28:00+08:00",
+          "attempts": 2,
+          "notes": "第一次生成的结构符合但落盘尺寸1672×941并非准确16:9，未通过画幅项；第二次以更清楚的斜俯视结构重生，内置工具仍输出1672×941，随后仅对四周不足0.6%的安全空白作对称裁切，最终文件1664×936为数学上准确16:9。肉眼确认只有一口方井和一个中央三叉拨盘，准确三道且仅三道导轨从左、右、下汇聚中央；冷灰旧钢、混凝土、盐霜与油污符合设定，未出现第四路、额外拨盘、人物、文字、符号或水印；主体和全部关键结构远离裁剪边缘。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -234,6 +284,11 @@
     "58": {
       "entity_ids": [
         "item:impression-echo-anvil"
+      ]
+    },
+    "59": {
+      "entity_ids": [
+        "location:underground-guarantee-routing-well"
       ]
     }
   }
