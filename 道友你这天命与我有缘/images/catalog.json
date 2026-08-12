@@ -161,6 +161,55 @@
           }
         }
       }
+    },
+    "item:gray-lamp-living-recovery-car": {
+      "name": "灰灯活人回收车",
+      "type": "item",
+      "first_chapter": 20,
+      "image_created_chapter": 20,
+      "source_excerpt": "七盏灰灯排成一线，照亮一辆贴着双铁索滑来的窄长黑车。",
+      "canonical_description": "沿折风井旧运道双铁索滑行的窄长黑铁回收车，由七个相接铁笼、七盏灰灯、七根探血索和四只扣索铁爪组成",
+      "distinctive_features": [
+        "严格七个前后相接的黑铁笼",
+        "严格七盏排成一线的灰灯",
+        "每个笼门一根灰白探血索，共七根",
+        "底部无落地车轮，严格四只铁爪扣住两根承重铁索"
+      ],
+      "forbidden_features": [
+        "少于或多于七个铁笼、灰灯或探血索",
+        "落地车轮、飞舟翼或马车结构",
+        "人物、人影、异兽、血迹或尸体",
+        "文字、数字、徽记或华丽法阵"
+      ],
+      "image": {
+        "path": "images/items/gray-lamp-living-recovery-car-v1.png",
+        "sha256": "eea85418d5512f9e21c3c9db6743688a79d9019178b24e7cb3cc7ba14440c854",
+        "alt_text": "七笼七灯的黑铁活人回收车以四只铁爪扣住双索",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说设定参考图\nPrimary request: 生成首次出现的横向器物“灰灯活人回收车”，用于解释它在折风井旧运道索桥上如何抓取并运输活人。\nSource excerpt: “七盏灰灯排成一线，照亮一辆贴着双铁索滑来的窄长黑车。车身没有轮子，底部四只铁爪扣住索桥承重索；七个半人高的铁笼前后相接，每个笼门上都垂着一根灰白探血索。”\nScene/backdrop: 云层下的废弃双铁索货运索桥，背景只保留克制的云灰山腹和少量朽木桥板，不出现人物、异兽或其他车辆。\nSubject: 严格只有一辆横向窄长黑色旧运道回收车；车顶或车身上方严格恰好七盏灰色旧灯，前后排成一线；车体严格由恰好七个半人高的黑铁笼前后相接组成，每个笼门各垂一根灰白探血索，共恰好七根，索头简单无文字；车底没有轮子，严格恰好四只黑铁扣索爪，两前两后扣住桥的两根粗承重铁索，使车辆沿铁索滑行。车体窄长、低矮、功能性强，不是飞舟、马车或火车。\nStyle/medium: 写实感中国仙侠叙事概念插画，东方遗迹器械结构清楚，克制电影光影；本书统一墨青、云灰、旧金画风，不加华丽法术。\nMaterials/textures: 锈蚀黑铁笼、磨损铁爪、灰白旧索、无焰灰灯；朽木与云灰山石仅作环境参照。\nComposition/framing: 准确3:2横向画幅，三分之四侧视并略微俯视，让七个连续铁笼、七盏灰灯、七根探血索和底部四只扣索铁爪都能肉眼计数。完整车辆位于中央80%主体安全区，左右上下至少保留10%裁剪余量；按3:2裁剪后车头车尾、全部灯笼铁爪和探血索均完整。\nConstraints: 严格一辆车；严格七个铁笼、七盏灰灯、七根探血索、四只扣索铁爪、两根桥梁承重铁索；无车轮；不得新增设定，不得用相似替代物，不得画成飞舟、蒸汽火车、马车、祭坛或普通囚车；不得添加人物、人影、异兽、血迹、尸体、武器、文字、数字、徽记、额外灯笼或华丽法阵；无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "3:2",
+          "fanqie_crop_ratio": "3:2",
+          "safe_area": "完整车体、七笼七灯七索与四只扣索铁爪均位于中央百分之八十，四周至少保留百分之十裁剪余量"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T20:18:00+08:00",
+          "attempts": 1,
+          "notes": "原始1536×1024分辨率回看确认3:2横向画幅；主体严格为单辆窄长黑铁索上回收车，肉眼可数七盏灰灯、七个连续铁笼、七根垂落灰白探血索及四个扣住两根粗承重索的铁爪组件；车体无落地轮结构，无人物、异兽、血迹、文字或水印，全部关键部件完整位于中央安全区。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -177,6 +226,11 @@
     "19": {
       "entity_ids": [
         "location:foldwind-old-route-rope-bridge"
+      ]
+    },
+    "20": {
+      "entity_ids": [
+        "item:gray-lamp-living-recovery-car"
       ]
     }
   }
