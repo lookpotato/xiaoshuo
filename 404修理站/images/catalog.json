@@ -163,6 +163,56 @@
           }
         }
       }
+    },
+    "item:impression-echo-anvil": {
+      "name": "压痕回声砧",
+      "type": "item",
+      "first_chapter": 58,
+      "image_created_chapter": 58,
+      "source_excerpt": "把旧压痕重新受一次很轻的力，再用三根测力针和软铅箔记下当初是从哪边、以多大偏斜压出来的",
+      "canonical_description": "一只巴掌大的扁平方形深灰旧钢机械砧，中央为单块暗红浮动压板，压板下有三根不同粗细的白瓷测力针，右侧有一条收卷软铅箔的窄槽",
+      "distinctive_features": [
+        "巴掌大的扁平方形深灰旧钢砧座",
+        "中央单块暗红色浮动压板",
+        "准确三根且仅三根不同粗细白瓷测力针",
+        "右侧唯一软铅箔收卷窄槽"
+      ],
+      "forbidden_features": [
+        "第四根或更多测力针",
+        "多个压板或多个铅箔槽",
+        "显示屏、刻度、文字、数字或符号",
+        "人物、手或纸张",
+        "赛博霓虹、魔法符文或能力光效"
+      ],
+      "image": {
+        "path": "images/items/impression-echo-anvil-v1.png",
+        "sha256": "8c7a7c6ddd77f8ae3e86fa34b74108a11cc564795272d5377f1d0ad669546d96",
+        "alt_text": "暗红浮动压板下有三根不同粗细白瓷测力针的旧钢压痕回声砧",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说《404修理站》关键道具设定参考图\nPrimary request: 生成关键道具“压痕回声砧”的孤立道具概念设定图；它用于对旧纸压痕施加极轻复测力，并记录原压痕的受力方向与偏斜，不负责识别人名\nScene/backdrop: 均匀暗青灰哑光工业台面，只出现这一件道具，不出现纸张、人物、手或其他设备\nSubject: 一只巴掌大的扁平方形深灰旧钢机械砧座；中央只有一块可上下浮动的暗红色矩形压板；压板正下方并列、清楚可见且准确仅有三根白色陶瓷测力针，三根由左到右分别细、中、粗，彼此独立，数量必须一眼可数；砧座右侧只有一条狭窄的软铅箔收卷槽，槽口露出一小截无字银灰软铅箔；结构简洁、真实可工作\nStyle/medium: 写实感中国末世工业科幻道具概念插画，像清晰的维修零件目录照片，结构识别优先\nComposition/framing: 准确1:1正方形画幅，轻微俯视的近正投影，单个道具完整居中，四周至少保留15%安全边距；方砧四边、暗红压板、三根白瓷针与右侧唯一窄槽全部位于中央安全区，按1:1裁剪后仍完整\nLighting/mood: 均匀冷色工业工作灯，无强烈阴影；暗红压板为唯一有限暖色重点\nColor palette: 盐尘灰、旧钢铁、暗青为主，暗红压板，白色陶瓷针，银灰软铅箔\nMaterials/textures: 磨损旧钢、细小划痕、少量霜尘、哑光陶瓷、柔软铅箔，真实使用痕迹\nConstraints: 必须只有一件压痕回声砧；必须准确只有一块暗红浮动压板、准确三根且仅三根不同粗细白瓷测力针、右侧准确一条软铅箔窄槽；不得新增第四根针、按钮、旋钮、显示屏、刻度、数字、文字、符号、徽标、人物、手、纸张、武器、能力光效或额外设定；不得用铁砧、印章机、打字机、压力表或相似替代物；无文字、无水印、无边框；准确1:1构图并保留裁剪安全区\nAvoid: 多余针杆，复杂齿轮，钟面，赛博霓虹，魔法符文，可读标签，文字，水印",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，四周保留至少百分之十五安全边距，方砧四边、暗红压板、三根白瓷针与右侧唯一窄槽均不贴边"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T17:06:00+08:00",
+          "attempts": 1,
+          "notes": "肉眼确认画面只有一件扁平方形深灰旧钢压痕回声砧；中央只有一块暗红浮动压板，压板下准确可数三根且仅三根由细到粗的白瓷测力针，右侧只有一条露出银灰软铅箔的窄槽；未出现额外针杆、压板、槽口、按钮、显示屏、刻度、文字、数字、符号、人物、纸张或水印；原图1254×1254准确1:1，主体和全部关键部件四周留边充分，按1:1裁剪安全。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -179,6 +229,11 @@
     "57": {
       "entity_ids": [
         "item:responsibility-slice-clip"
+      ]
+    },
+    "58": {
+      "entity_ids": [
+        "item:impression-echo-anvil"
       ]
     }
   }
