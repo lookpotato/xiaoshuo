@@ -110,6 +110,57 @@
           }
         }
       }
+    },
+    "location:foldwind-old-route-rope-bridge": {
+      "name": "折风井旧运道索桥",
+      "type": "location",
+      "first_chapter": 19,
+      "image_created_chapter": 19,
+      "source_excerpt": "云从桥板缝里向上翻。两根承重铁索一根沉黑，一根锈红",
+      "canonical_description": "云下山腹之间的废弃北向货运索桥，桥头设八席货位木牌、锈旧横轮与装货木托，左侧山壁另有斜向南库的无桥板回送槽",
+      "distinctive_features": [
+        "唯一一条由双粗铁索承重的朽木索桥",
+        "焦黑木牌上单行恰好八个无文字货位方框",
+        "桥头锈旧横轮与孤立装货木托",
+        "左侧山壁内独立的无桥板斜向回送槽",
+        "云下北向延伸的高空运输遗迹"
+      ],
+      "forbidden_features": [
+        "七个或九个货位方框",
+        "第二座桥或带木板的回送轨道",
+        "人物、人影或异兽",
+        "可读文字、宗门徽记或华丽法阵",
+        "石桥、城门或完整飞舟"
+      ],
+      "image": {
+        "path": "images/locations/foldwind-old-route-rope-bridge-v2.png",
+        "sha256": "46ba221eeb56d70809be0970a32018d00fc9b9463073150333d115767566a4f2",
+        "alt_text": "云下朽木索桥前立着八席货位木牌，左侧山壁另有回送槽",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept\nAsset type: 小说地点设定参考图，第二次生成并修正精确结构\nPrimary request: 重新生成“折风井旧运道索桥”。上一版木牌只有七个货位方框且回送槽像第二座桥；本次优先保证八席数量与回送槽结构正确。\nScene/backdrop: 云层下的山腹断口，一条废弃北向货运索桥从近处石台通往正前方远端黑暗；墨青云灰山石与云海。\nSubject and exact structure: 画面中央严格只有一条主索桥，由左右两根粗旧黑铁承重索与残破深色木板组成。近处桥头设锈旧横轮和一块孤立装货木托。桥头焦黑木牌上方只刻抽象无睛木鸢轮廓，下方必须恰好八个大小一致、清晰分开的空心方框，排列为单行 8 格：□ □ □ □ □ □ □ □，绝不能七个或九个，不得有任何文字。画面左侧山壁内另有一个半人高、向下斜入山腹的黑暗石槽口；它是没有木板、没有护栏、没有第二座桥的回送滑槽，与主桥明显分开。\nStyle/medium: 写实感中国仙侠叙事概念插画，结构优先、近似遗迹设定展示，克制电影光影；墨青、云灰、旧金。\nMaterials/textures: 锈蚀黑铁、火燎旧木、风化山石、少量旧金铜件；无华丽法术。\nComposition/framing: 准确16:9横向画幅，近似正面略高视角。主索桥、木牌上的恰好八格、锈轮木托和左侧山壁黑暗回送槽全部位于中央80%安全区，左右各至少10%余量；关键结构足够大可肉眼计数，16:9裁剪后全部完整。\nConstraints: 严格一条主索桥；严格恰好八个单行方框；回送槽不可画成桥、楼梯或带木板轨道；不得新增设定或用石桥、城门、飞舟替代；不得出现人物、人影、异兽、武器、可读文字、宗门徽记、发光法阵、额外法宝；无文字，无水印。",
+        "display": {
+          "content_kind": "location",
+          "generation_aspect_ratio": "16:9",
+          "fanqie_crop_ratio": "16:9",
+          "safe_area": "主索桥、八席木牌、锈轮木托和左侧回送槽均在中央百分之八十，左右各保留至少百分之十裁剪余量"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-12T19:22:00+08:00",
+          "attempts": 2,
+          "notes": "原始1672×941回看确认16:9画幅；严格只有一条双铁索朽木主桥，焦黑木牌上肉眼可数恰好八个独立无文字方框，桥头锈轮与孤立木托清楚，左侧山壁为无桥板无护栏的独立黑暗回送槽；锈铁、焦木、云灰山石符合设定，无人物、异兽、可读文字或水印，全部关键结构位于中央安全区。第一次因仅七格且回送槽误成侧桥未采用。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -121,6 +172,11 @@
     "18": {
       "entity_ids": [
         "location:well-bottom-eye-chamber"
+      ]
+    },
+    "19": {
+      "entity_ids": [
+        "location:foldwind-old-route-rope-bridge"
       ]
     }
   }
