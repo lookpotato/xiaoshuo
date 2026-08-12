@@ -102,7 +102,12 @@ class FanqieImageMarkdownTests(unittest.TestCase):
             image_path=Path("C:/test-book/images/items/test.png"),
             image_alt_text="  陈序   在修理站门前  ",
         )
-        self.assertEqual(author_note_text(chapter), "本章配图：陈序 在修理站门前")
+        self.assertEqual(
+            author_note_text(chapter),
+            "【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】\n"
+            "本章配图：陈序 在修理站门前\n"
+            "【辅助说明结束】",
+        )
 
     def test_author_note_falls_back_to_chapter_title(self) -> None:
         chapter = Chapter(
@@ -111,7 +116,12 @@ class FanqieImageMarkdownTests(unittest.TestCase):
             body="正文" * 600,
             path=Path("C:/test-book/chapters/0001-test.md"),
         )
-        self.assertEqual(author_note_text(chapter), "本章配图：没建成的站不能收人")
+        self.assertEqual(
+            author_note_text(chapter),
+            "【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】\n"
+            "本章配图：没建成的站不能收人\n"
+            "【辅助说明结束】",
+        )
 
     def test_image_selection_clicks_visible_dropzone(self) -> None:
         page = MagicMock()

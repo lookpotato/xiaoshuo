@@ -473,11 +473,15 @@ def _author_note_preview_count(scope: Locator) -> int:
 
 
 def author_note_text(chapter: Chapter) -> str:
-    """Build the required 作者有话说 text from the chapter image description."""
+    """Build a clearly delimited, non-story aid for the chapter image."""
     description = re.sub(
         r"\s+", " ", chapter.image_alt_text or chapter.title
     ).strip()
-    return f"本章配图：{description}"
+    return (
+        "【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】\n"
+        f"本章配图：{description}\n"
+        "【辅助说明结束】"
+    )
 
 
 def fill_author_note_text(scope: Locator, chapter: Chapter) -> None:
