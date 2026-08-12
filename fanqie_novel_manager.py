@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import sys
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -109,9 +110,24 @@ def read_json(path: Path, default=None):
 
 def write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    tmp = path.with_name(
+        f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+    )
+    try:
+        tmp.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        for attempt in range(5):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def job_path(job_id: str) -> Path:
@@ -604,15 +620,39 @@ def live_lock(data, now):
         return None
     lock = read_json(LOCK)
     claimed = datetime.fromisoformat(lock["claimed_at"])
+    pid = int(lock.get("pid", 0) or 0)
     if lock.get("owner_mode") == "on_demand_process":
-        pid = int(lock.get("pid", 0) or 0)
         if not process_is_running(pid):
             LOCK.unlink(missing_ok=True)
             return None
+    elif not process_is_running(pid) and _queued_job_matches_lock(lock):
+        # The on-demand launcher first claims the lock, then marks both the
+        # lock and job as running. If it dies between those writes, a queued
+        # job plus its dead claiming PID is an abandoned half-claim, not an
+        # active desktop worker.
+        LOCK.unlink(missing_ok=True)
+        return None
     if now - claimed > timedelta(minutes=data.get("global_lock_minutes", 180)):
         LOCK.unlink(missing_ok=True)
         return None
     return lock
+
+
+def _queued_job_matches_lock(lock: dict) -> bool:
+    if not JOB_DIR.exists():
+        return False
+    claimed_at = lock.get("claimed_at")
+    book_id = lock.get("book_id")
+    if not isinstance(claimed_at, str) or not isinstance(book_id, str):
+        return False
+    for path in JOB_DIR.glob("*.json"):
+        job = read_json(path, {})
+        if job.get("status") != "queued" or job.get("book_id") != book_id:
+            continue
+        created_at = job.get("created_at")
+        if isinstance(created_at, str) and created_at <= claimed_at:
+            return True
+    return False
 
 
 def process_is_running(pid):
