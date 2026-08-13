@@ -30,9 +30,9 @@
 1. 先读人物表、世界观、连续性账本、最近三章和本书 `images/catalog.json`，列出本章候选新实体。
 2. 按“若没有图，哪一个最妨碍读者理解”排序，只选择第一名生成本章唯一图片。其余实体靠正文解释；必要时把过于复杂的出场延后。
 3. 首次启用图片体系且目录为空时，如果本章没有更重要的新实体，可用唯一图片名额补齐主角参考图。
-4. 为每个实体先从首次出现章节抄录不少于 8 个字的 `source_excerpt`，再冻结 `canonical_description`、`distinctive_features` 和不得出现的矛盾特征；不得靠猜测补完正文没有说明的外观。随后先确定生成画幅和番茄裁剪比例，再按本书 `style_bible` 组织 imagegen 提示词。
-5. 使用内置 `imagegen` 技能逐张生成。不要使用需要 API Key 的 CLI 后备方式；若内置工具不可用，本章停在草稿状态并如实记录。
-6. 从 `$CODEX_HOME/generated_images/` 选择输出，复制到本书分类目录。项目引用的最终图不得只留在 Codex 默认目录。
+4. 为每个实体先从首次出现章节抄录不少于 8 个字的 `source_excerpt`，再冻结 `canonical_description`、`distinctive_features` 和不得出现的矛盾特征；不得靠猜测补完正文没有说明的外观。随后先确定生成画幅和番茄裁剪比例，再按本书 `style_bible` 组织网页生图提示词。
+5. 把完整提示词写入本任务临时文件，运行 `python browser_image_worker.py --prompt-file <提示词文件> --output <本书 images 分类目录的新文件> --ratio <画幅>`。脚本使用独立、已登录的 Google Chrome 会话打开 `image_browser_config.json` 指定的网页，生成并下载原图。
+6. 输出文件必须直接落在本书分类目录，文件名使用新版本号且禁止覆盖旧图。目录中记录 `generated_with: chrome-web` 和实际 `web_provider`。网页失败时不得改用 Codex `imagegen`；验证码、登录失效、风控、政策提示或控件变化时停止并保留草稿。
 7. 使用 `view_image` 打开最终文件，逐项检查：主体身份、标志特征、颜色材质、形状与部件数量、是否违反设定、是否有未要求文字或水印，以及按目标比例裁剪后主体和关键特征是否仍完整。
 8. 任一关键项不符时，只针对该问题重新生成，再完整复检。精确数量或复杂结构连续失败时，改用正投影、俯视、孤立道具或更清楚的结构展示重试，不得降低正确性标准；仍不正确时停止归档并明确报告失败原因，绝不能把失败项写成 `verified`。
 9. 全部通过后计算文件 SHA-256，写入实体记录与本章 `chapter_images`；核验者固定记为 `codex-visual-review`。
@@ -101,7 +101,8 @@
       "path": "images/items/soul-lock-v1.png",
       "sha256": "文件的实际 SHA-256",
       "alt_text": "四棱乌黑锁魂钉，尾端有暗红刻痕",
-      "generated_with": "codex-imagegen",
+      "generated_with": "chrome-web",
+      "web_provider": "gemini",
       "prompt": "实际使用的完整提示词",
       "display": {
         "content_kind": "item",

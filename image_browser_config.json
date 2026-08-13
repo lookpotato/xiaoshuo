@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "generator": "chrome-web",
+  "provider": "gemini",
+  "url": "https://gemini.google.com/app",
+  "allow_codex_imagegen_fallback": false,
+  "timeout_seconds": 240,
+  "prompt_selectors": [
+    "textarea",
+    "[contenteditable='true'][role='textbox']",
+    "div[contenteditable='true']"
+  ],
+  "submit_names": [
+    "发送",
+    "提交",
+    "Send"
+  ],
+  "download_names": [
+    "下载原图",
+    "下载图片",
+    "Download full size image",
+    "Download image"
+  ]
+}

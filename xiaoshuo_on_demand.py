@@ -101,12 +101,13 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
-必须读取 shared/image_workflow.md 与本书 images/catalog.json，并使用 imagegen 技能执行本章图片工作流：
+必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
 - 列出本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象作为候选；同名同设定实体沿用目录，不重复生图；
 - 每章总计最多 1 张，只选择最需要视觉解释的新实体；同章其他新实体必须用正文白话解释。首次启用且本章没有更高优先级新实体时，可用唯一名额补齐主角参考图；
 - 生图前先确定目标画幅并写入提示词：人物默认 2:3，道具或徽记 1:1，宽场景或地点 16:9，横向异兽或动作画面 3:2，仅明确超长竖构图使用 9:16；catalog 的 generation_aspect_ratio 与 fanqie_crop_ratio 必须一致，并写清主体安全区；
-- 逐张生成后把最终文件从 Codex 默认生成目录复制到本书 images/ 对应分类目录，使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印和裁剪安全构图七项核对；
-- 有任一关键项不符就做针对性重生，只有全部通过才能写入 catalog 的 verified 记录；内置生图不可用或连续失败时只保留章节草稿，不得归档正文、推进状态或伪造图片；
+- 把完整提示词写入本任务临时文件，执行 `python browser_image_worker.py --prompt-file <文件> --output <本书 images 分类目录的新文件> --ratio <画幅>`；网页会生成并下载原图到指定位置，catalog 记录 generated_with=chrome-web 和实际 web_provider；
+- 下载后使用 view_image 回看，按身份、标志特征、颜色材质、形状部件、设定冲突、文字水印和裁剪安全构图七项核对；有任一关键项不符就修正提示词并通过同一浏览器脚本重生为新版本文件，只有全部通过才能写入 catalog 的 verified 记录；
+- 图片浏览器未登录、出现验证码/风控/政策提示、控件变化或连续失败时，只保留章节草稿，不得归档正文、推进状态、伪造图片或改用 Codex imagegen；
 - 精确数量或复杂结构连续失败时，改用正投影、俯视、孤立道具或结构更清楚的表现方式重试，不得降低正确性标准；仍失败时在最终回复明确说明“已调用生图但未通过”的具体项目；
 - 番茄作者有话说中的配图解释必须明确标为非正文：固定以“【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】”开头，以“【辅助说明结束】”结尾；它只能帮助识图，正文因果不得依赖该说明；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
@@ -117,7 +118,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 2. 更新 chapter_state.json、continuity_ledger.md、reader_checks、batch_schedule 和当日日志；
 3. 新排期沿用 manager_config.json 的每日发布时间，未特别指定时固定 12:00；
 4. Metadata 的 upload_status 写为 not_uploaded；
-5. 不访问任何浏览器，不上传番茄，不调用 job-progress/job-finish/claim/finish；
+5. 只允许 browser_image_worker.py 访问图片专用 Chrome 生成和下载配图；不访问番茄浏览器、不上传番茄、不调用 job-progress/job-finish/claim/finish；
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
 7. 按 AGENTS.md 只提交并推送本章涉及的文件。
 

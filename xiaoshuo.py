@@ -15,6 +15,7 @@ MANAGER = ROOT / "fanqie_novel_manager.py"
 ON_DEMAND = ROOT / "xiaoshuo_on_demand.py"
 REWARD = ROOT / "xiaoshuo_reward.py"
 BROWSER_WORKER = ROOT / "fanqie_browser_worker.py"
+IMAGE_BROWSER_WORKER = ROOT / "browser_image_worker.py"
 CONFIG = ROOT / "manager_config.json"
 
 
@@ -95,6 +96,17 @@ def main() -> int:
         action="store_true",
         help="首次配置番茄专用 Chrome 登录会话",
     )
+    image_browser = parser.add_mutually_exclusive_group()
+    image_browser.add_argument(
+        "--setup-image-browser",
+        action="store_true",
+        help="首次配置网页生图专用 Chrome 登录会话",
+    )
+    image_browser.add_argument(
+        "--check-image-browser",
+        action="store_true",
+        help="检查网页生图 Chrome 的登录态与页面控件",
+    )
     parser.add_argument(
         "--debug-browser",
         action="store_true",
@@ -102,6 +114,14 @@ def main() -> int:
     )
     parser.add_argument("--resume", help="续跑 `.manager_jobs` 中已有的 job id")
     args = parser.parse_args()
+    if args.setup_image_browser or args.check_image_browser:
+        if args.count is not None or args.reward is not None or args.resume:
+            parser.error("图片浏览器配置命令不能与章节任务同时使用")
+        action = "--setup" if args.setup_image_browser else "--check"
+        return subprocess.run(
+            [sys.executable, str(IMAGE_BROWSER_WORKER), action],
+            cwd=ROOT,
+        ).returncode
     try:
         feature = "reward" if args.reward is not None else "update"
         books = selected_books(args.book, args.all, feature)

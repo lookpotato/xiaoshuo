@@ -5,5 +5,6 @@ __pycache__/
 .manager.lock
 .manager_runtime.json
 .manager_jobs/
+.manager_image_downloads/
 
 # Browser login data lives outside the repository under %LOCALAPPDATA%\xiaoshuo.

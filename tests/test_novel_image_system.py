@@ -89,6 +89,20 @@ class ImageCatalogTests(unittest.TestCase):
     def test_valid_verified_asset_passes(self) -> None:
         self.assertEqual(validate_image_catalog(self.project, "test-book"), [])
 
+    def test_verified_chrome_web_asset_passes(self) -> None:
+        image = self.catalog["entities"]["item:soul-lock"]["image"]
+        image["generated_with"] = "chrome-web"
+        image["web_provider"] = "gemini"
+        self.write_catalog()
+        self.assertEqual(validate_image_catalog(self.project, "test-book"), [])
+
+    def test_chrome_web_asset_requires_provider(self) -> None:
+        image = self.catalog["entities"]["item:soul-lock"]["image"]
+        image["generated_with"] = "chrome-web"
+        self.write_catalog()
+        errors = validate_image_catalog(self.project, "test-book")
+        self.assertTrue(any("web_provider" in error for error in errors))
+
     def test_more_than_one_image_in_one_chapter_fails(self) -> None:
         source = self.catalog["entities"]["item:soul-lock"]
         for index in range(2, 3):

@@ -13,6 +13,7 @@ from pathlib import Path, PurePosixPath
 SCHEMA_VERSION = 2
 MAX_IMAGES_PER_CHAPTER = 1
 ALLOWED_CROP_RATIOS = {"16:9", "9:16", "1:1", "2:3", "3:2"}
+ALLOWED_IMAGE_GENERATORS = {"chrome-web", "codex-imagegen"}
 CATALOG_RELATIVE_PATH = Path("images") / "catalog.json"
 ALLOWED_ENTITY_TYPES = {
     "character": "characters",
@@ -278,8 +279,16 @@ def validate_image_catalog(project: Path, expected_book_id: str | None = None) -
                 actual_hash = sha256_file(asset_path)
                 if image.get("sha256") != actual_hash:
                     errors.append(f"{label} 图片 sha256 与文件不一致")
-        if image.get("generated_with") != "codex-imagegen":
-            errors.append(f"{label}.image.generated_with 必须为 codex-imagegen")
+        generator = image.get("generated_with")
+        if generator not in ALLOWED_IMAGE_GENERATORS:
+            errors.append(
+                f"{label}.image.generated_with 不受支持: {generator!r}"
+            )
+        if generator == "chrome-web" and (
+            not isinstance(image.get("web_provider"), str)
+            or not image.get("web_provider", "").strip()
+        ):
+            errors.append(f"{label}.image.web_provider 必须记录网页生图服务")
         if not isinstance(image.get("alt_text"), str) or not image.get("alt_text", "").strip():
             errors.append(f"{label}.image.alt_text 不能为空")
         if not isinstance(image.get("prompt"), str) or not image.get("prompt", "").strip():
