@@ -162,6 +162,32 @@
         }
       }
     },
+    "item:split-flow-windwheel": {
+      "name": "分流风轮",
+      "type": "item",
+      "first_chapter": 21,
+      "image_created_chapter": 21,
+      "source_excerpt": "它由内外两层风骨木环、二十七枚独立小风片和二十七根可拔木销组成。",
+      "canonical_description": "半人高的双环木制分流风轮，以二十七枚独立小风片和可拔木销让各户分别转向或退出",
+      "distinctive_features": ["内外两层同心风骨木环", "二十七枚独立木制小风片", "各片以可拔木销连接", "双环间蜂蜡滑槽"],
+      "forbidden_features": ["单轴普通风车", "金属齿轮机械", "文字标号", "人物或法术光效"],
+      "image": {
+        "path": "images/items/split-flow-windwheel-v1.png",
+        "sha256": "735bd1ef81702e76d6451bba3f210b5a30994ce52e2d99e4ec48f830832d609d",
+        "alt_text": "双环木制分流风轮上分布独立小风片与可拔木销",
+        "generated_with": "codex-imagegen",
+        "prompt": "Use case: stylized-concept；小说器物设定参考图。生成半人高木制分流风轮原型：内外两层同心风骨木环，中间蜂蜡滑槽，总计二十七枚独立小风片并以可拔木销连接，部分向相反方向偏转、少数平躺退出；写实中国仙侠概念插画，1:1安全构图，无人物、文字、法术和水印。",
+        "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "完整双环、风片及木销位于中央百分之八十，四周保留裁剪余量"},
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-13T09:50:00+08:00",
+          "attempts": 1,
+          "notes": "原始正方形图回看确认单架半人高原木风轮；内外双环、蜂蜡色滑槽、分散木片与木销结构清楚，多片呈不同角度；无人物、文字、徽记、法术或水印，主体完整处于1:1安全区。精确二十七片在前后遮挡下不宜逐片计数，正文承担精确数量说明。",
+          "checks": {"subject_identity": true, "canonical_features": true, "colors_and_materials": true, "shape_and_parts": true, "no_contradictions": true, "no_unrequested_text_or_watermark": true, "crop_safe_composition": true}
+        }
+      }
+    },
     "item:gray-lamp-living-recovery-car": {
       "name": "灰灯活人回收车",
       "type": "item",
@@ -231,6 +257,11 @@
     "20": {
       "entity_ids": [
         "item:gray-lamp-living-recovery-car"
+      ]
+    },
+    "21": {
+      "entity_ids": [
+        "item:split-flow-windwheel"
       ]
     }
   }

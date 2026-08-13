@@ -1,4 +1,5 @@
 __pycache__/
+**/.local_cache/
 *.py[cod]
 
 # Local manager execution state

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 24,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-13T12:15:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "1849fea35089512673cba7d95a44b080431cd7af074106601fd691866452fe04",
+  "questions": {
+    "previous_context": {"answer": "陆遥投入的唯一白票因罪人不能自交而无效，但赦令等待某户认领。", "evidence": ["赦令不认陆遥那一票，却没有把票退回来。"]},
+    "immediate_problem": {"answer": "任一户公开认领白票就能让赦令重新把它作为民意收走陆遥。", "evidence": ["只要有人说一句“算我家的”，一票便重新成为民意，陆遥就会被收走。"]},
+    "decision_basis": {"answer": "白匣内壁的白线把不同户签统一接入村印，说明赦令依靠合并结构制造全村民意。", "evidence": ["这就是赦令把一票算作全村的依据：每户风签虽从不同人手里投入，进匣后都会被同一枚村印收走。白匣不辨哪一户，只认“栖霞村已有赞成”。"]},
+    "action_logic": {"answer": "将白签接到分流风轮的独立户支纹，现场检验一票究竟能免一户还是全村。", "evidence": ["“若一票真能替全村得赦，”她说，“白签接入陆家风片后，二十七截门槛木上的碑灰都该熄灭。若只熄陆家一截，就说明这票只能代表一户。”"]},
+    "result_and_cost": {"answer": "试验揭穿赦令只按户免灾，正式结果记录保住独立选择；代价是赦免拒绝后风灾提前。", "evidence": ["实质收益不是一句硬气话：栖霞村保住了独立选择的证据，赦令无法再把一票冒充全村；分流风轮也第一次接上真正的天庭法令，证明它能把按户执行的结果从“一村民意”里拆出来。"]},
+    "reader_hook": {"answer": "镇天碑巨眼提前睁开，地底风灾已经开始而断视楔尚未就位。", "evidence": ["更远处，镇天碑裂纹后的青色巨眼提前睁开一线。\n\n风灾不等午时了。"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

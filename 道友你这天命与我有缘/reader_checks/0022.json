@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 22,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-13T12:05:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "debb16f9a309a7d77a9166bf6416a8ff2430ff65ba0705a721e389eeee2021db",
+  "questions": {
+    "previous_context": {"answer": "分流风轮刚完成三户原型，二十七架屋顶风轮便被镇天碑同步控制。", "evidence": ["二十七架屋顶风轮齐齐朝向镇天碑时，木作铺前的分流风轮也停了。"]},
+    "immediate_problem": {"answer": "碑在提前逐户点名；核对完成会在钉楔前把所有选择合并。", "evidence": ["它正在核对二十七户是不是仍共用一根轮轴；若核对完成，断视楔还没钉下去，所有人的去留便会先被它并成一个答案。"]},
+    "decision_basis": {"answer": "无叶的陆家空轴仍被转动，证明镇天碑抓的是总轴而非叶片。", "evidence": ["陆家风轮没有叶片，空轴却仍吱呀转了半圈。\n\n“它不认叶子，认轴。”陆遥躺在布架上道，“我们刚劈了风轮，还没劈轮轴。”"]},
+    "action_logic": {"answer": "散轴扣让每片风片直接连接各户木牌，从结构上取消统一总轴。", "evidence": ["这种改法叫散轴扣。用途只有一句话：二十七枚风片各用各的短轴，不再把二十七户拴到同一根长轴上。"]},
+    "result_and_cost": {"answer": "二十四户分向运行并让断视楔撑满一刻，但多人伤势、刀具和楔尾继续损耗。", "evidence": ["所有收益都有账。\n\n天快亮时，村外忽然传来铜铃。"]},
+    "reader_hook": {"answer": "韩百川带来以交出陆遥换全村免灾的天庭赦令。", "evidence": ["白纸直到看见陆遥，才浮出一行金字：\n\n“交出逆天行者陆遥，栖霞全村免灾。”"]}
+  },
+  "new_terms": [{"term": "散轴扣", "plain_explanation": "让二十七枚风片分别使用短轴、不再共用长轴的连接结构。", "evidence": "这种改法叫散轴扣。用途只有一句话：二十七枚风片各用各的短轴，不再把二十七户拴到同一根长轴上。"}],
+  "unexplained_terms": []
+}
