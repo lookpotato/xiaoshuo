@@ -32,7 +32,29 @@ READY_FILE = PROFILE_DIR.parent / "image-chatgpt-chrome-profile-v1.ready.json"
 DOWNLOAD_DIR = ROOT / ".manager_image_downloads"
 CONFIG_FILE = ROOT / "image_browser_config.json"
 
-STOP_TEXT = re.compile(r"验证码|验证身份|异常流量|稍后再试|账号受限|政策|违反|captcha", re.I)
+BLOCK_PATTERNS = (
+    ("验证码或真人验证", re.compile(
+        r"验证码|captcha|verify (?:that )?you are human|"
+        r"验证(?:您|你)?是(?:否)?真人|确认(?:您|你)?是真人|Cloudflare",
+        re.I,
+    )),
+    ("异常流量", re.compile(r"异常流量|unusual traffic|automated requests", re.I)),
+    ("账号受限", re.compile(
+        r"账号.{0,8}(?:受限|停用|封禁)|"
+        r"account.{0,12}(?:restricted|deactivated|suspended)",
+        re.I,
+    )),
+    ("明确的政策拦截", re.compile(
+        r"(?:违反|不符合).{0,20}(?:内容|使用)?政策|"
+        r"policy violation|violates?.{0,12}(?:content )?policy",
+        re.I,
+    )),
+    ("使用额度或请求限制", re.compile(
+        r"(?:已|达到|超出).{0,12}(?:使用|图片|生成|请求).{0,8}(?:上限|限制)|"
+        r"rate limit|too many requests",
+        re.I,
+    )),
+)
 LOGIN_TEXT = re.compile(r"登录|注册|Log in|Sign in|Sign up", re.I)
 
 
@@ -194,10 +216,17 @@ def page_text(page: Page) -> str:
         return ""
 
 
+def detect_blocker(text: str) -> str | None:
+    for label, pattern in BLOCK_PATTERNS:
+        if pattern.search(text):
+            return label
+    return None
+
+
 def assert_safe(page: Page) -> None:
-    text = page_text(page)
-    if STOP_TEXT.search(text):
-        raise ImageBlocked("图片网站出现验证码、风控或政策提示，已安全停止")
+    blocker = detect_blocker(page_text(page))
+    if blocker:
+        raise ImageBlocked(f"图片网站出现{blocker}，已安全停止")
 
 
 def visible_prompt(page: Page, config: WebImageConfig):
@@ -245,11 +274,29 @@ def validate_output_path(output: Path) -> Path:
     return resolved
 
 
-def wait_ready(page: Page, config: WebImageConfig, timeout_seconds: int) -> None:
+def wait_ready(
+    page: Page,
+    config: WebImageConfig,
+    timeout_seconds: int,
+    allow_manual_challenge: bool = False,
+) -> None:
     deadline = time.monotonic() + timeout_seconds
+    reported_blocker: str | None = None
     while time.monotonic() < deadline:
-        assert_safe(page)
-        if visible_prompt(page, config):
+        blocker = detect_blocker(page_text(page))
+        manual_challenge = allow_manual_challenge and blocker == "验证码或真人验证"
+        if blocker and not manual_challenge:
+            raise ImageBlocked(f"图片网站出现{blocker}，已安全停止")
+        if manual_challenge and blocker != reported_blocker:
+            print(
+                f"检测到{blocker}，请在打开的 Chrome 中由你本人处理；"
+                "程序不会自动绕过。",
+                file=sys.stderr,
+                flush=True,
+            )
+            reported_blocker = blocker
+        text = page_text(page)
+        if visible_prompt(page, config) and not LOGIN_TEXT.search(text):
             return
         page.wait_for_timeout(1000)
     text = page_text(page)
@@ -265,7 +312,12 @@ def setup(timeout_seconds: int) -> dict:
         try:
             page = context.pages[0] if context.pages else context.new_page()
             navigate(page, config)
-            wait_ready(page, config, timeout_seconds)
+            wait_ready(
+                page,
+                config,
+                timeout_seconds,
+                allow_manual_challenge=True,
+            )
             READY_FILE.write_text(json.dumps({"provider": config.provider, "url": config.url}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             return {"ready": True, "provider": config.provider, "profile": str(PROFILE_DIR), "url": page.url}
         finally:

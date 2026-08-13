@@ -6,6 +6,7 @@ from pathlib import Path
 
 from browser_image_worker import (
     ROOT,
+    detect_blocker,
     load_config,
     normalize_proxy_server,
     parse_windows_proxy,
@@ -38,6 +39,18 @@ class BrowserImageWorkerTests(unittest.TestCase):
             normalize_proxy_server("socks5://127.0.0.1:7891"),
             "socks5://127.0.0.1:7891",
         )
+
+    def test_privacy_policy_footer_is_not_a_blocker(self) -> None:
+        self.assertIsNone(detect_blocker("使用条款 · 隐私政策 · Cookie 设置"))
+
+    def test_explicit_policy_violation_is_a_blocker(self) -> None:
+        self.assertEqual(
+            detect_blocker("此请求可能违反我们的内容政策"),
+            "明确的政策拦截",
+        )
+
+    def test_human_verification_is_a_blocker(self) -> None:
+        self.assertEqual(detect_blocker("Verify you are human"), "验证码或真人验证")
 
     def test_output_must_be_inside_book_images(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
