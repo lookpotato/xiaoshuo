@@ -4,6 +4,8 @@
   "provider": "chatgpt-plus",
   "url": "https://chatgpt.com/",
   "allow_codex_imagegen_fallback": false,
+  "proxy_mode": "system",
+  "proxy_server": null,
   "timeout_seconds": 240,
   "prompt_selectors": [
     "#prompt-textarea",

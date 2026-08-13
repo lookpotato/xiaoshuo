@@ -4,7 +4,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from browser_image_worker import ROOT, load_config, validate_output_path
+from browser_image_worker import (
+    ROOT,
+    load_config,
+    normalize_proxy_server,
+    parse_windows_proxy,
+    validate_output_path,
+)
 
 
 class BrowserImageWorkerTests(unittest.TestCase):
@@ -13,6 +19,25 @@ class BrowserImageWorkerTests(unittest.TestCase):
         self.assertEqual(config.provider, "chatgpt-plus")
         self.assertEqual(config.url, "https://chatgpt.com/")
         self.assertFalse(config.allow_codex_imagegen_fallback)
+        self.assertEqual(config.proxy_mode, "system")
+
+    def test_plain_windows_proxy_is_normalized(self) -> None:
+        self.assertEqual(
+            parse_windows_proxy("127.0.0.1:7890"),
+            "http://127.0.0.1:7890",
+        )
+
+    def test_https_proxy_wins_for_scheme_mapping(self) -> None:
+        self.assertEqual(
+            parse_windows_proxy("http=127.0.0.1:8080;https=127.0.0.1:7890"),
+            "http://127.0.0.1:7890",
+        )
+
+    def test_explicit_proxy_scheme_is_preserved(self) -> None:
+        self.assertEqual(
+            normalize_proxy_server("socks5://127.0.0.1:7891"),
+            "socks5://127.0.0.1:7891",
+        )
 
     def test_output_must_be_inside_book_images(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

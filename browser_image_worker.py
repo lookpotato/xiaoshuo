@@ -9,6 +9,7 @@ import re
 import shutil
 import sys
 import time
+import winreg
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -52,6 +53,60 @@ class WebImageConfig:
     download_names: tuple[str, ...]
     timeout_seconds: int
     allow_codex_imagegen_fallback: bool
+    proxy_mode: str
+    proxy_server: str | None
+
+
+def normalize_proxy_server(value: str) -> str:
+    server = value.strip()
+    if not server:
+        raise ValueError("代理地址不能为空")
+    if "://" not in server:
+        server = f"http://{server}"
+    return server
+
+
+def parse_windows_proxy(value: str) -> str | None:
+    entries = [entry.strip() for entry in value.split(";") if entry.strip()]
+    if not entries:
+        return None
+    keyed: dict[str, str] = {}
+    direct: list[str] = []
+    for entry in entries:
+        if "=" in entry:
+            scheme, server = entry.split("=", 1)
+            keyed[scheme.strip().lower()] = server.strip()
+        else:
+            direct.append(entry)
+    selected = keyed.get("https") or keyed.get("http")
+    if selected is None and direct:
+        selected = direct[0]
+    return normalize_proxy_server(selected) if selected else None
+
+
+def windows_user_proxy() -> str | None:
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Internet Settings",
+        ) as key:
+            enabled = int(winreg.QueryValueEx(key, "ProxyEnable")[0])
+            raw = str(winreg.QueryValueEx(key, "ProxyServer")[0])
+    except (FileNotFoundError, OSError, TypeError, ValueError):
+        return None
+    return parse_windows_proxy(raw) if enabled else None
+
+
+def effective_proxy(config: WebImageConfig) -> str | None:
+    if config.proxy_mode == "direct":
+        return None
+    if config.proxy_mode == "manual":
+        if not config.proxy_server:
+            raise ValueError("proxy_mode=manual 时必须填写 proxy_server")
+        return normalize_proxy_server(config.proxy_server)
+    if config.proxy_mode == "system":
+        return windows_user_proxy()
+    raise ValueError("proxy_mode 只能是 system、manual 或 direct")
 
 
 def load_config() -> WebImageConfig:
@@ -94,19 +149,42 @@ def load_config() -> WebImageConfig:
         allow_codex_imagegen_fallback=bool(
             web.get("allow_codex_imagegen_fallback", False)
         ),
+        proxy_mode=str(web.get("proxy_mode", "system")),
+        proxy_server=(
+            str(web["proxy_server"]) if web.get("proxy_server") else None
+        ),
     )
 
 
-def launch(playwright):
+def launch(playwright, config: WebImageConfig):
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    options = {
+        "user_data_dir": str(PROFILE_DIR),
+        "executable_path": str(chrome_path()),
+        "headless": False,
+        "viewport": {"width": 1440, "height": 960},
+        "locale": "zh-CN",
+        "accept_downloads": True,
+    }
+    proxy = effective_proxy(config)
+    if proxy:
+        options["proxy"] = {"server": proxy, "bypass": "localhost;127.0.0.1"}
     return playwright.chromium.launch_persistent_context(
-        user_data_dir=str(PROFILE_DIR),
-        executable_path=str(chrome_path()),
-        headless=False,
-        viewport={"width": 1440, "height": 960},
-        locale="zh-CN",
-        accept_downloads=True,
+        **options,
     )
+
+
+def navigate(page: Page, config: WebImageConfig) -> None:
+    try:
+        page.goto(config.url, wait_until="domcontentloaded", timeout=60_000)
+    except PlaywrightError as exc:
+        proxy = effective_proxy(config)
+        route = f"代理 {proxy}" if proxy else "直连"
+        raise ImageRetryable(
+            f"无法通过{route}打开 {config.url}；请确认代理程序正在运行，"
+            "然后重试 --setup-image-browser。原始错误: "
+            f"{exc}"
+        ) from exc
 
 
 def page_text(page: Page) -> str:
@@ -183,10 +261,10 @@ def wait_ready(page: Page, config: WebImageConfig, timeout_seconds: int) -> None
 def setup(timeout_seconds: int) -> dict:
     config = load_config()
     with sync_playwright() as playwright:
-        context = launch(playwright)
+        context = launch(playwright, config)
         try:
             page = context.pages[0] if context.pages else context.new_page()
-            page.goto(config.url, wait_until="domcontentloaded", timeout=60_000)
+            navigate(page, config)
             wait_ready(page, config, timeout_seconds)
             READY_FILE.write_text(json.dumps({"provider": config.provider, "url": config.url}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             return {"ready": True, "provider": config.provider, "profile": str(PROFILE_DIR), "url": page.url}
@@ -240,10 +318,10 @@ def generate(prompt_file: Path, output: Path, ratio: str, timeout_seconds: int |
         "无文字、无水印、不得新增提示词之外的设定。"
     )
     with sync_playwright() as playwright:
-        context = launch(playwright)
+        context = launch(playwright, config)
         try:
             page = context.pages[0] if context.pages else context.new_page()
-            page.goto(config.url, wait_until="domcontentloaded", timeout=60_000)
+            navigate(page, config)
             wait_ready(page, config, timeout_seconds or config.timeout_seconds)
             downloaded = download_image(
                 page,
