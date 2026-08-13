@@ -20,13 +20,19 @@ from novel_image_system import _image_dimensions, _matches_aspect_ratio, _valid_
 
 
 ROOT = Path(__file__).resolve().parent
-PROFILE_DIR = Path.home() / "AppData" / "Local" / "xiaoshuo" / "image-chrome-profile-v1"
-READY_FILE = PROFILE_DIR.parent / "image-chrome-profile-v1.ready.json"
+PROFILE_DIR = (
+    Path.home()
+    / "AppData"
+    / "Local"
+    / "xiaoshuo"
+    / "image-chatgpt-chrome-profile-v1"
+)
+READY_FILE = PROFILE_DIR.parent / "image-chatgpt-chrome-profile-v1.ready.json"
 DOWNLOAD_DIR = ROOT / ".manager_image_downloads"
 CONFIG_FILE = ROOT / "image_browser_config.json"
 
 STOP_TEXT = re.compile(r"验证码|验证身份|异常流量|稍后再试|账号受限|政策|违反|captcha", re.I)
-LOGIN_TEXT = re.compile(r"登录|Sign in", re.I)
+LOGIN_TEXT = re.compile(r"登录|注册|Log in|Sign in|Sign up", re.I)
 
 
 class ImageBlocked(RuntimeError):
@@ -55,15 +61,35 @@ def load_config() -> WebImageConfig:
     if web.get("allow_codex_imagegen_fallback") is not False:
         raise ValueError("质量策略禁止自动降级到 Codex imagegen")
     return WebImageConfig(
-        provider=str(web.get("provider", "gemini")),
-        url=str(web.get("url", "https://gemini.google.com/app")),
+        provider=str(web.get("provider", "chatgpt-plus")),
+        url=str(web.get("url", "https://chatgpt.com/")),
         prompt_selectors=tuple(web.get("prompt_selectors", [
+            "#prompt-textarea",
+            "[data-testid='prompt-textarea']",
             "textarea",
             "[contenteditable='true'][role='textbox']",
             "div[contenteditable='true']",
         ])),
-        submit_names=tuple(web.get("submit_names", ["发送", "提交", "Send"])),
-        download_names=tuple(web.get("download_names", ["下载原图", "下载图片", "Download full size image", "Download image"])),
+        submit_names=tuple(
+            web.get(
+                "submit_names",
+                ["发送提示", "发送", "Send prompt", "Send message", "Send"],
+            )
+        ),
+        download_names=tuple(
+            web.get(
+                "download_names",
+                [
+                    "下载此图片",
+                    "下载图片",
+                    "保存",
+                    "Download this image",
+                    "Download image",
+                    "Download",
+                    "Save",
+                ],
+            )
+        ),
         timeout_seconds=int(web.get("timeout_seconds", 240)),
         allow_codex_imagegen_fallback=bool(
             web.get("allow_codex_imagegen_fallback", False)

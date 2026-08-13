@@ -10,7 +10,8 @@ from browser_image_worker import ROOT, load_config, validate_output_path
 class BrowserImageWorkerTests(unittest.TestCase):
     def test_default_config_disables_codex_fallback(self) -> None:
         config = load_config()
-        self.assertEqual(config.provider, "gemini")
+        self.assertEqual(config.provider, "chatgpt-plus")
+        self.assertEqual(config.url, "https://chatgpt.com/")
         self.assertFalse(config.allow_codex_imagegen_fallback)
 
     def test_output_must_be_inside_book_images(self) -> None:

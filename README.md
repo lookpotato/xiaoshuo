@@ -76,7 +76,7 @@ python xiaoshuo --setup-image-browser
 python xiaoshuo --check-image-browser
 ```
 
-系统会通过已登录网页生成并下载图片，Codex 只负责提示词、设定一致性和视觉质量验收；网页失败时不会自动消耗 Codex 图片额度。详细步骤见 `docs/图片浏览器配置.md`。
+系统会通过已登录的 ChatGPT Plus 网页生成并下载图片，Codex 只负责提示词、设定一致性和视觉质量验收；网页失败时不会自动消耗 Codex 图片额度。详细步骤见 `docs/图片浏览器配置.md`。
 
 ### 《404修理站》打赏加更
 

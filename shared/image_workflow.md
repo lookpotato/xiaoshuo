@@ -102,7 +102,7 @@
       "sha256": "文件的实际 SHA-256",
       "alt_text": "四棱乌黑锁魂钉，尾端有暗红刻痕",
       "generated_with": "chrome-web",
-      "web_provider": "gemini",
+      "web_provider": "chatgpt-plus",
       "prompt": "实际使用的完整提示词",
       "display": {
         "content_kind": "item",

@@ -1,24 +1,32 @@
 {
   "schema_version": 1,
   "generator": "chrome-web",
-  "provider": "gemini",
-  "url": "https://gemini.google.com/app",
+  "provider": "chatgpt-plus",
+  "url": "https://chatgpt.com/",
   "allow_codex_imagegen_fallback": false,
   "timeout_seconds": 240,
   "prompt_selectors": [
+    "#prompt-textarea",
+    "[data-testid='prompt-textarea']",
     "textarea",
     "[contenteditable='true'][role='textbox']",
     "div[contenteditable='true']"
   ],
   "submit_names": [
+    "发送提示",
     "发送",
     "提交",
+    "Send prompt",
+    "Send message",
     "Send"
   ],
   "download_names": [
-    "下载原图",
+    "下载此图片",
     "下载图片",
-    "Download full size image",
-    "Download image"
+    "保存",
+    "Download this image",
+    "Download image",
+    "Download",
+    "Save"
   ]
 }
