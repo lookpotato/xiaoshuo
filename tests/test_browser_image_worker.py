@@ -5,11 +5,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from playwright.sync_api import Error as PlaywrightError
+
 from browser_image_worker import (
     ROOT,
     detect_blocker,
     download_image_source,
     load_config,
+    navigate,
     normalize_proxy_server,
     parse_windows_proxy,
     validate_output_path,
@@ -90,6 +93,20 @@ class BrowserImageWorkerTests(unittest.TestCase):
         self.assertEqual(page.context.request.get.call_count, 3)
         self.assertEqual(page.wait_for_timeout.call_count, 2)
         browser_download.assert_called_once_with(page, "https://chatgpt.com/image")
+
+    def test_navigation_retries_transient_proxy_failure(self) -> None:
+        config = load_config()
+        page = Mock()
+        page.goto.side_effect = [
+            PlaywrightError("proxy closed"),
+            PlaywrightError("tls interrupted"),
+            None,
+        ]
+
+        navigate(page, config, attempts=3)
+
+        self.assertEqual(page.goto.call_count, 3)
+        self.assertEqual(page.wait_for_timeout.call_count, 2)
 
 
 if __name__ == "__main__":

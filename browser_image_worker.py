@@ -222,17 +222,23 @@ def launch(playwright, config: WebImageConfig):
         raise
 
 
-def navigate(page: Page, config: WebImageConfig) -> None:
-    try:
-        page.goto(config.url, wait_until="domcontentloaded", timeout=60_000)
-    except PlaywrightError as exc:
-        proxy = effective_proxy(config)
-        route = f"代理 {proxy}" if proxy else "直连"
-        raise ImageRetryable(
-            f"无法通过{route}打开 {config.url}；请确认代理程序正在运行，"
-            "然后重试 --setup-image-browser。原始错误: "
-            f"{exc}"
-        ) from exc
+def navigate(page: Page, config: WebImageConfig, attempts: int = 3) -> None:
+    last_error = "未知网络错误"
+    for attempt in range(1, attempts + 1):
+        try:
+            page.goto(config.url, wait_until="domcontentloaded", timeout=60_000)
+            return
+        except PlaywrightError as exc:
+            last_error = str(exc).splitlines()[0]
+            if attempt < attempts:
+                page.wait_for_timeout(attempt * 2000)
+    proxy = effective_proxy(config)
+    route = f"代理 {proxy}" if proxy else "直连"
+    raise ImageRetryable(
+        f"连续 {attempts} 次无法通过{route}打开 {config.url}；"
+        "请确认代理程序正在运行后重试。最后错误: "
+        f"{last_error}"
+    )
 
 
 def page_text(page: Page) -> str:

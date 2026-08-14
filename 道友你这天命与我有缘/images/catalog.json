@@ -237,6 +237,54 @@
         }
       }
     },
+    "item:recovery-boundary-spike": {
+      "name": "回收界钉",
+      "type": "item",
+      "first_chapter": 26,
+      "image_created_chapter": 26,
+      "source_excerpt": "链尾从碎石里翻起一枚半臂长的乌黑四棱铁钉，钉腰套着方形旧金环",
+      "canonical_description": "用于钉住副碑回收边界的半臂长乌黑四棱铁钉，钉腰以方形旧金环连接单道灰白云索",
+      "distinctive_features": [
+        "半臂长乌黑四棱铁钉",
+        "钉腰严格只有一个方形旧金环",
+        "方环后严格只连接一小段灰白粗云索"
+      ],
+      "forbidden_features": [
+        "圆钉、剑、枪、锚或木钉",
+        "圆环、第二枚钉、第二个环或完整长链",
+        "人物、村庄、文字、徽记或法术光效"
+      ],
+      "image": {
+        "path": "images/items/recovery-boundary-spike-v1.png",
+        "sha256": "c9de978556053a70b6cc94b41fb4f52842340063b44fd359d011bcf4f42322e8",
+        "alt_text": "乌黑四棱铁钉腰间套着方形旧金环并连接一段灰白云索",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图。\n实体名称与类型：回收界钉，关键回收道具。\n正文来源：“云索横在唯一的出村路上，灰白链身比屋梁还粗。链尾从碎石里翻起一枚半臂长的乌黑四棱铁钉，钉腰套着方形旧金环，环后只接这一道云索。”\n主体：严格只展示一枚孤立的“回收界钉”。界钉为半臂长的乌黑四棱铁钉，四条棱线清晰，钉尖厚重，钉腰严格只套一个方形旧金金属环；方环后严格只连接一小段灰白色粗云索，用来表明它与锁碑云索相连。不要表现完整长链、第二枚钉或其他道具。\n结构关系：采用正投影结合轻微俯视的器物设定展示，让完整四棱钉身、钉尖、唯一方形旧金环和唯一一小段灰白云索都清楚可辨。方环套在钉腰，不是圆环；云索只从方环一侧接出，不缠绕钉身。界钉用于钉住回收边界，不是武器、法器飞剑或普通建筑钉。\n材质与颜色：钉身为磨损乌黑铁，棱角带少量冷灰磨痕；方环为暗哑旧金色金属；云索为灰白色、如压实云絮与旧绳结合的粗索材质。背景仅用克制云灰色中性地面。\n统一画风：写实感中国仙侠叙事概念插画，东方器物结构清楚，克制电影光影；墨青、云灰、旧金为主，不加华丽法术。\n画幅与安全区：准确 1:1 正方形画幅。完整界钉、唯一方环和唯一一小段云索居中，全部位于中央 80% 安全区，四周至少保留 10% 空白；按 1:1 裁剪后所有关键特征完整，不贴边、不截断。\n限制：严格一枚半臂长乌黑四棱铁钉、一个方形旧金环、唯一一小段灰白云索；不得新增设定，不得用相似替代物；不得画成圆钉、剑、长枪、锚、木钉、金色钉、圆环或完整长链；不得添加第二枚钉、第二个环、额外锁链、人物、人影、村庄、房屋、镇天碑、武器、文字、数字、铭文、徽记、法术光效、黑霜或血迹；无文字，无水印。\n\n硬性输出要求：请直接生成一张图片；画幅必须为 1:1；无文字、无水印、不得新增提示词之外的设定。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "完整四棱钉身、唯一方形旧金环和唯一一小段灰白云索位于中央百分之八十，四周至少保留百分之十裁剪余量"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-14T18:32:00+08:00",
+          "attempts": 1,
+          "notes": "原始1254×1254图片回看确认1:1画幅；主体严格为单枚磨损乌黑四棱铁钉，四棱钉身、厚重钉尖、钉腰唯一方形旧金环及环侧唯一一小段灰白粗云索清楚完整；无第二枚钉、额外环链、人物、场景、文字、水印或法术光效，全部关键结构位于中央安全区。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
+    },
     "item:gray-lamp-living-recovery-car": {
       "name": "灰灯活人回收车",
       "type": "item",
@@ -316,6 +364,11 @@
     "25": {
       "entity_ids": [
         "item:household-wind-wing"
+      ]
+    },
+    "26": {
+      "entity_ids": [
+        "item:recovery-boundary-spike"
       ]
     }
   }
