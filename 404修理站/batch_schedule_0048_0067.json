@@ -194,10 +194,12 @@
       "chapter": 64,
       "date": "2026-08-21",
       "time": "12:00",
-      "status": "not_uploaded",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-14T15:15:25+08:00",
       "job_id": "20260814-115703-a3f38ab8",
-      "author_note_image_uploaded": false
+      "author_note_image_uploaded": true,
+      "verified_at": "2026-08-14T15:56:42.949045+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
     }
   ]
 }
