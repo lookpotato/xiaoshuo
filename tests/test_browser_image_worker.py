@@ -3,10 +3,12 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from browser_image_worker import (
     ROOT,
     detect_blocker,
+    download_image_source,
     load_config,
     normalize_proxy_server,
     parse_windows_proxy,
@@ -72,6 +74,22 @@ class BrowserImageWorkerTests(unittest.TestCase):
                 validate_output_path(target)
         finally:
             target.unlink(missing_ok=True)
+
+    def test_image_source_retries_then_uses_browser_download(self) -> None:
+        page = Mock()
+        page.context.request.get.return_value = Mock(ok=False, status=503)
+        fallback = Path("browser-fallback.png")
+
+        with patch(
+            "browser_image_worker.download_image_in_browser",
+            return_value=fallback,
+        ) as browser_download:
+            result = download_image_source(page, "https://chatgpt.com/image", attempts=3)
+
+        self.assertEqual(result, fallback)
+        self.assertEqual(page.context.request.get.call_count, 3)
+        self.assertEqual(page.wait_for_timeout.call_count, 2)
+        browser_download.assert_called_once_with(page, "https://chatgpt.com/image")
 
 
 if __name__ == "__main__":

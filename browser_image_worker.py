@@ -328,22 +328,65 @@ def generated_image_sources(page: Page, config: WebImageConfig) -> list[str]:
     return sources
 
 
-def download_image_source(page: Page, source: str) -> Path:
-    response = page.context.request.get(source, timeout=60_000)
-    if not response.ok:
-        raise ImageRetryable(
-            f"ChatGPT 图片资源下载失败，HTTP {response.status}"
-        )
-    content_type = (response.headers.get("content-type") or "").lower()
-    suffix = ".png"
-    if "jpeg" in content_type or "jpg" in content_type:
-        suffix = ".jpg"
-    elif "webp" in content_type:
-        suffix = ".webp"
+def download_image_in_browser(page: Page, source: str) -> Path:
+    """Fall back to Chrome's own network stack for an authenticated image URL."""
     DOWNLOAD_DIR.mkdir(exist_ok=True)
-    target = DOWNLOAD_DIR / f"web-image-{int(time.time())}{suffix}"
-    target.write_bytes(response.body())
-    return target
+    try:
+        with page.expect_download(timeout=60_000) as download_info:
+            page.evaluate(
+                """source => {
+                    const link = document.createElement('a');
+                    link.href = source;
+                    link.download = 'chatgpt-image.png';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                }""",
+                source,
+            )
+        download = download_info.value
+        suffix = Path(download.suggested_filename).suffix.lower() or ".png"
+        target = DOWNLOAD_DIR / f"web-image-{time.time_ns()}{suffix}"
+        download.save_as(target)
+        return target
+    except PlaywrightError as exc:
+        raise ImageRetryable(
+            f"ChatGPT 图片原图下载连续失败：{str(exc).splitlines()[0]}"
+        ) from exc
+
+
+def download_image_source(page: Page, source: str, attempts: int = 3) -> Path:
+    """Download a generated image, tolerating transient TLS/proxy interruptions."""
+    last_error = "未知网络错误"
+    for attempt in range(1, attempts + 1):
+        try:
+            response = page.context.request.get(source, timeout=60_000)
+            if not response.ok:
+                last_error = f"HTTP {response.status}"
+            else:
+                content_type = (response.headers.get("content-type") or "").lower()
+                suffix = ".png"
+                if "jpeg" in content_type or "jpg" in content_type:
+                    suffix = ".jpg"
+                elif "webp" in content_type:
+                    suffix = ".webp"
+                DOWNLOAD_DIR.mkdir(exist_ok=True)
+                target = DOWNLOAD_DIR / f"web-image-{time.time_ns()}{suffix}"
+                target.write_bytes(response.body())
+                return target
+        except PlaywrightError as exc:
+            last_error = str(exc).splitlines()[0]
+        if attempt < attempts:
+            page.wait_for_timeout(attempt * 1500)
+
+    try:
+        return download_image_in_browser(page, source)
+    except ImageRetryable as exc:
+        raise ImageRetryable(
+            f"ChatGPT 图片资源下载失败（直连重试 {attempts} 次，最后错误："
+            f"{last_error}；浏览器兜底也失败：{exc}）"
+        ) from exc
 
 
 def validate_output_path(output: Path) -> Path:
