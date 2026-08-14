@@ -102,6 +102,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
+- 续跑失败批次时，先检查 next_chapter_number 对应的既有草稿和本书 images/ 中尚未登记的同章成图；正文与图片通过现行门禁后必须直接复用，不得仅因上次流程中断而重写正文、重复生图或覆盖文件；
 - 列出本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象作为候选；同名同设定实体沿用目录，不重复生图；
 - 每章总计最多 1 张，只选择最需要视觉解释的新实体；同章其他新实体必须用正文白话解释。首次启用且本章没有更高优先级新实体时，可用唯一名额补齐主角参考图；
 - 生图前先确定目标画幅并写入提示词：人物默认 2:3，道具或徽记 1:1，宽场景或地点 16:9，横向异兽或动作画面 3:2，仅明确超长竖构图使用 9:16；catalog 的 generation_aspect_ratio 与 fanqie_crop_ratio 必须一致，并写清主体安全区；
