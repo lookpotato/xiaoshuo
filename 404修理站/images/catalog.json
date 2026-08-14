@@ -263,6 +263,59 @@
           }
         }
       }
+    },
+    "location:archive-pump-room": {
+      "name": "档案泵房",
+      "type": "location",
+      "first_chapter": 59,
+      "image_created_chapter": 60,
+      "source_excerpt": "下行线没有通往零号炉芯，而是折向旧公交维修厂更深处，终点标着一间早已封死的档案泵房。",
+      "canonical_description": "旧公交维修厂最深处夹在地下油库与废弃回水墙之间的封死档案泵房，双层盐霜旧钢门下有三枚方形机械压脚；左脚管送纸，中脚连接红灰担保线，略低的右脚以四片厚度不同的薄钢垫显示机械余量",
+      "distinctive_features": [
+        "结满盐霜的双层旧钢铁门与半截扁平拉杆",
+        "沿同一水平线排列且仅有三枚方形机械压脚",
+        "中间压脚连接一根红灰细线",
+        "右脚略低且下方卡口准确嵌有四片薄钢垫",
+        "最上层垫片边缘断裂并露出新鲜银白断口",
+        "门缝前无字废报码纸带三道平行油痕"
+      ],
+      "forbidden_features": [
+        "第四枚压脚或第五片垫片",
+        "人物、手、车辆或武器",
+        "显示屏、文字、数字、符号、品牌或徽标",
+        "赛博霓虹、魔法符文或能力光效",
+        "现代洁净机房或无关锅炉设备"
+      ],
+      "image": {
+        "path": "images/locations/archive-pump-room-v1.png",
+        "sha256": "097740cb3e399552a871aa0fede709702463537798edfbf96177eaf7897f8012",
+        "alt_text": "盐霜双层钢门下排列三枚机械压脚，右脚卡口嵌有四片薄钢垫的档案泵房",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说《404修理站》第60章地点设定参考图，用于让读者看清档案泵房的机械结构。主体：旧公交维修厂最深处夹在地下油库与废弃回水墙之间的封死档案泵房；盐霜双层旧钢门、半截扁平拉杆，门下准确三枚方形压脚；左脚接手摇送纸槽，中脚接红灰细线，略低右脚下准确四片厚度不同的薄钢垫，顶片银白断裂；无字废报码纸仅有三道平行油痕。写实感中国末世工业科幻，盐尘灰、旧钢铁、暗青与有限琥珀灯，准确16:9横向构图，关键结构在中央安全区。禁止第四枚压脚、第五片垫片、人物、手、车辆、武器、显示屏、品牌、徽标、霓虹、符文、能力光效、文字和水印，不得新增设定。",
+        "display": {
+          "content_kind": "location",
+          "generation_aspect_ratio": "16:9",
+          "fanqie_crop_ratio": "16:9",
+          "safe_area": "双层铁门、三枚压脚、右脚四片钢垫、断片、红灰线和门缝废纸均位于中央百分之八十区域，四周留边充分"
+        },
+        "verification": {
+          "status": "verified",
+          "reviewer": "codex-visual-review",
+          "checked_at": "2026-08-14T09:21:00+08:00",
+          "attempts": 1,
+          "notes": "肉眼确认盐霜双层旧钢门、左侧半截拉杆和门下三枚且仅三枚机械压脚；右脚下四段钢垫与银白断片可辨，中脚红灰线及带三道油痕的无字废纸存在；未出现人物、文字、水印、额外压脚、额外垫片、显示屏或设定冲突。原图1672×941符合16:9容差，全部关键结构远离裁剪边缘。",
+          "checks": {
+            "subject_identity": true,
+            "canonical_features": true,
+            "colors_and_materials": true,
+            "shape_and_parts": true,
+            "no_contradictions": true,
+            "no_unrequested_text_or_watermark": true,
+            "crop_safe_composition": true
+          }
+        }
+      }
     }
   },
   "chapter_images": {
@@ -289,6 +342,11 @@
     "59": {
       "entity_ids": [
         "location:underground-guarantee-routing-well"
+      ]
+    },
+    "60": {
+      "entity_ids": [
+        "location:archive-pump-room"
       ]
     }
   }
