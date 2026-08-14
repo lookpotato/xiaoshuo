@@ -21,6 +21,8 @@ class BrowserImageWorkerTests(unittest.TestCase):
         self.assertEqual(config.url, "https://chatgpt.com/")
         self.assertFalse(config.allow_codex_imagegen_fallback)
         self.assertEqual(config.proxy_mode, "system")
+        self.assertIn("[data-testid='send-button']", config.submit_selectors)
+        self.assertIn("img[alt^='已生成图片']", config.generated_image_selectors)
 
     def test_plain_windows_proxy_is_normalized(self) -> None:
         self.assertEqual(

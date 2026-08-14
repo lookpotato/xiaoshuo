@@ -14,6 +14,11 @@
     "[contenteditable='true'][role='textbox']",
     "div[contenteditable='true']"
   ],
+  "submit_selectors": [
+    "[data-testid='send-button']",
+    "button[aria-label*='发送']",
+    "button[aria-label*='Send']"
+  ],
   "submit_names": [
     "发送提示",
     "发送",
@@ -21,6 +26,11 @@
     "Send prompt",
     "Send message",
     "Send"
+  ],
+  "generated_image_selectors": [
+    "img[alt^='已生成图片']",
+    "img[alt^='Generated image']",
+    "img[src*='/backend-api/estuary/content?id=file_']"
   ],
   "download_names": [
     "下载此图片",

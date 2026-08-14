@@ -12,6 +12,7 @@ import time
 import winreg
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError, sync_playwright
@@ -71,7 +72,9 @@ class WebImageConfig:
     provider: str
     url: str
     prompt_selectors: tuple[str, ...]
+    submit_selectors: tuple[str, ...]
     submit_names: tuple[str, ...]
+    generated_image_selectors: tuple[str, ...]
     download_names: tuple[str, ...]
     timeout_seconds: int
     allow_codex_imagegen_fallback: bool
@@ -147,10 +150,26 @@ def load_config() -> WebImageConfig:
             "[contenteditable='true'][role='textbox']",
             "div[contenteditable='true']",
         ])),
+        submit_selectors=tuple(
+            web.get(
+                "submit_selectors",
+                ["[data-testid='send-button']", "button[aria-label*='发送']"],
+            )
+        ),
         submit_names=tuple(
             web.get(
                 "submit_names",
                 ["发送提示", "发送", "Send prompt", "Send message", "Send"],
+            )
+        ),
+        generated_image_selectors=tuple(
+            web.get(
+                "generated_image_selectors",
+                [
+                    "img[alt^='已生成图片']",
+                    "img[alt^='Generated image']",
+                    "img[src*='/backend-api/estuary/content?id=file_']",
+                ],
             )
         ),
         download_names=tuple(
@@ -191,9 +210,16 @@ def launch(playwright, config: WebImageConfig):
     proxy = effective_proxy(config)
     if proxy:
         options["proxy"] = {"server": proxy, "bypass": "localhost;127.0.0.1"}
-    return playwright.chromium.launch_persistent_context(
-        **options,
-    )
+    try:
+        return playwright.chromium.launch_persistent_context(**options)
+    except PlaywrightError as exc:
+        message = str(exc)
+        if "Target page, context or browser has been closed" in message:
+            raise ImageRetryable(
+                "图片专用 Chrome 配置正在被另一个窗口或遗留进程占用；"
+                "请只关闭图片专用 Chrome 后重试，不要关闭日常 Chrome。"
+            ) from exc
+        raise
 
 
 def navigate(page: Page, config: WebImageConfig) -> None:
@@ -231,10 +257,33 @@ def assert_safe(page: Page) -> None:
 
 def visible_prompt(page: Page, config: WebImageConfig):
     for selector in config.prompt_selectors:
-        matches = [item for item in page.locator(selector).all() if item.is_visible() and item.is_enabled()]
+        try:
+            matches = [
+                item
+                for item in page.locator(selector).all()
+                if item.is_visible() and item.is_enabled()
+            ]
+        except PlaywrightError:
+            continue
         if matches:
             return matches[-1]
     return None
+
+
+def click_selector(page: Page, selectors: tuple[str, ...]) -> bool:
+    for selector in selectors:
+        try:
+            matches = [
+                item
+                for item in page.locator(selector).all()
+                if item.is_visible() and item.is_enabled()
+            ]
+            if matches:
+                matches[-1].click()
+                return True
+        except PlaywrightError:
+            continue
+    return False
 
 
 def click_named(page: Page, names: tuple[str, ...]) -> bool:
@@ -260,6 +309,43 @@ def visible_named_count(page: Page, names: tuple[str, ...]) -> int:
     return len(seen)
 
 
+def generated_image_sources(page: Page, config: WebImageConfig) -> list[str]:
+    sources: list[str] = []
+    seen: set[str] = set()
+    for selector in config.generated_image_selectors:
+        try:
+            images = page.locator(selector).all()
+        except PlaywrightError:
+            continue
+        for item in images:
+            try:
+                source = item.get_attribute("src") or ""
+                if item.is_visible() and source.startswith("http") and source not in seen:
+                    sources.append(source)
+                    seen.add(source)
+            except PlaywrightError:
+                continue
+    return sources
+
+
+def download_image_source(page: Page, source: str) -> Path:
+    response = page.context.request.get(source, timeout=60_000)
+    if not response.ok:
+        raise ImageRetryable(
+            f"ChatGPT 图片资源下载失败，HTTP {response.status}"
+        )
+    content_type = (response.headers.get("content-type") or "").lower()
+    suffix = ".png"
+    if "jpeg" in content_type or "jpg" in content_type:
+        suffix = ".jpg"
+    elif "webp" in content_type:
+        suffix = ".webp"
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    target = DOWNLOAD_DIR / f"web-image-{int(time.time())}{suffix}"
+    target.write_bytes(response.body())
+    return target
+
+
 def validate_output_path(output: Path) -> Path:
     resolved = output.resolve()
     if ROOT not in resolved.parents:
@@ -272,6 +358,37 @@ def validate_output_path(output: Path) -> Path:
     if resolved.exists():
         raise ValueError("输出文件已存在；请使用 -v2、-v3 等新文件名，禁止覆盖旧图")
     return resolved
+
+
+def fill_and_submit_prompt(
+    page: Page,
+    config: WebImageConfig,
+    prompt: str,
+    timeout_seconds: int,
+) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error = "输入框尚未出现"
+    while time.monotonic() < deadline:
+        assert_safe(page)
+        prompt_box = visible_prompt(page, config)
+        if prompt_box is None:
+            page.wait_for_timeout(500)
+            continue
+        try:
+            prompt_box.scroll_into_view_if_needed()
+            prompt_box.click()
+            prompt_box.fill(prompt)
+            page.wait_for_timeout(500)
+            if not click_selector(page, config.submit_selectors):
+                if not click_named(page, config.submit_names):
+                    prompt_box.press("Enter")
+            return
+        except PlaywrightError as exc:
+            last_error = str(exc).splitlines()[0]
+            page.wait_for_timeout(750)
+    raise ImageRetryable(
+        f"ChatGPT 输入框在页面重绘后仍不可用：{last_error}"
+    )
 
 
 def wait_ready(
@@ -325,19 +442,17 @@ def setup(timeout_seconds: int) -> dict:
 
 
 def download_image(page: Page, config: WebImageConfig, prompt: str, timeout_seconds: int) -> Path:
-    prompt_box = visible_prompt(page, config)
-    if prompt_box is None:
-        raise ImageRetryable("提示词输入框不可用")
-    prompt_box.click()
-    prompt_box.fill(prompt)
-    before_images = page.locator("img").count()
+    before_sources = set(generated_image_sources(page, config))
     before_downloads = visible_named_count(page, config.download_names)
-    if not click_named(page, config.submit_names):
-        prompt_box.press("Enter")
+    fill_and_submit_prompt(page, config, prompt, min(timeout_seconds, 60))
 
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         assert_safe(page)
+        current_sources = generated_image_sources(page, config)
+        new_sources = [source for source in current_sources if source not in before_sources]
+        if new_sources:
+            return download_image_source(page, new_sources[-1])
         new_download_available = visible_named_count(page, config.download_names) > before_downloads
         if new_download_available:
             break
@@ -354,6 +469,64 @@ def download_image(page: Page, config: WebImageConfig, prompt: str, timeout_seco
     target = DOWNLOAD_DIR / f"web-image-{int(time.time())}{suffix}"
     download.save_as(target)
     return target
+
+
+def recover_image(
+    conversation_url: str,
+    output: Path,
+    ratio: str,
+    timeout_seconds: int,
+) -> dict:
+    parsed = urlparse(conversation_url)
+    if parsed.scheme != "https" or parsed.netloc != "chatgpt.com" or not parsed.path.startswith("/c/"):
+        raise ValueError("--recover-url 必须是 https://chatgpt.com/c/... 会话地址")
+    config = load_config()
+    output = validate_output_path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as playwright:
+        context = launch(playwright, config)
+        try:
+            page = context.pages[0] if context.pages else context.new_page()
+            page.goto(conversation_url, wait_until="domcontentloaded", timeout=60_000)
+            deadline = time.monotonic() + timeout_seconds
+            downloaded: Path | None = None
+            while time.monotonic() < deadline:
+                assert_safe(page)
+                sources = generated_image_sources(page, config)
+                if sources:
+                    downloaded = download_image_source(page, sources[-1])
+                    break
+                page.wait_for_timeout(1000)
+            if downloaded is None:
+                raise ImageRetryable("指定 ChatGPT 会话中未找到已生成图片")
+        finally:
+            context.close()
+    return finalize_download(downloaded, output, ratio, config.provider)
+
+
+def finalize_download(
+    downloaded: Path,
+    output: Path,
+    ratio: str,
+    provider: str,
+) -> dict:
+    shutil.copy2(downloaded, output)
+    downloaded.unlink(missing_ok=True)
+    if not _valid_image_signature(output):
+        output.unlink(missing_ok=True)
+        raise ImageRetryable("下载结果不是有效的 PNG/JPEG/WebP 图片")
+    dimensions = _image_dimensions(output)
+    if dimensions is None or not _matches_aspect_ratio(*dimensions, ratio):
+        raise ImageRetryable(f"下载图片尺寸 {dimensions} 不符合目标画幅 {ratio}；保留文件供人工检查")
+    return {
+        "status": "downloaded_pending_visual_review",
+        "provider": provider,
+        "generated_with": "chrome-web",
+        "path": str(output),
+        "sha256": sha256_file(output),
+        "dimensions": list(dimensions),
+        "ratio": ratio,
+    }
 
 
 def generate(prompt_file: Path, output: Path, ratio: str, timeout_seconds: int | None) -> dict:
@@ -383,23 +556,7 @@ def generate(prompt_file: Path, output: Path, ratio: str, timeout_seconds: int |
             )
         finally:
             context.close()
-    shutil.copy2(downloaded, output)
-    downloaded.unlink(missing_ok=True)
-    if not _valid_image_signature(output):
-        output.unlink(missing_ok=True)
-        raise ImageRetryable("下载结果不是有效的 PNG/JPEG/WebP 图片")
-    dimensions = _image_dimensions(output)
-    if dimensions is None or not _matches_aspect_ratio(*dimensions, ratio):
-        raise ImageRetryable(f"下载图片尺寸 {dimensions} 不符合目标画幅 {ratio}；保留文件供人工检查")
-    return {
-        "status": "downloaded_pending_visual_review",
-        "provider": config.provider,
-        "generated_with": "chrome-web",
-        "path": str(output),
-        "sha256": sha256_file(output),
-        "dimensions": list(dimensions),
-        "ratio": ratio,
-    }
+    return finalize_download(downloaded, output, ratio, config.provider)
 
 
 def emit(payload: dict) -> None:
@@ -415,11 +572,22 @@ def main() -> int:
     parser.add_argument("--prompt-file", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--ratio", choices=["16:9", "9:16", "1:1", "2:3", "3:2"])
+    parser.add_argument("--recover-url", help="从已经完成的 ChatGPT 会话恢复图片")
     parser.add_argument("--timeout", type=int)
     args = parser.parse_args()
     try:
         if args.setup or args.check:
             emit(setup(args.timeout or 600))
+            return 0
+        if args.recover_url:
+            if not args.output or not args.ratio:
+                parser.error("恢复图片需要 --output 和 --ratio")
+            emit(recover_image(
+                args.recover_url,
+                args.output,
+                args.ratio,
+                args.timeout or 120,
+            ))
             return 0
         if not args.prompt_file or not args.output or not args.ratio:
             parser.error("生成图片需要 --prompt-file、--output 和 --ratio")
