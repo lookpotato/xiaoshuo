@@ -83,12 +83,13 @@
       "chapter": 27,
       "date": "2026-08-18",
       "time": "18:30",
-      "status": "archived_not_uploaded",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-14T20:10:41+08:00",
-      "verified_at": "2026-08-14T20:10:41+08:00",
+      "verified_at": "2026-08-14T20:24:53.148999+08:00",
       "local_word_count": 4078,
       "reader_check": "passed",
-      "author_note_image_uploaded": false
+      "author_note_image_uploaded": true,
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7669807761814735897&%E9%81%93%E5%8F%8B%E4%BD%A0%E8%BF%99%E5%A4%A9%E5%91%BD%E4%B8%8E%E6%88%91%E6%9C%89%E7%BC%98?type=1"
     }
   ]
 }
