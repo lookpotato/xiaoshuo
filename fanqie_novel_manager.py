@@ -526,11 +526,9 @@ def cmd_session(data, args):
         "pending_batch_chapters": pending_publish_entries(project),
         "required_read_order": [
             str(project / "automation_prompt.md"),
-            str(ROOT / "shared" / "writing_playbook.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
             str(ROOT / "shared" / "image_workflow.md"),
             str(ROOT / "shared" / "reader_gate.md"),
-            str(ROOT / "shared" / "learning_log.md"),
             str(project / "novel_config.md"),
             str(project / "outline.md"),
             str(project / "characters.md"),
