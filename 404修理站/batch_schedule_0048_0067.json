@@ -211,6 +211,18 @@
       "author_note_image_uploaded": true,
       "verified_at": "2026-08-17T16:48:54.980575+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+    },
+    {
+      "chapter": 66,
+      "date": "2026-08-22",
+      "time": "12:00",
+      "status": "not_uploaded",
+      "archived_at": "2026-08-17T17:19:46+08:00",
+      "job_id": "20260817-160053-a05701ae",
+      "local_word_count": 3897,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false
     }
   ]
 }
