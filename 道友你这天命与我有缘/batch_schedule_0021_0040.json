@@ -1,7 +1,7 @@
 {
   "timezone": "Asia/Shanghai",
   "created_at": "2026-08-13T12:20:00+08:00",
-  "updated_at": "2026-08-17T18:50:19+08:00",
+  "updated_at": "2026-08-20T17:12:21+08:00",
   "chapter_range": [
     21,
     40
@@ -117,6 +117,18 @@
       "image_path": "images/items/detention-token-v3.png",
       "verified_at": "2026-08-17T18:58:11.671606+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7669807761814735897&%E9%81%93%E5%8F%8B%E4%BD%A0%E8%BF%99%E5%A4%A9%E5%91%BD%E4%B8%8E%E6%88%91%E6%9C%89%E7%BC%98?type=1"
+    },
+    {
+      "chapter": 30,
+      "date": "2026-08-20",
+      "time": "18:30",
+      "status": "not_uploaded",
+      "archived_at": "2026-08-20T17:12:21+08:00",
+      "local_word_count": 2003,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/damaged-green-bamboo-flying-sword-v1.png"
     }
   ]
 }
