@@ -154,7 +154,7 @@ def write_one(book_id: str, job: dict) -> None:
         "-C",
         str(ROOT),
         "--model",
-        "gpt-5.6-sol",
+        "gpt-5.6-luna",
         "--sandbox",
         "danger-full-access",
         "--config",
