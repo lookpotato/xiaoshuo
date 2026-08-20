@@ -7,6 +7,15 @@
   "default_failure_policy": "retry_same_day",
   "default_book_id": "cosmic-404",
   "writing_policy": {
+    "chapter_length": {
+      "target": "正文 1900—2200 字，以约 2000 字为中心",
+      "hard_ceiling": "常规不得超过 2400 字；预计超长时在阶段胜负处拆成连续短章",
+      "quality_rule": "拆章是延长事件链，不是删掉打斗细节、因果桥梁、人物反应或结果余波；每个短章仍须有目标、交锋、兑现和钩子。"
+    },
+    "pacing": {
+      "combat_first": "推理和规则只服务于行动，不得连续两章以核验、查档案或剧本杀式过关为主要体验。",
+      "emotional_wave": "低潮最多连续 2 章，且必须取得反攻筹码；以小高潮、中高潮和大高潮逐级兑现。"
+    },
     "new_item_explanation": {
       "enabled": true,
       "first_appearance": "新道具首次出现时先用一句直白说明告诉读者它能做什么，再补必要设定；允许使用角色认知、铭牌、面板或数据化短栏。",
@@ -16,14 +25,13 @@
     },
     "image_assets": {
       "enabled": true,
-      "generator": "codex-imagegen",
+      "generator": "chrome-web",
       "max_images_per_chapter": 1,
       "new_entity_rule": "每章只选一个最需要视觉解释的首次出现实体配图；普通背景物不登记，同章其他新实体必须用正文白话解释。",
       "reuse_rule": "同名同设定实体沿用本书目录中的既有参考图，禁止重复生图或跨书复用。",
-      "verification_rule": "生成后必须由 Codex 回看并完成七项视觉核验（含裁剪安全构图）；任一关键项不符就重生，未通过不得归档章节或推进状态。",
+      "verification_rule": "网页 GPT 成图下载后直接采用，不调用 Codex 回看图片内容；只做文件头、SHA-256、像素画幅、目录、正文引用和番茄上传回显等机械校验。",
       "aspect_ratio_rule": "图片目录必须记录生成画幅和番茄裁剪比例且二者一致：人物默认2:3，道具与组织标志默认1:1，宽场景与地点默认16:9，横向异兽或动作画面默认3:2，仅明确的超长竖构图使用9:16；主体与关键特征必须留在安全区内。",
-      "generation_failure_rule": "精确数量或结构连续生成失败时，不降低正确性标准；改用正投影、俯视、孤立道具或结构更清楚的表现方式重试，仍失败则保留章节草稿并向命令行报告具体失败原因。",
-      "author_note_explanation_rule": "作者有话说中的配图解释必须以【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】开头，以【辅助说明结束】结尾；说明只辅助识图，正文因果不得依赖它。"
+      "generation_failure_rule": "网页未产出文件、下载失败、文件损坏或像素画幅错误时保留草稿并报告；不得因 Codex 主观查看画面而重生。"
     },
     "reader_comprehension": {
       "enabled": true,

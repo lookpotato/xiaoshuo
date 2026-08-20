@@ -568,7 +568,7 @@ def finalize_download(
     if dimensions is None or not _matches_aspect_ratio(*dimensions, ratio):
         raise ImageRetryable(f"下载图片尺寸 {dimensions} 不符合目标画幅 {ratio}；保留文件供人工检查")
     return {
-        "status": "downloaded_pending_visual_review",
+        "status": "downloaded_ready_for_catalog",
         "provider": provider,
         "generated_with": "chrome-web",
         "path": str(output),

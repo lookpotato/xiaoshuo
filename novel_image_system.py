@@ -23,15 +23,6 @@ ALLOWED_ENTITY_TYPES = {
     "organization": "organizations",
     "scene": "scenes",
 }
-REQUIRED_VISUAL_CHECKS = {
-    "subject_identity",
-    "canonical_features",
-    "colors_and_materials",
-    "shape_and_parts",
-    "no_contradictions",
-    "no_unrequested_text_or_watermark",
-    "crop_safe_composition",
-}
 IMAGE_SIGNATURES = {
     ".png": (b"\x89PNG\r\n\x1a\n",),
     ".jpg": (b"\xff\xd8\xff",),
@@ -327,34 +318,6 @@ def validate_image_catalog(project: Path, expected_book_id: str | None = None) -
             safe_area = display.get("safe_area")
             if not isinstance(safe_area, str) or len(safe_area.strip()) < 8:
                 errors.append(f"{label}.image.display.safe_area 必须说明安全构图范围")
-        verification = image.get("verification")
-        if not isinstance(verification, dict) or verification.get("status") != "verified":
-            errors.append(f"{label} 图片尚未通过 verified 核验")
-        else:
-            if verification.get("reviewer") != "codex-visual-review":
-                errors.append(f"{label}.image.verification.reviewer 必须为 codex-visual-review")
-            if not isinstance(verification.get("checked_at"), str) or not verification.get(
-                "checked_at", ""
-            ).strip():
-                errors.append(f"{label}.image.verification.checked_at 不能为空")
-            if not isinstance(verification.get("notes"), str) or len(
-                verification.get("notes", "").strip()
-            ) < 8:
-                errors.append(f"{label}.image.verification.notes 必须记录具体核验依据")
-            if not isinstance(verification.get("attempts"), int) or verification.get(
-                "attempts", 0
-            ) < 1:
-                errors.append(f"{label}.image.verification.attempts 必须是正整数")
-            checks = verification.get("checks")
-            if not isinstance(checks, dict):
-                errors.append(f"{label}.image.verification.checks 必须是对象")
-            else:
-                missing = sorted(
-                    key for key in REQUIRED_VISUAL_CHECKS if checks.get(key) is not True
-                )
-                if missing:
-                    errors.append(f"{label} 视觉核验未通过: {', '.join(missing)}")
-
     recorded_entities: set[str] = set()
     for chapter_key, manifest in chapter_images.items():
         label = f"chapter_images.{chapter_key}"

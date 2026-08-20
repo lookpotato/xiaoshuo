@@ -55,22 +55,6 @@ class ImageCatalogTests(unittest.TestCase):
                             "fanqie_crop_ratio": "1:1",
                             "safe_area": "道具完整居中，四周保留至少百分之十安全边距",
                         },
-                        "verification": {
-                            "status": "verified",
-                            "reviewer": "codex-visual-review",
-                            "checked_at": "2026-08-11T12:00:00+08:00",
-                            "attempts": 1,
-                            "notes": "肉眼确认四棱钉身、暗红尾环，且没有文字水印。",
-                            "checks": {
-                                "subject_identity": True,
-                                "canonical_features": True,
-                                "colors_and_materials": True,
-                                "shape_and_parts": True,
-                                "no_contradictions": True,
-                                "no_unrequested_text_or_watermark": True,
-                                "crop_safe_composition": True,
-                            },
-                        },
                     },
                 }
             },
@@ -86,10 +70,10 @@ class ImageCatalogTests(unittest.TestCase):
             json.dumps(self.catalog, ensure_ascii=False), encoding="utf-8"
         )
 
-    def test_valid_verified_asset_passes(self) -> None:
+    def test_valid_downloaded_asset_passes_without_visual_review(self) -> None:
         self.assertEqual(validate_image_catalog(self.project, "test-book"), [])
 
-    def test_verified_chrome_web_asset_passes(self) -> None:
+    def test_chrome_web_asset_passes(self) -> None:
         image = self.catalog["entities"]["item:soul-lock"]["image"]
         image["generated_with"] = "chrome-web"
         image["web_provider"] = "gemini"
@@ -125,14 +109,15 @@ class ImageCatalogTests(unittest.TestCase):
         errors = validate_image_catalog(self.project, "test-book")
         self.assertTrue(any("图片超过 1 张" in error for error in errors))
 
-    def test_failed_visual_check_is_rejected(self) -> None:
-        checks = self.catalog["entities"]["item:soul-lock"]["image"]["verification"][
-            "checks"
-        ]
-        checks["shape_and_parts"] = False
+    def test_legacy_failed_visual_check_does_not_block_trusted_web_output(self) -> None:
+        image = self.catalog["entities"]["item:soul-lock"]["image"]
+        image["verification"] = {
+            "status": "failed",
+            "reviewer": "codex-visual-review",
+            "checks": {"shape_and_parts": False},
+        }
         self.write_catalog()
-        errors = validate_image_catalog(self.project, "test-book")
-        self.assertTrue(any("shape_and_parts" in error for error in errors))
+        self.assertEqual(validate_image_catalog(self.project, "test-book"), [])
 
     def test_missing_display_metadata_is_rejected(self) -> None:
         del self.catalog["entities"]["item:soul-lock"]["image"]["display"]
