@@ -120,15 +120,18 @@
     },
     {
       "chapter": 30,
-      "date": "2026-08-20",
-      "time": "18:30",
-      "status": "not_uploaded",
+      "date": "2026-08-19",
+      "time": "20:30",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-20T17:12:21+08:00",
       "local_word_count": 2003,
       "reader_check": "passed",
       "upload_status": "not_uploaded",
-      "author_note_image_uploaded": false,
-      "image_path": "images/items/damaged-green-bamboo-flying-sword-v1.png"
+      "author_note_image_uploaded": true,
+      "image_path": "images/items/damaged-green-bamboo-flying-sword-v1.png",
+      "schedule_normalized_at": "2026-08-20T17:47:25.807731+08:00",
+      "verified_at": "2026-08-20T21:35:02.100324+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7669807761814735897&%E9%81%93%E5%8F%8B%E4%BD%A0%E8%BF%99%E5%A4%A9%E5%91%BD%E4%B8%8E%E6%88%91%E6%9C%89%E7%BC%98?type=1"
     }
   ]
 }
