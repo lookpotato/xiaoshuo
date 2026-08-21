@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 40,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T20:12:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "77cc3e372eb8b4b3b2339ff4da196ac1432b593f5890fe078adb8d368b72713c",
+  "questions": {
+    "previous_context": {
+      "answer": "黑井求救与收人牌的去处冲突把现场推入新的扣押危机。",
+      "evidence": ["门后的那句“别让他们把我送回去”"]
+    },
+    "immediate_problem": {
+      "answer": "陆遥必须阻止门把自己和镇天碑一起送回栖霞村，否则黑井会重新封死。",
+      "evidence": ["它要把我送回栖霞村。"]
+    },
+    "decision_basis": {
+      "answer": "他依据收人牌三项缺损、木鸢回声和铜线连接判断门是在冒名扣押。",
+      "evidence": ["姓名缺半格，担保是伪印，去处是门里自己写的。"]
+    },
+    "action_logic": {
+      "answer": "陆遥用修索骨钉锁住铜线并把牌压在门缝前，借规则让门先退牌再退人。",
+      "evidence": ["这不是收人，是冒名扣押。按你们的规矩，先退牌，再退人。"]
+    },
+    "result_and_cost": {
+      "answer": "门内牵引反扣四名收网人并稳住索桥，但收人牌裂成两半，陆遥的名字仍可能被井底收走。",
+      "evidence": ["可陆遥手里的收人牌也裂成了两半。"]
+    },
+    "reader_hook": {
+      "answer": "黑井睁眼后叫出的韩百川，说明门内收路账的对象还不是陆遥父亲。",
+      "evidence": ["它看着陆遥，先叫出了一个不属于陆沉舟的名字。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "收人牌",
+      "plain_explanation": "用来登记被收之人的姓名、担保和去处，缺项只能形成扣押。",
+      "evidence": "陆遥低头看着收人牌——它用来登记姓名、担保和去处，缺一项便只能算扣押。"
+    },
+    {
+      "term": "木鸢归巢",
+      "plain_explanation": "牌背上的去处标记，提示门内正在把人送回某个归处。",
+      "evidence": "收人牌第三格浮出的“木鸢归巢”——牌背写给门内的去处——贴在一起"
+    },
+    {
+      "term": "修索骨钉",
+      "plain_explanation": "用来锁住会滑动的牌或索骨的钉状工具。",
+      "evidence": "他用左手掏出修索骨钉，这枚钉子用来锁住会滑动的牌或索骨。"
+    }
+  ],
+  "unexplained_terms": []
+}

@@ -786,6 +786,40 @@
         }
       }
     },
+    "character:lu-yao": {
+      "name": "陆遥",
+      "type": "character",
+      "first_chapter": 1,
+      "image_created_chapter": 40,
+      "source_excerpt": "此刻，陆遥就挂在镇天碑顶端",
+      "canonical_description": "栖霞村木匠学徒，身形清瘦，左眉有浅疤，右臂受伤不能发力，握着裂损的青竹飞剑与旧工具囊。",
+      "distinctive_features": [
+        "清瘦少年与左眉浅疤",
+        "右臂贴身保持受伤姿势",
+        "裂损青竹飞剑第七节白裂",
+        "灰布衣与旧工具囊"
+      ],
+      "forbidden_features": [
+        "仙气光环、宗门徽记或额外法宝",
+        "完整无伤的右臂、完好的飞剑或额外人物",
+        "文字、数字、水印或现代服饰"
+      ],
+      "image": {
+        "path": "images/characters/lu-yao-v1.png",
+        "sha256": "350e871667045183964544fcf6cf823e71853b39d05828e23a937d020284c8e3",
+        "alt_text": "陆遥：负伤的少年握着残竹飞剑，站在黑井与断索桥旁",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0040-lu-yao.txt",
+        "prompt": "Novel reference image for 《道友你这天命与我有缘》, entity: 陆遥, character portrait, generation aspect ratio 2:3, Fanqie crop ratio 2:3. A lean seventeen-year-old Chinese xianxia youth, pale from blood loss, short dark hair, a shallow scar at the left eyebrow, soot and blood on his cheek, right arm held close and unusable, left hand gripping a damaged green bamboo flying sword with a cracked seventh segment, gray cloth work clothes and an old tool pouch, wary crooked half-smile, standing beside a black well and a broken rope bridge in a furnace-lit underground ruin. Full upper-body to three-quarter figure centered; keep head, both hands, sword, injury marks, and tool pouch inside the central 70% safe area with generous margins; no text, no watermark, no extra characters, no new weapons, no magical aura, consistent restrained Chinese web-novel cover illustration style.",
+        "display": {
+          "content_kind": "character",
+          "generation_aspect_ratio": "2:3",
+          "fanqie_crop_ratio": "2:3",
+          "safe_area": "人物头部、双手、残竹飞剑、伤势与工具囊均位于中央70%安全区，四周保留裁剪余量"
+        }
+      }
+    },
     "item:receiving-person-plaque": {
       "name": "收人牌",
       "type": "item",
@@ -913,6 +947,11 @@
     "39": {
       "entity_ids": [
         "item:receiving-person-plaque"
+      ]
+    },
+    "40": {
+      "entity_ids": [
+        "character:lu-yao"
       ]
     }
   }
