@@ -617,6 +617,30 @@
         "fanqie_crop_ratio": "16:9",
         "safe_area": "炉体、内城门金齿、偏斜发红云索和回火槽位于中央百分之八十，关键主体不贴边，四周至少保留约百分之十安全边距"
       }
+    },
+    "item:three-legged-warm-wind-furnace": {
+      "name": "三足温风小炉",
+      "type": "item",
+      "first_chapter": 36,
+      "image_created_chapter": 36,
+      "source_excerpt": "三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。",
+      "canonical_description": "半人高的黑青旧铁小炼器炉，三只分开的铁炉足各带风孔，炉口是窄长进风缝，可用一份旧风骨木升温一炷香并选择炼制一种材料",
+      "distinctive_features": ["黑青半人高炉腹", "三只带风孔的铁炉足", "窄长进风缝与简朴炉盖"],
+      "forbidden_features": ["人物或手", "剑、城门、云索", "文字、铭文、火焰特效", "额外成品或水印"],
+      "image": {
+        "path": "images/items/three-legged-warm-wind-furnace-v1.png",
+        "sha256": "38d5b548f08448a566c0ebc7ad022763735ba4949dc23242d5dc6146c6b64366",
+        "alt_text": "黑青旧铁制成的三足温风小炉，三只炉足带风孔，炉口为窄长进风缝",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图。\n实体名称与类型：三足温风小炉，关键实战道具。\n正文依据：‘三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。升温要一炷香，燃料只有一份，三样只能选一样。’\n基础用途：一座半人高的黑青小炼器炉，用一份旧风骨木燃料升温一炷香，可在修补胶、爆风丸、临时剑蜡三者中选择炼制一种；本图只展示器物本身，不展示人物、火焰特效或成品。\n主体：严格只有一座半人高的三足温风小炉，黑青厚重炉腹，三只分开的旧铁炉足，炉腹下方各有一个清晰的风孔，炉口为窄长进风缝与简朴炉盖，结构完整居中。\n材质与颜色：墨青旧铁、云灰磨痕、少量暗红受热锈痕；写实感中国仙侠叙事概念插画，克制电影光影，墨青、云灰、旧金配色。\n构图：准确 1:1 正方形画幅，器物完整居中，主体及三只炉足、风孔、窄长炉口全部位于中央 80% 安全区，四周至少保留 10% 空白，适配番茄 1:1 裁剪。\n限制：不得新增设定，不得使用相似替代物；不得添加人物、手、剑、云索、城门、法术光效、文字、铭文、符号、数字、成品、燃烧火焰或水印；无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "器物完整居中，炉腹、三只炉足、风孔与窄长炉口均位于中央80%安全区，四周至少保留10%裁剪余量"
+        }
+      }
     }
     },
     "item:backflow-fire-wedge": {
@@ -647,6 +671,30 @@
           "generation_aspect_ratio": "1:1",
           "fanqie_crop_ratio": "1:1",
           "safe_area": "完整回火楔、窄前端、厚尾与旧麻绳位于中央百分之八十，四周至少保留百分之十裁剪余量"
+        }
+      }
+    },
+    "item:three-legged-warm-wind-furnace": {
+      "name": "三足温风小炉",
+      "type": "item",
+      "first_chapter": 36,
+      "image_created_chapter": 36,
+      "source_excerpt": "三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。",
+      "canonical_description": "半人高的黑青旧铁小炼器炉，三只分开的铁炉足各带风孔，炉口为窄长进风缝，可用一份旧风骨木升温一炷香并选择炼制一种材料",
+      "distinctive_features": ["黑青半人高炉腹", "三只带风孔的铁炉足", "窄长进风缝与简朴炉盖"],
+      "forbidden_features": ["人物或手", "剑、城门、云索", "文字、铭文、火焰特效", "额外成品或水印"],
+      "image": {
+        "path": "images/items/three-legged-warm-wind-furnace-v1.png",
+        "sha256": "38d5b548f08448a566c0ebc7ad022763735ba4949dc23242d5dc6146c6b64366",
+        "alt_text": "黑青旧铁制成的三足温风小炉，三只炉足带风孔，炉口为窄长进风缝",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图。实体名称与类型：三足温风小炉，关键实战道具。准确1:1正方形画幅，器物完整居中，主体及三只炉足、风孔、窄长炉口位于中央80%安全区，四周至少10%空白；黑青旧铁、云灰磨痕、暗红受热锈痕，写实感中国仙侠叙事概念插画，克制电影光影；不得添加人物、手、剑、云索、城门、法术光效、文字、铭文、成品、火焰或水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "器物完整居中，炉腹、三只炉足、风孔与窄长炉口均位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
     }
@@ -725,6 +773,11 @@
     "35": {
       "entity_ids": [
         "item:backflow-fire-wedge"
+      ]
+    },
+    "36": {
+      "entity_ids": [
+        "item:three-legged-warm-wind-furnace"
       ]
     }
   }

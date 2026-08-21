@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "chapter_number": 36,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T17:02:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "ddef0a06249ee7364a615b432bdf835269a69f922abaab22728c2c216a6abdbf",
+  "questions": {
+    "previous_context": {"answer": "黑井要求把门外副碑送进内城，镇天碑与索桥同时承压，陆遥必须在门缝扩大前作出选择。", "evidence": ["镇天碑再往前半尺，内城门会开；再往后半尺，索桥会断。"]},
+    "immediate_problem": {"answer": "副碑继续入门会让局面失控，而索桥、收网人和散客都可能被热风与断桥卷走。", "evidence": ["金齿门缝扩大了一指，镇天碑底部擦出一串暗红火星。"]},
+    "decision_basis": {"answer": "沈雁回说明三足小炉能炼三种不同材料但燃料只够一种，陆遥又看到残剑已裂，因此选择强化残剑。", "evidence": ["三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。升温要一炷香，燃料只有一份，三样只能选一样。"]},
+    "action_logic": {"answer": "他用铁钉锁住坠台，把小炉拉到桥边，并以残剑承接热气；临时剑蜡能让残剑继续直冲，虽不能解决转弯限制，却适合试探门内。", "evidence": ["我要炼临时剑蜡。"]},
+    "result_and_cost": {"answer": "坠台和小炉被拉到桥边，众人被迫共同稳住它；炉火尚未完全升起，门内已用陆遥的声音敲碑，说明选择引出了新的风险。", "evidence": ["炉火尚未真正升起，门缝里却伸出一根漆黑的金属指节，轻轻敲在镇天碑上。"]},
+    "reader_hook": {"answer": "门内借陆遥的声音说出第三次别敲，陆遥要用临时剑蜡试探它究竟收碑还是收人。", "evidence": ["“第三次别敲。”"]}
+  },
+  "new_terms": [
+    {"term": "三足温风小炉", "plain_explanation": "一座半人高的三足小炼器炉，一份燃料升温一炷香，只能在修补胶、爆风丸和临时剑蜡中选一种。", "evidence": "三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。升温要一炷香，燃料只有一份，三样只能选一样。"},
+    {"term": "临时剑蜡", "plain_explanation": "小炉可炼的一种临时材料，能让残竹剑多撑几次直冲，但不能让它转弯。", "evidence": "让你的残剑多撑几次直冲，但不能让它转弯。"},
+    {"term": "空心铁钉", "plain_explanation": "沈雁回交给陆遥、用来钉住坠台防止它滑回云里的轻铁钉。", "evidence": "钉进台脚，防它滑回云里。"}
+  ],
+  "unexplained_terms": []
+}
