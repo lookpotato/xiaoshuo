@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 35,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T12:00:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "e71147131e92eb7b111af4a34dd5c9b7a276575cf3b78e9de255b4b7cdeee5bf",
+  "questions": {
+    "previous_context": {
+      "answer": "黑井里的木鸢在上一章用陆遥的声音警告不要第二次敲击，而本章从这道警告和桥上伤势接起。",
+      "evidence": ["第34章末那句“别敲第二次，会看见我”还贴在耳边。"]
+    },
+    "immediate_problem": {
+      "answer": "黑井泄压、镇天碑入门和索桥存亡互相冲突，选错就会让桥断或副碑进门。",
+      "evidence": ["无论选哪边，索桥和二号剑炉只能留一个。"]
+    },
+    "decision_basis": {
+      "answer": "陆遥听出黑井回声先于铁水变化，判断井中之物会借回火管推力，且旧风槽可把热气送向空索。",
+      "evidence": ["声音有先后。井壁里的回声先响，镇天碑底的铁水才落；可刚才那一遍，是黑井先动，炉火后跟。"]
+    },
+    "action_logic": {
+      "answer": "他只拔回火楔半寸开窄缝，再以只能直冲不能急转的残剑把热风推向已清空人的西侧空索，避免替黑井开门。",
+      "evidence": ["这是陆遥的选择。他将骨锥尖端换到铁楔靠外的一侧，只挑出半寸，让风槽先开一条窄缝；然后把残缺青竹飞剑的剑尾对准西侧空索。"]
+    },
+    "result_and_cost": {
+      "answer": "热压被引走，索桥保住且副碑未入门，但残剑抱箍断裂、回火楔卡死，陆遥掌心和胸伤加重。",
+      "evidence": ["黑井里的热压被风槽泄走，二号剑炉的铁水终于没有继续往桥下滴。"]
+    },
+    "reader_hook": {
+      "answer": "井中陌生声音要求把门外副碑送进来，门齿也露出一人宽的缝，陆遥决定反送送碑者入门。",
+      "evidence": ["我们把送碑的人，先送进去。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "回火楔",
+      "plain_explanation": "堵住旧风槽并控制炉压方向的铁楔，拔出半寸能让热气沿空索散走。",
+      "evidence": "它是堵住旧风槽、控制炉压方向的铁楔。拔出来，热气会顺空索散走；插回去，风槽重新封死。"
+    },
+    {
+      "term": "旧风槽",
+      "plain_explanation": "二号剑炉原本用来把回火热气导向外侧的散热通道。",
+      "evidence": "桥下第三梁后有一条旧风槽，原本给回火槽散热。"
+    },
+    {
+      "term": "空索",
+      "plain_explanation": "西侧没有接住人员的云索，可用来把热风导离索桥。",
+      "evidence": "空索那头若有人，热气会把人掀下绳坪。"
+    }
+  ],
+  "unexplained_terms": []
+}
