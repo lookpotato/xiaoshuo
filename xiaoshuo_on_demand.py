@@ -249,6 +249,35 @@ def expected_regular_slot(
     return next_date.strftime("%Y-%m-%d"), times[0]
 
 
+def uploaded_today_count(
+    data: dict,
+    project: Path,
+    now: datetime | None = None,
+) -> int:
+    """Count platform-confirmed chapters uploaded on the configured local date."""
+    current = now or manager.now_for(data)
+    today = current.date().isoformat()
+    return sum(
+        1
+        for _, entry in schedule_entries(project)
+        if str(entry.get("date", "")) == today
+        and str(entry.get("status", "")).strip()
+        in manager.SUBMITTED_UPLOAD_STATUSES
+    )
+
+
+def should_publish_immediately(
+    data: dict,
+    book_id: str,
+    project: Path,
+    now: datetime | None = None,
+) -> bool:
+    """Use immediate submission until today's configured chapter quota is full."""
+    book = manager.find_book(data, book_id)
+    target = max(1, int(book.get("daily_chapter_target", 1)))
+    return uploaded_today_count(data, project, now) < target
+
+
 def normalize_schedule_entry(
     data: dict,
     book_id: str,
@@ -367,6 +396,12 @@ def record_upload(
     target = next(
         item for item in payload["entries"] if int(item["chapter"]) == number
     )
+    if result.get("immediate"):
+        # Immediate submissions consume today's quota even when their old local
+        # slot was in the future or already expired. Keep the configured slot
+        # time so the next regular chapter can advance to the next day.
+        target["date"] = manager.now_for(data).date().isoformat()
+        target["immediate_submitted_at"] = manager.now_for(data).isoformat()
     target["status"] = local_status
     target["verified_at"] = manager.now_for(data).isoformat()
     target["fanqie_url"] = result["url"]
@@ -398,7 +433,8 @@ def record_upload(
             f"\n\n## 按需命令发布第{number}章\n\n"
             f"- 平台状态：{platform}\n"
             f"- 本地状态：{local_status}\n"
-            f"- 排期：{entry['date']} {resolved_time(data, book_id, entry['time'])}\n"
+            f"- {'立即发布时间' if result.get('immediate') else '排期'}："
+            f"{entry['date']} {resolved_time(data, book_id, entry['time'])}\n"
             f"- 核验 URL：{result['url']}\n"
             f"- 作者有话说图片："
             f"{'已上传唯一图片' if result.get('author_note_image_uploaded') else '本章无图'}\n"
@@ -559,18 +595,49 @@ def run(
                     raise RuntimeError("新章节未进入待上传排期")
             schedule_path, entry, chapter_path = pending
             chapter = parse_chapter(chapter_path)
-            publish_time = resolved_time(data, book_id, str(entry["time"]))
-            print(
-                f"正在发布第{chapter.number}章《{chapter.title}》："
-                f"{entry['date']} {publish_time}",
-                flush=True,
+            current_time = manager.now_for(data)
+            immediate_for_chapter = should_publish_immediately(
+                data, book_id, project, current_time
             )
+            if immediate_for_chapter:
+                publish_date = current_time.date().isoformat()
+                publish_time = current_time.strftime("%H:%M")
+                print(
+                    f"当天尚未完成每日 {book.get('daily_chapter_target', 1)} 章，"
+                    f"第{chapter.number}章《{chapter.title}》立即发布："
+                    f"{publish_date} {publish_time}",
+                    flush=True,
+                )
+            else:
+                normalized_schedule = normalize_schedule_entry(
+                    data, book_id, project, chapter.number
+                )
+                if normalized_schedule:
+                    entry = next(
+                        item
+                        for item in manager.read_json(normalized_schedule)["entries"]
+                        if int(item["chapter"]) == chapter.number
+                    )
+                    schedule_path = normalized_schedule
+                    print(
+                        f"当天已完成每日 {book.get('daily_chapter_target', 1)} 章，"
+                        f"第{chapter.number}章顺延到 {entry['date']} {entry['time']}。",
+                        flush=True,
+                    )
+                publish_time = resolved_time(data, book_id, str(entry["time"]))
+                publish_date = str(entry["date"])
+                print(
+                    f"正在排期发布第{chapter.number}章《{chapter.title}》："
+                    f"{publish_date} {publish_time}",
+                    flush=True,
+                )
             upload = publish_with_retry(
                 project,
                 chapter_path,
-                str(entry["date"]),
+                publish_date,
                 publish_time,
                 debug_browser,
+                immediate=immediate or immediate_for_chapter,
             )
             changed = record_upload(
                 data,
@@ -596,7 +663,7 @@ def run(
                         "已发布": "published",
                     }[upload["status"]],
                     message=(
-                        f"《{chapter.title}》{entry['date']} {publish_time}，"
+                        f"《{chapter.title}》{publish_date} {publish_time}，"
                         f"平台核验为{upload['status']}"
                     ),
                 ),
