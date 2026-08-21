@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 34,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T12:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "cad1628093c987001f313b4661255cfa73ad4211ee391fae1ac8015b83b11938",
+  "questions": {
+    "previous_context": {
+      "answer": "前章二号剑炉隔门烧副碑，铁水落入黑井并敲出暗号，陆遥因此在索桥上追查回声。",
+      "evidence": ["第三滴铁水落下，黑井里又传来一长、两短。"]
+    },
+    "immediate_problem": {
+      "answer": "镇天碑正被云索拖进内城，索桥将断，黑井里可能有会动的东西，处理失误会让副碑进门或桥毁。",
+      "evidence": ["“副碑要进门了。”沈雁回盯着云索，“炉火压不住它，桥会先断。”"]
+    },
+    "decision_basis": {
+      "answer": "陆遥比较白气和铁水的间隔，又依据空心铁钉回声更长，判断黑井在回火并通过井壁铁管传递。",
+      "evidence": ["白气出现的间隔，和铁水落下的间隔不一样。"]
+    },
+    "action_logic": {
+      "answer": "他先用旧铜抱箍撑住碑与桥梁的缝，再让沈雁回撬出空心铁钉，把炉火改压到外侧云索，以保住索桥并拖延副碑入门。",
+      "evidence": ["“碑进不了门，炉子才会继续烧。炉子一停，桥就断。如今得先保住桥，再管门。”"]
+    },
+    "result_and_cost": {
+      "answer": "铁水沿云索倒卷，镇天碑退开半尺，金齿停止合拢，索桥暂稳；陆遥再次吐血，黑井却换出更急的暗号并露出木鸢。",
+      "evidence": ["镇天碑底部被那股回流一扯，向外退了半尺。"]
+    },
+    "reader_hook": {
+      "answer": "黑井深处出现烧焦木鸢，并传出与陆遥相同的声音，催他不要第二次敲击。",
+      "evidence": ["“别敲第二次，会看见我。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "旧铜抱箍",
+      "plain_explanation": "它原本用来夹住裂开的风骨，当前被陆遥临时卡进桥梁与镇天碑的缝里撑住结构，不能修好飞剑。",
+      "evidence": "旧铜抱箍只能暂时夹住裂开的风骨，不能修好飞剑。"
+    },
+    {
+      "term": "回火声",
+      "plain_explanation": "二号剑炉压下来的炉火沿云索传递，黑井把其中一部分退回去形成的声响。",
+      "evidence": "剑炉隔着门烧副碑，铁水顺着云索走。黑井接的不是人声，是炉子的回火声。"
+    },
+    {
+      "term": "泄压路",
+      "plain_explanation": "黑井不是囚室，而是二号剑炉释放压力、把火力从井口挪开的通道。",
+      "evidence": "黑井不是囚室，是二号剑炉的泄压路。"
+    }
+  ],
+  "unexplained_terms": []
+}
