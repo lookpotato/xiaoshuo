@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 42,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T21:12:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "0e79f16e1fa1bc8850121ed2d1e90456f3e1a4189f4a821edbee0bfe9b2d42e2",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章黑井通过折云翼的铜扣再次叫出韩百川，陆遥因此要追查这笔旧担保，而不是继续下井。",
+      "evidence": ["韩百川三个字从折云翼的铜扣里响出来时，陆遥先看了一眼自己的手。"]
+    },
+    "immediate_problem": {
+      "answer": "黑井每次眨眼都会让索桥下沉，若不处理，镇天碑和桥上众人会被热压牵进井底。",
+      "evidence": ["井眼一眨，第一座索桥向下一沉。"]
+    },
+    "decision_basis": {
+      "answer": "陆遥根据铜扣把青光引向最外侧云索、收人牌残字变化以及黑井持续叫名，判断它追的是担保路径。",
+      "evidence": ["铜扣没有咬住他的指头，翼面也没有往井底塌。它只是沿着旧刻痕一明一灭，把黑井里的青光引到最外侧云索上。"]
+    },
+    "action_logic": {
+      "answer": "追索铜印能把替人担保的名字印到承力物上并沿牵引追到担保人，但印错会先裂；陆遥再借折云翼贴侧风转向，把印和承力梁拖离井眼。",
+      "evidence": ["它用来标出当前替人担保的名字，印在承力物上，牵引就会顺着印面追到真正担保人。"]
+    },
+    "result_and_cost": {
+      "answer": "沈雁回松肩后，镇天碑向西滑出半丈，黑井失去收牌残字的角度；追索铜印碎裂，陆遥的伤口和折云翼破损都继续付出代价。",
+      "evidence": ["镇天碑则沿空索滑出半丈，黑井青光从它底部擦过，没能再扣住收人牌上的残字。"]
+    },
+    "reader_hook": {
+      "answer": "印碎后账仍在，黑井开始追问陆遥替谁押路，并从铜扣里叫出陆遥自己的名字。",
+      "evidence": ["说完，折云翼的铜扣里，第三个名字响了起来。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "追索铜印",
+      "plain_explanation": "一种把担保名字印到承力物、顺着牵引追到真正担保人的旧铜印，印错时先裂开。",
+      "evidence": "它用来标出当前替人担保的名字，印在承力物上，牵引就会顺着印面追到真正担保人。"
+    }
+  ],
+  "unexplained_terms": []
+}

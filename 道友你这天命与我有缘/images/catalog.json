@@ -886,6 +886,38 @@
           "safe_area": "折云翼完整展开并位于中央约70%安全区，左右上下至少保留10%裁剪余量"
         }
       }
+    },
+    "item:pursuit-seal": {
+      "name": "追索铜印",
+      "type": "item",
+      "first_chapter": 42,
+      "image_created_chapter": 42,
+      "source_excerpt": "它用来标出当前替人担保的名字",
+      "canonical_description": "巴掌大的粗旧追索铜印，旧铜磨白，印钮像缩着爪子的铁鸟，背面有细裂纹，碎裂后显出缺角官印轮廓。",
+      "distinctive_features": [
+        "粗旧磨白的铜印面",
+        "像缩着爪子铁鸟的印钮",
+        "背面细裂纹与缺角官印轮廓"
+      ],
+      "forbidden_features": [
+        "人物、手、承力梁、云索、城门、石碑、黑井或飞剑",
+        "完整官府印章图案、文字、数字、符号或水印"
+      ],
+      "image": {
+        "path": "images/items/pursuit-seal-v1.png",
+        "sha256": "0a6b7b6262e2811a9be488011053cf44f745e97705d361d74015fa3b2e53ce45",
+        "alt_text": "巴掌大的旧铜追索印，印钮像缩着爪子的铁鸟，背面有裂纹",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0042-pursuit-seal.txt",
+        "prompt": "用途：小说设定参考图。实体名称：追索铜印。实体类型：关键实战道具。严格1:1正方形；巴掌大旧铜印完整置于中央80%安全区，四周至少10%余量；粗旧铜质、磨白印面、像缩着爪子铁鸟的印钮、背面细裂纹与少量碎片表现裂开状态；旧铜、暗灰、冷黑配色，无发光法术。写实感中国仙侠叙事概念插画，克制电影光影。不得出现人物、手、承力梁、云索、城门、石碑、黑井、飞剑、文字、数字、符号、完整官府印章图案、水印或边框。无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "铜印、印钮、磨白印面和裂纹位于中央80%，四周至少10%安全余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -992,6 +1024,11 @@
     "41": {
       "entity_ids": [
         "item:fold-cloud-wing"
+      ]
+    },
+    "42": {
+      "entity_ids": [
+        "item:pursuit-seal"
       ]
     }
   }
