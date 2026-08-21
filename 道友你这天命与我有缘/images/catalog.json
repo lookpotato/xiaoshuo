@@ -851,6 +851,41 @@
           "safe_area": "主体完整居中于中央80%，四周至少保留10%安全边距"
         }
       }
+    },
+    "item:fold-cloud-wing": {
+      "name": "折云翼",
+      "type": "item",
+      "first_chapter": 41,
+      "image_created_chapter": 41,
+      "source_excerpt": "它的基础用途很直白：折云翼能把人贴着侧风滑出去，借铰扣改变方向",
+      "canonical_description": "一具由旧青竹翼骨、暗金铰扣与青灰风帛组成的可折叠滑翔翼，左翼有修补线，右侧风帛破损",
+      "distinctive_features": [
+        "两片不对称青灰薄翼",
+        "旧青竹翼骨与暗金铰扣",
+        "左翼三道修补线",
+        "右侧外缘缺口与短风绳"
+      ],
+      "forbidden_features": [
+        "人物或手",
+        "飞剑、炉子、门、石碑或黑井",
+        "发光法术、文字、符文或水印",
+        "完整无损的双翼"
+      ],
+      "image": {
+        "path": "images/items/fold-cloud-wing-v1.png",
+        "sha256": "4b48d63f03db2b55ac50d38625c81c61b95d7b5ac461ee8726b3a72463a6a8bb",
+        "alt_text": "青灰薄翼与旧金铰扣组成的破损折云翼",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图；新实战装备“折云翼”，用于第41章云索峡追逐前的装备视觉说明。严格 3:2 横向画幅；主体是一具单独的折云翼，完整展开但保持可折叠的骨架结构，置于画面中央约70%安全区，左右和上下至少保留10%裁剪余量。折云翼由两片不对称的青灰色薄翼组成，翼骨是旧青竹与暗金铰扣，翼面为半透明的灰青风帛；左翼有三道明显修补线，右侧外缘缺一小段，边缘挂着短短的风绳，体现刚从废弃法驾上拆下、尚未完全修好的状态。翼根有一枚可扣在腰背的旧铜扣，但不得出现人物、手、飞剑、炉子、门、石碑、黑井、文字、符文、水印或发光法术。写实感中国仙侠叙事概念插画，东方器物结构清楚，克制电影光影；墨青、云灰、旧金配色，背景为简洁的云灰中性空间，不表现具体地点。重点展示折叠铰扣、骨架、风帛破损和安全区，构图留出主体周围空白，按 3:2 裁剪后关键特征完整。",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0041-fold-cloud-wing.txt",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "3:2",
+          "fanqie_crop_ratio": "3:2",
+          "safe_area": "折云翼完整展开并位于中央约70%安全区，左右上下至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -952,6 +987,11 @@
     "40": {
       "entity_ids": [
         "character:lu-yao"
+      ]
+    },
+    "41": {
+      "entity_ids": [
+        "item:fold-cloud-wing"
       ]
     }
   }
