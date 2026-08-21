@@ -12,6 +12,31 @@
     ]
   },
   "entities": {
+    "item:explosive-wind-pill": {
+      "name": "爆风丸",
+      "type": "item",
+      "first_chapter": 38,
+      "image_created_chapter": 38,
+      "source_excerpt": "这是爆风丸，作用很直白：把炉子积住的热风一次性喷出去",
+      "canonical_description": "拇指大小的暗青色风丸，能把三足温风小炉积住的热风一次性横向喷出，短时间控制一个方向",
+      "distinctive_features": ["暗青色圆丸", "表面布满细小风孔", "内部压缩风声如闷雷"],
+      "forbidden_features": ["多颗丸子", "人物或手", "炉子、剑、门、石碑", "火焰爆炸、文字、符文或水印"],
+      "image": {
+        "path": "images/items/explosive-wind-pill-v1.png",
+        "sha256": "0e3d6424de4b21695e1620339054d5509b0fc9a4cc8ee98cfdffd2f490e2deb3",
+        "alt_text": "暗青色布满细小风孔的爆风丸",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图；爆风丸，关键实战道具；严格1:1正方形画幅；仅一颗拇指大小暗青色圆丸，完整居中，表面布满细小风孔，主体在中央70%安全区，四周至少10%裁剪余量；墨青、云灰、旧金属灰，写实感中国仙侠叙事概念插画；不得添加人物、手、炉子、剑、门、石碑、文字、符文、火焰爆炸或水印。",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0038-explosive-wind-pill.txt",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "整颗爆风丸居中约70%，四周至少保留10%裁剪余量"
+        }
+      }
+    },
     "item:sight-breaking-wedge": {
       "name": "断视楔",
       "type": "item",
@@ -616,6 +641,7 @@
         "generation_aspect_ratio": "16:9",
         "fanqie_crop_ratio": "16:9",
         "safe_area": "炉体、内城门金齿、偏斜发红云索和回火槽位于中央百分之八十，关键主体不贴边，四周至少保留约百分之十安全边距"
+        }
       }
     },
     "item:three-legged-warm-wind-furnace": {
@@ -696,7 +722,6 @@
           "safe_area": "器物完整居中，炉腹、三只炉足、风孔与窄长炉口均位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
-    }
     },
     "item:backflow-fire-wedge": {
       "name": "回火楔",
@@ -846,6 +871,11 @@
     "37": {
       "entity_ids": [
         "item:black-gold-finger-joint"
+      ]
+    },
+    "38": {
+      "entity_ids": [
+        "item:explosive-wind-pill"
       ]
     }
   }
