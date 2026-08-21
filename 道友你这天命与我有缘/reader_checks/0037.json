@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 37,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T17:45:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "28cb48344872eb4c25a7c4058b35fb4e76bac4007646c940fd1fceb63a8582bf",
+  "questions": {
+    "previous_context": {
+      "answer": "门内指节要求送副碑入门，同时门齿合拢压住索桥，陆遥必须先处理桥断危机。",
+      "evidence": ["门齿向内合拢半寸，第一座索桥的木梁同时下沉。"]
+    },
+    "immediate_problem": {
+      "answer": "门再合一寸就会断桥，副碑入门还会把整座桥拖进去。",
+      "evidence": ["它再合一寸，桥就断。"]
+    },
+    "decision_basis": {
+      "answer": "陆遥观察到铁水沿碑底裂痕向外爬，判断热压是在借裂缝找人，而不是单纯推碑。",
+      "evidence": ["热压不是在推碑，而是在借裂缝找人。"]
+    },
+    "action_logic": {
+      "answer": "他用临时剑蜡把残剑裂节暂时黏成只能直走的硬脊，再用三次直冲配合回火楔放出的热风顶开镇天碑；剑蜡不能让剑转弯且会锁热。",
+      "evidence": ["剑蜡的用途在此刻兑现：它不是修好残剑，而是把裂开的剑节黏成一条只能直走的硬脊。"]
+    },
+    "result_and_cost": {
+      "answer": "镇天碑被顶出门缝、索桥回弹，门齿停住；剑蜡裂开、陆遥掌心受伤，炉盖也出现新裂纹。",
+      "evidence": ["镇天碑退出门缝，压住的第一根索桥木梁重新弹起。"]
+    },
+    "reader_hook": {
+      "answer": "门内知道临时剑蜡只够三次直冲，却声称下次给四次，并抬起第四根黑金指节，留下门究竟要收剑冲还是收人的问题。",
+      "evidence": ["陆遥现在更想知道：下次门里要收的，究竟是第四次剑冲，还是他这个说话的人？"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "三足温风小炉",
+      "plain_explanation": "用一份旧风骨木升温一炷香，并在修补胶、爆风丸和临时剑蜡中炼出一样的炼器小炉。",
+      "evidence": "它的用途沈雁回已经说得明白：用一份旧风骨木烧热一炷香，从修补胶、爆风丸和临时剑蜡里炼出一样。"
+    },
+    {
+      "term": "临时剑蜡",
+      "plain_explanation": "把残竹剑裂开的剑节暂时黏成只能直走的硬脊，能支撑直冲但不能让剑转弯。",
+      "evidence": "陆遥选的是临时剑蜡——把裂剑暂时黏住、只许直冲不许转弯的黑蜡——能让残竹剑多撑几次直冲。"
+    },
+    {
+      "term": "回火楔",
+      "plain_explanation": "堵住旧风槽并控制炉压方向的铁楔。",
+      "evidence": "回火楔——堵住旧风槽、控制炉压的铁楔——还卡在二号剑炉里。"
+    }
+  ],
+  "unexplained_terms": []
+}

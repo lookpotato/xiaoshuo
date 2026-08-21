@@ -641,7 +641,6 @@
           "safe_area": "器物完整居中，炉腹、三只炉足、风孔与窄长炉口均位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
-    }
     },
     "item:backflow-fire-wedge": {
       "name": "回火楔",
@@ -695,6 +694,70 @@
           "generation_aspect_ratio": "1:1",
           "fanqie_crop_ratio": "1:1",
           "safe_area": "器物完整居中，炉腹、三只炉足、风孔与窄长炉口均位于中央80%安全区，四周至少保留10%裁剪余量"
+        }
+      }
+    }
+    },
+    "item:backflow-fire-wedge": {
+      "name": "回火楔",
+      "type": "item",
+      "first_chapter": 35,
+      "image_created_chapter": 35,
+      "source_excerpt": "它是堵住旧风槽、控制炉压方向的铁楔。",
+      "canonical_description": "粗短黑灰旧铁楔，用于堵住二号剑炉旧风槽并控制炉压方向。",
+      "distinctive_features": ["楔形旧铁", "发白旧麻绳"],
+      "forbidden_features": ["人物、炉子、文字或水印"],
+      "image": {
+        "path": "images/items/backflow-fire-wedge-v1.png",
+        "sha256": "903b6eca50c095969a746e4f33cc3333b225f3707703cd9902439e5457f6889d",
+        "alt_text": "黑灰旧铁制成的粗短回火楔",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "回火楔道具参考图，严格1:1正方形，完整旧铁楔居中，黑灰旧铁、暗红受热锈痕、发白旧麻绳，无人物、文字或水印。",
+        "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "主体中央80%，四周至少10%余量"}
+      }
+    },
+    "item:three-legged-warm-wind-furnace": {
+      "name": "三足温风小炉",
+      "type": "item",
+      "first_chapter": 36,
+      "image_created_chapter": 36,
+      "source_excerpt": "三足温风小炉，能把材料炼成修补胶、爆风丸或临时剑蜡。",
+      "canonical_description": "半人高黑青三足炼器小炉，三只炉足各有风孔。",
+      "distinctive_features": ["黑青炉腹", "三只带风孔的铁炉足", "窄长进风缝"],
+      "forbidden_features": ["人物、剑、城门、文字或水印"],
+      "image": {
+        "path": "images/items/three-legged-warm-wind-furnace-v1.png",
+        "sha256": "38d5b548f08448a566c0ebc7ad022763735ba4949dc23242d5dc6146c6b64366",
+        "alt_text": "黑青旧铁制成的三足温风小炉",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "三足温风小炉道具参考图，严格1:1正方形，器物完整居中，黑青旧铁、三只带风孔炉足、窄长炉口，无人物、文字或水印。",
+        "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "主体中央80%，四周至少10%余量"}
+      }
+    },
+    "item:black-gold-finger-joint": {
+      "name": "门内黑金指节",
+      "type": "item",
+      "first_chapter": 37,
+      "image_created_chapter": 37,
+      "source_excerpt": "门内那根漆黑金属指节还搭在镇天碑上，指尖一敲，碑面便落下一层铁锈。",
+      "canonical_description": "从内城门缝探出的局部黑金金属指节，能敲击镇天碑、抓住碑面裂纹并借陆遥声音传话，来源与完整数量未知。",
+      "distinctive_features": ["漆黑旧金属与暗金磨亮痕", "指尖搭在有裂纹的墨青石碑上", "只表现门缝中的局部指节"],
+      "forbidden_features": ["完整手掌、手臂或门后实体", "人物、脸、眼睛、武器、符文、文字、数字、火焰特效或水印"],
+      "image": {
+        "path": "images/items/black-gold-finger-joint-v1.png",
+        "sha256": "b9749a743b8ada6b2845cdae48cc8a3d781d2aec6a93c1348c62bf5cefbc4d85",
+        "alt_text": "门缝中探出的漆黑金属指节搭在有裂纹的墨青石碑上",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "门内黑金指节道具参考图，严格1:1正方形，门缝中探出的局部漆黑金属指节搭在有裂纹的墨青石碑上，中央80%安全区，四周10%余量，无完整手掌、人物、文字或水印。",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0037-black-gold-finger-joint.txt",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "指节与石碑接缝位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
     }
@@ -778,6 +841,11 @@
     "36": {
       "entity_ids": [
         "item:three-legged-warm-wind-furnace"
+      ]
+    },
+    "37": {
+      "entity_ids": [
+        "item:black-gold-finger-joint"
       ]
     }
   }
