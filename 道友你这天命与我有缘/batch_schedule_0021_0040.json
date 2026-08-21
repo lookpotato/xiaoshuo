@@ -161,6 +161,20 @@
       "immediate_submitted_at": "2026-08-21T10:25:13.941544+08:00",
       "verified_at": "2026-08-21T10:25:13.943562+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7669807761814735897&%E9%81%93%E5%8F%8B%E4%BD%A0%E8%BF%99%E5%A4%A9%E5%91%BD%E4%B8%8E%E6%88%91%E6%9C%89%E7%BC%98?type=1"
+    },
+    {
+      "chapter": 33,
+      "date": "2026-08-22",
+      "time": "12:00",
+      "status": "local_only",
+      "archived_at": "2026-08-21T12:20:00+08:00",
+      "local_word_count": 2374,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/locations/number-two-sword-furnace-v1.png",
+      "verified_at": "2026-08-21T12:20:00+08:00",
+      "fanqie_url": null
     }
   ]
 }
