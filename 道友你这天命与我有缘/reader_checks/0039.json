@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 39,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-21T18:55:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "7cebf5f07cdc5fc6d1500fd5aa2db50434b1c3e2409e559f34aff31d58a869f6",
+  "questions": {
+    "previous_context": {
+      "answer": "爆风丸的横向释放已经结束，但炉盖和云索仍在承受余热，镇天碑暂时离开门心。",
+      "evidence": ["爆风丸已经炸空，三足温风小炉炉盖裂成七道，余热沿西侧空索爬。"]
+    },
+    "immediate_problem": {
+      "answer": "门内要把开门的人登记并收走，同时牵动镇天碑和索桥。",
+      "evidence": ["“收人。”黑金指尖勾着碑缝，“先收开门的人。”"]
+    },
+    "decision_basis": {
+      "answer": "陆遥从收人牌三个凹格的亮灭和填写状态判断，门内只有冒充的担保，没有真实去处。",
+      "evidence": ["黑牌没有韩百川的官印，只是把镇天碑裂纹里的追索气息冒充担保；“倒悬城内”也不是具体去处。"]
+    },
+    "action_logic": {
+      "answer": "他用空心铁钉把炉口余热导向收人牌，再用剑身挡住牌，迫使门内按自己的收人规则留下凭据。",
+      "evidence": ["他猛地把空心铁钉向下一压，三足温风小炉的炉盖被锁死，残余热气沿钉身直冲黑牌。"]
+    },
+    "result_and_cost": {
+      "answer": "收人牌被打出门并钉在桥板上，门齿暂时停下，但陆遥胸伤加深、左眼受牵引，残剑裂纹扩大。",
+      "evidence": ["黑牌从门缝弹出，砸在镇天碑外侧。沈雁回用修索骨锥把它钉在桥板上。黑牌未碎，三道空格却重新变成空白。"]
+    },
+    "reader_hook": {
+      "answer": "黑井突然用陆沉舟的声音求陆遥阻止他们把他送回去，直接把收人牌的去处与木鸢来源连到亲人的求救上。",
+      "evidence": ["井里响起的不是陌生男声，而是陆沉舟的声音："]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "收人牌",
+      "plain_explanation": "用来登记被收之人的姓名、担保和去处，三项缺一只能算扣押，不能算入门。",
+      "evidence": "收人牌的用途很直白：它不杀人，只留下姓名、担保和去处三笔账。"
+    }
+  ],
+  "unexplained_terms": []
+}

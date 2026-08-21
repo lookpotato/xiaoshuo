@@ -785,6 +785,38 @@
           "safe_area": "指节与石碑接缝位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:receiving-person-plaque": {
+      "name": "收人牌",
+      "type": "item",
+      "first_chapter": 39,
+      "image_created_chapter": 39,
+      "source_excerpt": "收人牌的用途很直白：它不杀人，只留下姓名、担保和去处三笔账。",
+      "canonical_description": "被烧平的焦黑旧木牌，边缘嵌细金线，正面有三个代表姓名、担保、去处的浅凹空格。",
+      "distinctive_features": [
+        "焦黑旧木与细旧金线",
+        "正面三个并列浅凹空格",
+        "背面边缘一道烧断的木鸢翅纹"
+      ],
+      "forbidden_features": [
+        "可读文字、数字或符号",
+        "完整木鸢、人物、手、门、石碑或额外法器"
+      ],
+      "image": {
+        "path": "images/items/receiving-person-plaque-v1.png",
+        "sha256": "d0cb99412cff4487470f227bc09eda866627ff8466fb52c69f520d43097445a9",
+        "alt_text": "焦黑旧木制收人牌，边缘嵌细金线，正面有三个空格",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说设定参考图；实体：收人牌，类型：关键道具。准确1:1方形画幅，主体安全区为中央80%，四周至少保留10%空白边距，完整展示被烧平的黑色旧木牌，边缘嵌细金线，正面只有三个并列浅凹空格，背面边缘可露出一道烧断的木鸢翅纹；写实感中国仙侠叙事概念插画，无文字、数字、符号、人物、手、门、碑或水印。",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0039-receiving-person-plaque.txt",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "主体完整居中于中央80%，四周至少保留10%安全边距"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -876,6 +908,11 @@
     "38": {
       "entity_ids": [
         "item:explosive-wind-pill"
+      ]
+    },
+    "39": {
+      "entity_ids": [
+        "item:receiving-person-plaque"
       ]
     }
   }
