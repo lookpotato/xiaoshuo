@@ -718,6 +718,25 @@
         }
       }
     },
+    "item:white-rejection-pin": {
+      "name": "拒收验收插销",
+      "type": "item",
+      "first_chapter": 70,
+      "image_created_chapter": 70,
+      "source_excerpt": "它的用途很直白：把一次拒绝接收固定成可核验状态，防止白塔把‘不接’自动改写成‘已经接收’。",
+      "canonical_description": "一枚短粗的白色旧金属插销，用于把一次拒绝接收固定成可核验状态，不能证明归还对象，也不能抵住牵引力",
+      "distinctive_features": ["短粗白色旧金属插销", "头部一圈磨损黑色卡槽", "尾端平整圆帽", "插入验收槽后只能固定一次"],
+      "forbidden_features": ["弹簧、齿轮或电子屏", "文字、数字、徽标或符号", "人物、手、武器或第二件道具", "赛博霓虹或魔法光效"],
+      "image": {
+        "path": "images/items/white-rejection-pin-v1.png",
+        "sha256": "de709edd928f9a433fc9a8bd2fd181efe1129041ec27247898e16ea0f5236014",
+        "alt_text": "短粗白色旧钢拒收验收插销，头部有磨损黑色卡槽，尾端为平整圆帽",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说《404修理站》关键道具设定参考图；实体名称与类型：拒收验收插销，关键道具；用途：把拒绝接收固定成可核验状态，防止白塔把拒绝自动改写成收件资格；一枚短粗白色旧金属插销，头部一圈磨损黑色卡槽，尾端平整圆帽，白漆剥落露出旧钢，盐霜与使用磨痕；单一道具，准确1:1正方形画幅，道具完整居中，四周至少10%安全边距；写实感中国末世工业科幻概念插画，盐尘灰、旧钢铁、暗青为主，白色插销作有限重点；不得新增设定，不得用相似替代物，不得出现弹簧、齿轮、电子屏、人物、手、牵引机、武器、品牌、可读文字、数字、符号、徽标、赛博霓虹、魔法光效或水印。",
+        "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "道具完整居中，四周保留至少百分之十安全边距，插销头、尾端和磨损区域不得贴边"}
+      }
+    },
     "scene:white-tower-tow-machine": {
       "name": "白塔牵引机",
       "type": "scene",
@@ -828,6 +847,11 @@
     "69": {
       "entity_ids": [
         "scene:white-tower-tow-machine"
+      ]
+    },
+    "70": {
+      "entity_ids": [
+        "item:white-rejection-pin"
       ]
     }
   }
