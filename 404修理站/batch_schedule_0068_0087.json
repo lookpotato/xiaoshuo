@@ -60,6 +60,20 @@
       "image_path": "images/items/white-rejection-pin-v1.png",
       "verified_at": "2026-08-23T19:23:34.905290+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+    },
+    {
+      "chapter": 71,
+      "date": "2026-08-25",
+      "time": "12:00",
+      "status": "archived_local_only",
+      "archived_at": "2026-08-23T20:50:00+08:00",
+      "job_id": "20260823-174848-0236854b",
+      "local_word_count": 1909,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": null,
+      "verified_at": "2026-08-23T20:50:00+08:00"
     }
   ]
 }
