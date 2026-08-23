@@ -943,6 +943,31 @@
           "safe_area": "换梁钉完整位于中央约70%安全区，钉身承压环与热裂纹清晰，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:temporary-stay-rope": {
+      "name": "暂留索绳",
+      "type": "item",
+      "first_chapter": 45,
+      "image_created_chapter": 45,
+      "source_excerpt": "它的用途很直白：把一个人的暂住处写进承力索文",
+      "canonical_description": "烧剩的旧索绳，绳端保留可写入索文的纤维，用于把暂住处登记进承力云桥规则，避免无处可去者被当成替补",
+      "distinctive_features": ["烧剩的黑灰旧索绳纤维", "写入端织有细窄浅色金属丝", "绳身吸着一小片暗红血痕"],
+      "forbidden_features": ["人物、手、完整桥景、城门、镇天碑、飞剑", "可读文字、数字、符号、发光法术或水印"],
+      "image": {
+        "path": "images/items/temporary-stay-rope-v1.png",
+        "sha256": "00a02e251fa50dd1bbffdc16aa11eabe10ed00dac97ba9d117d2ee7a04851bd0",
+        "alt_text": "烧剩的旧索绳缠着血痕，绳端保留可写入索文的纤维",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0045-temporary-stay-rope.txt",
+        "prompt": "Use: novel setting reference image. Entity: temporary-stay rope, a key practical item used to write a person's temporary location into a load-bearing cloud-bridge rule so the bridge recognizes where they stand and prevents a door from treating them as an unassigned substitute. Item illustration, strict 1:1 square aspect ratio, Fanqie crop ratio 1:1. Show one short length of burnt old rope centered in the central 70% safe area, with soot-black and weathered gray fibers, one end frayed but intact, a narrow dark-red blood stain absorbed into the fibers, and a small pale metal thread woven near the writing end to suggest it can carry rule marks without displaying readable text. Include only a small fragment of rough cloud-bridge rope as scale context, no people, no hands, no bridge panorama, no door, no monument, no sword, no glowing magic, no symbols, no letters, no numbers, no watermark, no border. Restrained realistic Chinese xianxia narrative illustration, muted charcoal, rope-brown and dark red palette, clear material texture, complete object centered with at least 10% empty safe margin on every side.",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "索绳主体与写入端位于中央70%安全区，四周至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1059,6 +1084,11 @@
     "44": {
       "entity_ids": [
         "item:rebeam-switch-nail"
+      ]
+    },
+    "45": {
+      "entity_ids": [
+        "item:temporary-stay-rope"
       ]
     }
   }
