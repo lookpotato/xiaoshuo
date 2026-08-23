@@ -2,7 +2,10 @@
   "timezone": "Asia/Shanghai",
   "created_at": "2026-08-21T21:38:00+08:00",
   "updated_at": "2026-08-23T20:18:00+08:00",
-  "chapter_range": [41, 60],
+  "chapter_range": [
+    41,
+    60
+  ],
   "status": "local_archived",
   "content_check": "reader_gate_passed",
   "ai_usage": true,
@@ -29,14 +32,15 @@
       "chapter": 44,
       "date": "2026-08-27",
       "time": "18:30",
-      "status": "local_archived",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-23T20:18:00+08:00",
       "local_word_count": 2324,
       "reader_check": "passed",
       "upload_status": "not_uploaded",
-      "author_note_image_uploaded": false,
+      "author_note_image_uploaded": true,
       "image_path": "images/items/rebeam-switch-nail-v1.png",
-      "verified_at": "2026-08-23T20:18:00+08:00"
+      "verified_at": "2026-08-23T20:03:30.470142+08:00",
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7669807761814735897&%E9%81%93%E5%8F%8B%E4%BD%A0%E8%BF%99%E5%A4%A9%E5%91%BD%E4%B8%8E%E6%88%91%E6%9C%89%E7%BC%98?type=1"
     }
   ]
 }
