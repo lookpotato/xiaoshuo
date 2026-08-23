@@ -1,7 +1,7 @@
 {
   "timezone": "Asia/Shanghai",
   "created_at": "2026-08-21T21:38:00+08:00",
-  "updated_at": "2026-08-21T21:38:00+08:00",
+  "updated_at": "2026-08-23T20:18:00+08:00",
   "chapter_range": [41, 60],
   "status": "local_archived",
   "content_check": "reader_gate_passed",
@@ -24,6 +24,19 @@
       "author_note_image_uploaded": false,
       "image_path": null,
       "verified_at": "2026-08-21T21:38:00+08:00"
+    },
+    {
+      "chapter": 44,
+      "date": "2026-08-27",
+      "time": "18:30",
+      "status": "local_archived",
+      "archived_at": "2026-08-23T20:18:00+08:00",
+      "local_word_count": 2324,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/rebeam-switch-nail-v1.png",
+      "verified_at": "2026-08-23T20:18:00+08:00"
     }
   ]
 }

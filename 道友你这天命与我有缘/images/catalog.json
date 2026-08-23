@@ -918,6 +918,31 @@
           "safe_area": "铜印、印钮、磨白印面和裂纹位于中央80%，四周至少10%安全余量"
         }
       }
+    },
+    "item:rebeam-switch-nail": {
+      "name": "回风换梁钉",
+      "type": "item",
+      "first_chapter": 44,
+      "image_created_chapter": 44,
+      "source_excerpt": "这是回风换梁钉。它的用途是把一根快断的承力梁，临时接到旁边还能吃力的旧梁上",
+      "canonical_description": "粗短的旧黑铁斜楔状换梁钉，钉身有三道承压环与白色热裂纹，用于把快断承力梁临时接到旁边旧梁并转移压力",
+      "distinctive_features": ["斜楔状粗短旧黑铁", "三道承压环", "尾端白色热裂纹"],
+      "forbidden_features": ["人物、手、桥、云索、城门、石碑、飞剑", "文字、数字、符号、法术光效或水印"],
+      "image": {
+        "path": "images/items/rebeam-switch-nail-v1.png",
+        "sha256": "bc4457be029f43667a6c8569d33c59359508fffb1f7602be36ce1f4a7b490d73",
+        "alt_text": "粗短旧黑铁回风换梁钉，钉身有承压环与白色热裂纹",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0044-rebeam-switch-nail.txt",
+        "prompt": "用途：小说设定参考图。实体名称：回风换梁钉。实体类型：可持续实战道具。严格 1:1 正方形画幅，Fanqie 裁剪比例 1:1；一枚粗短的旧黑铁换梁钉完整置于画面中央，主体占中央约 70% 安全区，四周至少保留 10% 裁剪余量。外形是斜楔状短钉，钉身有三道承压环与明显白色热裂纹，尾端刚刚崩开一小块，表面有焦黑旧铁、暗红受热痕和少量灰尘；旁边只允许有一小段断裂的旧铁梁作为尺寸关系，不能出现人物、手、桥、云索、城门、石碑、飞剑、文字、数字、符号、法术光效或水印。写实感中国仙侠叙事概念插画，克制电影光影，旧铁与暗红配色，器物完整清晰，关键裂纹和承压环位于中央安全区，无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "换梁钉完整位于中央约70%安全区，钉身承压环与热裂纹清晰，四周至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1029,6 +1054,11 @@
     "42": {
       "entity_ids": [
         "item:pursuit-seal"
+      ]
+    },
+    "44": {
+      "entity_ids": [
+        "item:rebeam-switch-nail"
       ]
     }
   }
