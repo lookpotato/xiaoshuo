@@ -5,9 +5,9 @@
   "outline_blind": true,
   "reviewer": "codex-reader-gate",
   "status": "passed",
-  "reviewed_at": "2026-08-12T09:07:29+08:00",
-  "revision_rounds": 1,
-  "narrative_sha256": "46a234ace879435cb1d4212514c854ad0c75c181884f08673562da6db3531787",
+  "reviewed_at": "2026-08-23T00:00:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "7de735b9c275d67f503d0c5a8569b53a7935e80d15d22cac7cd2e657595a1dac",
   "questions": {
     "previous_context": {
       "answer": "上一章刚把旧附单的接收地点落实为侧线现场，并因固定站点仍为空而保住保护性注销；白塔随即追到新地址，逼陈序决定是否把北区404修理站设为永久归属。",

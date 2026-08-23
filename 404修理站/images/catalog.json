@@ -17,7 +17,7 @@
       "type": "character",
       "first_chapter": 1,
       "image_created_chapter": 54,
-      "source_excerpt": "犬爪压住他的橙色维修服，冻硬的布料发出撕裂声。",
+      "source_excerpt": "陈序被三条灰潮猎犬堵在垃圾巷里。",
       "canonical_description": "二十四岁、偏瘦的中国青年，左眉有一道旧冻伤，穿大两号且磨损冻硬的橙色旧维修服",
       "distinctive_features": [
         "左眉旧冻伤",
@@ -374,7 +374,7 @@
       "type": "location",
       "first_chapter": 61,
       "image_created_chapter": 62,
-      "source_excerpt": "城西旧档案柜却已经被那根细回线重新唤醒",
+      "source_excerpt": "可纸带背面还有一层被油黏住的回执。梁魁用废纸边一点点粘开，先露出一行机械压孔，再露出半枚早年的市政档案印。回执不是从泵房发出的，它来自城西旧档案柜，记录的是第六值守位最后一次入位后的去向。",
       "canonical_description": "城西各区档案回线汇入旧公交维修厂地下的一座横向机械档案站，整面嵌入墙体的旧钢柜准确分为六列，每列有入位卷、退位卷和交接卷三层纸轴，底部以共同机械回线连接档案泵房",
       "distinctive_features": [
         "整面嵌入地下墙体的宽幅旧钢铁柜",
@@ -428,7 +428,7 @@
       "type": "item",
       "first_chapter": 63,
       "image_created_chapter": 63,
-      "source_excerpt": "退位报码到达后，它先预演“旧值守离开到下一名值守接上”之间的空档由谁承担",
+      "source_excerpt": "这东西叫留守结算匣。",
       "canonical_description": "一只长方形磨损旧钢纯机械结算匣，正面上下各有一道窄纸口，两道纸口之间横置一根烧黑平衡杆；平衡杆左接一根短踏板连杆，右接两根短压力管",
       "distinctive_features": [
         "单一长方形磨损旧钢匣体",
@@ -583,7 +583,7 @@
       "type": "item",
       "first_chapter": 66,
       "image_created_chapter": 66,
-      "source_excerpt": "它把对象今天仍有效的三类记录——身份、责任和存活——分别夹进三个方窗",
+      "source_excerpt": "它叫存续扣时尺。",
       "canonical_description": "一根前臂长的狭长磨损旧黑钢机械尺，正面从左到右准确三个长方形方窗，依次嵌暗青钢、旧黄铜和灰白骨瓷底片，最右端有一枚赤铜色止扣",
       "distinctive_features": [
         "单一狭长笔直的磨损旧黑钢尺身",

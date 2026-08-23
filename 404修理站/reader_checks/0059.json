@@ -5,9 +5,9 @@
   "outline_blind": true,
   "reviewer": "codex-reader-gate",
   "status": "passed",
-  "reviewed_at": "2026-08-12T18:32:00+08:00",
-  "revision_rounds": 0,
-  "narrative_sha256": "b88d208dbe3a72d525d41bf905392017426052e71a5de29739b793d0b1b75c90",
+  "reviewed_at": "2026-08-23T00:00:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "a099d999c0558ba0c3da43fa71876a8fb434b1b98d40bf95315f13b0bcd63efd",
   "questions": {
     "previous_context": {
       "answer": "上一轮刚发现地下旧签名模具再次崩角并伴随三号回路压降，本章从这股仍在驱动模具的力量继续追查。",

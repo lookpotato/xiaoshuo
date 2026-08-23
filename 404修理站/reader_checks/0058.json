@@ -5,9 +5,9 @@
   "outline_blind": true,
   "reviewer": "codex-reader-gate",
   "status": "passed",
-  "reviewed_at": "2026-08-12T17:15:00+08:00",
-  "revision_rounds": 0,
-  "narrative_sha256": "43684156f465c340cab267a0f36b63b139d37a87c4c6b2b6b04e8180eb8051e8",
+  "reviewed_at": "2026-08-23T00:00:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "b45bde49284cd2ca607edaff4ae0578babf6d11eeb682e50633e20f4500c666f",
   "questions": {
     "previous_context": {
       "answer": "上一轮刚把历史总责拆成四十七份分项核验，但最后一份无编号记录出现了与陈默死亡登记相同的压痕，威胁让分项结果重新合并。",
