@@ -32,6 +32,7 @@ PROFILE_DIR = (
 READY_FILE = PROFILE_DIR.parent / "image-chatgpt-chrome-profile-v1.ready.json"
 DOWNLOAD_DIR = ROOT / ".manager_image_downloads"
 CONFIG_FILE = ROOT / "image_browser_config.json"
+GENERATION_ATTEMPTS = 2
 
 BLOCK_PATTERNS = (
     ("验证码或真人验证", re.compile(
@@ -578,6 +579,26 @@ def finalize_download(
     }
 
 
+def generate_once(
+    config: WebImageConfig,
+    web_prompt: str,
+    output: Path,
+    ratio: str,
+    timeout_seconds: int,
+) -> dict:
+    """Generate once in a fresh browser context; always close it before returning."""
+    with sync_playwright() as playwright:
+        context = launch(playwright, config)
+        try:
+            page = context.pages[0] if context.pages else context.new_page()
+            navigate(page, config)
+            wait_ready(page, config, timeout_seconds)
+            downloaded = download_image(page, config, web_prompt, timeout_seconds)
+        finally:
+            context.close()
+    return finalize_download(downloaded, output, ratio, config.provider)
+
+
 def generate(prompt_file: Path, output: Path, ratio: str, timeout_seconds: int | None) -> dict:
     config = load_config()
     prompt = prompt_file.read_text(encoding="utf-8").strip()
@@ -591,21 +612,21 @@ def generate(prompt_file: Path, output: Path, ratio: str, timeout_seconds: int |
         f"{prompt}\n\n硬性输出要求：请直接生成一张图片；画幅必须为 {ratio}；"
         "无文字、无水印、不得新增提示词之外的设定。"
     )
-    with sync_playwright() as playwright:
-        context = launch(playwright, config)
+    attempt_timeout = timeout_seconds or config.timeout_seconds
+    failures: list[str] = []
+    for attempt in range(1, GENERATION_ATTEMPTS + 1):
         try:
-            page = context.pages[0] if context.pages else context.new_page()
-            navigate(page, config)
-            wait_ready(page, config, timeout_seconds or config.timeout_seconds)
-            downloaded = download_image(
-                page,
-                config,
-                web_prompt,
-                timeout_seconds or config.timeout_seconds,
-            )
-        finally:
-            context.close()
-    return finalize_download(downloaded, output, ratio, config.provider)
+            return generate_once(config, web_prompt, output, ratio, attempt_timeout)
+        except ImageBlocked:
+            raise
+        except (ImageRetryable, PlaywrightError, PlaywrightTimeoutError, OSError) as exc:
+            failures.append(f"第{attempt}次：{str(exc).splitlines()[0]}")
+            if attempt < GENERATION_ATTEMPTS:
+                continue
+            raise ImageRetryable(
+                "图片生成已独立重启浏览器并尝试两次，仍失败；已关闭图片专用 Chrome。"
+                + "；".join(failures)
+            ) from exc
 
 
 def emit(payload: dict) -> None:
