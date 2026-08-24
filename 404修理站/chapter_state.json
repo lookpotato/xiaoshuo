@@ -1,11 +1,11 @@
 {
   "book_title": "404修理站",
   "current_volume": "第一卷：冰城的错误代码",
-  "last_completed_chapter": 72,
-  "next_chapter_number": 73,
+  "last_completed_chapter": 73,
+  "next_chapter_number": 74,
   "last_uploaded_chapter": 72,
   "latest_published_chapter": 38,
-  "last_uploaded_status": "submitted_pending_review",
+  "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": "2026-08-24T23:26:41.415341+08:00",
   "last_fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
   "latest_online_publish_at": "2026-08-14T12:00:00+08:00",
@@ -20,6 +20,10 @@
     "fourth_wall": "每章设置一个评论共创接口，让读者起外号、判责站队、预测回旋镖或续写工单；正文给足材料但不说完梗，下一章只回收可核验的真实高频评论，绝不伪造"
   },
   "notes_for_next_chapter": [
+    "第73章同动作猎犬由校正光催生，基础用途是复制目标刚做过的标准动作并以最省力路线追击；它不读心、不判断责任，下一章可处理其来源、上限或更高阶复制，不得写成已识别收件人。",
+    "第73章陈序用排水阀制造湿滑差异、延长冲击时间并折偏标准扑击，猎犬被黑索拖出后卡在翻倒牵引机轮槽；黑烟一号右膝裂响加深、胸前门牌磨成两半，三根维修缆又一根露铜。",
+    "第73章陈序右膝不能再承受一次正面冲击，右履带卡门槛才维持站立；苏弥用露铜维修缆把机体重量分到总柜，余压未恢复，黑色空位片未补入任何身份、责任或存活记录。",
+    "第73章同动作猎犬参考图登记 images/creatures/same-motion-hound-v1.png，后续同名同设定沿用，不得重复生图。",
     "第72章黑色空位片确认用途是为尚不存在的收件资格预留空槽，不是第四类记录或现成资格；本次三类记录均未被补入。",
     "第72章黑色空位片回执确认来源为上级线路、最多补入一类，但补入代价未显示；门外残余牵引机再次转动并使空位片出现不属于任何人的新报码孔。",
     "第72章黑烟一号右膝轴承裂口扩大、余压彻底见底，三根维修缆一根外皮磨穿；陈序右肩麻到握不住扳手，总柜门框新增凹口。",
