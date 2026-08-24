@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 72,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-24T19:08:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "8202ce9248ba4e93c604d6cd9a50dde62fc4a88d47280d8f66c1d62a17200ae8",
+  "questions": {
+    "previous_context": {
+      "answer": "第四声落在前章留下的空白位置，导致三类记录被同时拉向空位片。",
+      "evidence": ["第四声落在黑色空位上。"]
+    },
+    "immediate_problem": {
+      "answer": "白塔正要把某张当前记录先塞进空位，最先被拖走的记录可能被写成收件资格。",
+      "evidence": ["白塔不需要判断谁是谁，只需要一张能被当前记录承认的纸先碰上空位。"]
+    },
+    "decision_basis": {
+      "answer": "陈序看到责任纸暂时停住、陈默半孔靠近空槽、空白纸无法成形，因此判断空位在等一张完整记录。",
+      "evidence": ["陈序看见三件事：责任纸被履带压住后暂时停了，陈默半孔正在往空槽靠，空白纸却被风卷成了筒。"]
+    },
+    "action_logic": {
+      "answer": "三根缆分别隔开三类记录，让每类只报告自己的范围，不替别类补资格；随后松履带借牵引力反拖牵引机。",
+      "evidence": ["总办法只有一个：三类记录同时报告自己的有效范围，让空位没有一张完整的纸可填。"]
+    },
+    "result_and_cost": {
+      "answer": "补入未成立，三类当前记录保住，但黑烟一号右膝、维修缆、陈序右肩和总柜门框都受损。",
+      "evidence": ["维修站保住了三类当前记录，却没能把空位摧毁。"]
+    },
+    "reader_hook": {
+      "answer": "空位来源仍在上级线路，补入代价未显示，且出现了不属于任何人的新报码声。",
+      "evidence": ["孔里传出一个尚未属于任何人的报码声。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "黑色空位片",
+      "plain_explanation": "它只是给未来某类当前记录预留的收件资格位置，不是第四类记录，也不是现成资格。",
+      "evidence": ["它不是第四类记录，也不是现成资格；没有人填，它就只是一个空槽。"]
+    }
+  ],
+  "unexplained_terms": []
+}
