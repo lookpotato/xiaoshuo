@@ -737,6 +737,40 @@
         "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "道具完整居中，四周保留至少百分之十安全边距，插销头、尾端和磨损区域不得贴边"}
       }
     },
+    "item:black-qualification-slot": {
+      "name": "黑色空位片",
+      "type": "item",
+      "first_chapter": 72,
+      "image_created_chapter": 72,
+      "source_excerpt": "黑色薄片从记录卡里滑出来，贴在柜面上。它的用途很直白：给白塔预留一个尚未存在的收件资格位置",
+      "canonical_description": "一片无文字、无编号、无徽标的旧黑钢薄片，边缘有身份、责任、存活三类孔位，另留一格极细的暗红空槽；它只是预留收件资格的空槽，不是第四类记录或现成资格",
+      "distinctive_features": [
+        "无文字无编号的旧黑钢近矩形薄片",
+        "身份、责任、存活三类孔位结构",
+        "边缘另留一格极细的暗红空槽",
+        "薄片有盐尘磨痕与冷灰边缘"
+      ],
+      "forbidden_features": [
+        "第四类已成立记录或完整收件资格",
+        "人物、手、纸张、牵引机、总柜或其他道具",
+        "显示屏、文字、数字、字母、徽标或水印",
+        "赛博霓虹、魔法符文或能力特效"
+      ],
+      "image": {
+        "path": "images/items/black-qualification-slot-v1.png",
+        "sha256": "d0a90e66b762bc3946e461b39a474efa2aa48068fddfa36202ecc860f63021cf",
+        "alt_text": "无文字旧黑钢黑色空位片，边缘有三类孔位与一格细红空槽",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "用途：小说《404修理站》关键道具黑色空位片参考图，用于解释它如何作为尚未存在的收件资格位置持续影响行动。主体是一片无文字、无编号、无徽标的旧黑钢薄片，薄而略有磨损，完整近矩形；边缘有身份、责任、存活三类孔位的对应结构，另外留有一格极细的空白槽，空白槽边缘只有有限暗红警示光。不要画成第四类记录、收件人、完整资格或装满的卡槽。写实感中国末世工业科幻概念插画，结构清楚，道具可辨识，盐尘灰、旧钢铁、暗青为主，暗红作有限点缀。准确1:1正方形画幅；generation_aspect_ratio=1:1；fanqie_crop_ratio=1:1。主体完整居中，四周至少百分之十五安全边距，薄片四边、三类孔位与额外空槽均不贴边。不得出现人物、手、纸张、牵引机、总柜、武器、额外道具、显示屏、可读文字、数字、字母、符号、徽标、赛博霓虹、魔法符文、能力特效或水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "薄片完整居中，四周至少保留百分之十五安全边距，四边、三类孔位与额外空槽不贴边"
+        }
+      }
+    },
     "scene:white-tower-tow-machine": {
       "name": "白塔牵引机",
       "type": "scene",
@@ -852,6 +886,11 @@
     "70": {
       "entity_ids": [
         "item:white-rejection-pin"
+      ]
+    },
+    "72": {
+      "entity_ids": [
+        "item:black-qualification-slot"
       ]
     }
   }

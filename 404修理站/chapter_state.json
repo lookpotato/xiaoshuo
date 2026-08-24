@@ -1,11 +1,11 @@
 {
   "book_title": "404修理站",
   "current_volume": "第一卷：冰城的错误代码",
-  "last_completed_chapter": 71,
-  "next_chapter_number": 72,
+  "last_completed_chapter": 72,
+  "next_chapter_number": 73,
   "last_uploaded_chapter": 71,
   "latest_published_chapter": 38,
-  "last_uploaded_status": "submitted_pending_review",
+  "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": "2026-08-23T19:34:04.169108+08:00",
   "last_fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
   "latest_online_publish_at": "2026-08-14T12:00:00+08:00",
@@ -20,6 +20,10 @@
     "fourth_wall": "每章设置一个评论共创接口，让读者起外号、判责站队、预测回旋镖或续写工单；正文给足材料但不说完梗，下一章只回收可核验的真实高频评论，绝不伪造"
   },
   "notes_for_next_chapter": [
+    "第72章黑色空位片确认用途是为尚不存在的收件资格预留空槽，不是第四类记录或现成资格；本次三类记录均未被补入。",
+    "第72章黑色空位片回执确认来源为上级线路、最多补入一类，但补入代价未显示；门外残余牵引机再次转动并使空位片出现不属于任何人的新报码孔。",
+    "第72章黑烟一号右膝轴承裂口扩大、余压彻底见底，三根维修缆一根外皮磨穿；陈序右肩麻到握不住扳手，总柜门框新增凹口。",
+    "第72章黑色空位片参考图登记 images/items/black-qualification-slot-v1.png，后续同名同设定沿用，不得重复生图。",
     "第70章拒收验收插销已把拒绝接收固定为可核验结果，但只完成一次验收；白色插销尾端裂开，下一次同类回收可能缩短验收窗口。",
     "第70章验收结果仅证明当前责任记录拒绝历史代收，收件资格与归还对象仍缺失；不得写成赵庆、陈默或任何当前记录已成为收件人。",
     "第70章牵引机验收槽被撑宽，总柜仍歪一格；黑烟一号右膝继续落细屑，锅炉余压与既有报废耗材不能恢复。",

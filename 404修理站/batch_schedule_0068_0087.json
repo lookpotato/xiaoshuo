@@ -76,6 +76,20 @@
       "verified_at": "2026-08-23T19:34:04.162110+08:00",
       "schedule_normalized_at": "2026-08-23T19:33:48.160614+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+    },
+    {
+      "chapter": 72,
+      "date": "2026-08-25",
+      "time": "12:00",
+      "status": "archived_local",
+      "archived_at": "2026-08-24T23:15:00+08:00",
+      "job_id": "20260824-225646-a5c3cd52",
+      "local_word_count": 2140,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/black-qualification-slot-v1.png",
+      "verified_at": "2026-08-24T23:15:00+08:00"
     }
   ]
 }
