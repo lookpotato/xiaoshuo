@@ -1,12 +1,12 @@
 {
   "book_title": "404修理站",
   "current_volume": "第一卷：冰城的错误代码",
-  "last_completed_chapter": 80,
-  "next_chapter_number": 81,
+  "last_completed_chapter": 81,
+  "next_chapter_number": 82,
   "last_uploaded_chapter": 80,
   "latest_published_chapter": 38,
-  "last_uploaded_status": "submitted_pending_review",
-  "last_uploaded_at": "2026-08-25T21:39:02.634471+08:00",
+  "last_uploaded_status": "not_uploaded",
+  "last_uploaded_at": null,
   "last_fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
   "latest_online_publish_at": "2026-08-14T12:00:00+08:00",
   "schedule_synced_at": "2026-08-10T20:21:46+08:00",
@@ -20,6 +20,10 @@
     "fourth_wall": "每章设置一个评论共创接口，让读者起外号、判责站队、预测回旋镖或续写工单；正文给足材料但不说完梗，下一章只回收可核验的真实高频评论，绝不伪造"
   },
   "notes_for_next_chapter": [
+    "第81章双人手动联控杆首次出现，用途是让两名驾驶员同时同向施力，把动作传给半截驾驶舱；它不替任何人承担记录损耗，动作不同步会卡死。参考图登记 images/items/dual-manual-control-v1.png，底座已被陈序拔断，后续不得当作完整联控杆复用。",
+    "第81章同动作猎犬被故意制造的半动作引入牵引机轮槽，未拆毁；它的左前爪折进轮槽，暂时只剩两条腿能复制动作。驾驶舱暂时留在陈序与苏弥一侧，但总柜第六列已落下第一枚黑色小孔。",
+    "第81章陈序左腕彻底垂下，苏弥右手一根义指卡死，三号回路降至三点五八，黑烟一号右膝最后一次承重已提前用掉；双人并列收件资格仍未完成，下一章先拖出被猎犬压住的牵引机，不确认来源、上限或隐藏代价。",
+    "第81章评论共创接口为判定双人联控杆先拆还是锅是否平均，下一章未读取番茄真实评论，不得伪造回收。",
     "第80章总柜第六列以半圆压痕试压活人责任记录，驾驶舱紧急脱离架首次出现，用途是把驾驶员和半截操控舱从被记录线锁住的黑烟一号上分开；必须两人同步扳动，第一根断销已崩断，驾驶舱与主机分离。参考图登记 images/items/cockpit-ejection-frame-v1.png，后续同名同设定沿用。",
     "第80章脱离成功后收件资格仍未完成，门内学习者从脱离处接入；下一次必须同时握住驾驶舱位置，来源、完整上限和隐藏代价仍未揭示，不确认幕后操作者。",
     "第80章苏弥右手义指失去一节回弹，陈序左腕暂时抬不起，黑烟一号共同损耗单缺一角，右膝承重只剩一次；同动作猎犬未拆毁，撞上总柜底座后仍在场。",
