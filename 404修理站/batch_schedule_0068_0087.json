@@ -245,6 +245,21 @@
       "image_path": "images/items/triangular-backpressure-wedge-v1.png",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
       "verified_at": "2026-08-26T03:25:48.308025+08:00"
+    },
+    {
+      "chapter": 83,
+      "date": "2026-08-31",
+      "time": "12:00",
+      "status": "submitted_pending_review",
+      "archived_at": "2026-08-26T04:30:00+08:00",
+      "job_id": "20260826-023320-7fa8075c",
+      "local_word_count": 2124,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/magnetic-rail-nail-gun-v1.png",
+      "fanqie_url": null,
+      "verified_at": "2026-08-26T04:30:00+08:00"
     }
   ]
 }
