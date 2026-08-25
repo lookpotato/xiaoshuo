@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 53,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-25T22:35:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "e7f212a351985be1a0d773901dfc3674c3025ce92434a71a8b4829d2edf5614c",
+  "questions": {
+    "previous_context": {
+      "answer": "甲七舟沿着父债追索陆沉舟的领路旧账，并把韩照夜的家债写上木牌。",
+      "evidence": ["门内那句“第九程，先还韩家”像一根细针，扎进她握剑的虎口。"]
+    },
+    "immediate_problem": {
+      "answer": "若韩照夜被金线写成领路人，索桥和桥上众人会被拖进内城。",
+      "evidence": ["字一旦写完，甲七舟就能把她算成领路人。"]
+    },
+    "decision_basis": {
+      "answer": "陆遥根据退客铃退站位、黑金指节按承力点，以及木牌和门内没有直接收人的表现，判断甲七舟在找能承接旧路的人。",
+      "evidence": ["退客铃退走的是站位，黑金指节按的是承力点。"]
+    },
+    "action_logic": {
+      "answer": "韩照夜压住门齿铁屑避免金线接触木牌，再按债主、债物、去处三项规则提出认账，只认路不替父亲认罪；陆遥负责把账挂住。",
+      "evidence": ["但我认韩家欠下的路。债主是韩百川，债物是第九程旧路，去处——由我亲自去看折风井。"]
+    },
+    "result_and_cost": {
+      "answer": "甲七舟给出去处并暂时停止合拢，韩照夜成为韩家领路，陆遥成为同行核验；两人都承担了金线与伤口加重的代价。",
+      "evidence": ["木牌背面最后浮出一行小字：第九程旧路，折风井，韩家领路；代签者陆遥，同行核验。"]
+    },
+    "reader_hook": {
+      "answer": "折风井里有人用不同于陆沉舟暗号的敲击回应，暗示回程门已经被里面的人先敲响。",
+      "evidence": ["是有人在折风井里，替他们敲响了回程的门。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "代签者",
+      "plain_explanation": "暂时接住承力点的人，不是替别人送死。",
+      "evidence": "代签者就是暂时替人接住承力点的人，不是替人送死。"
+    },
+    {
+      "term": "第九程旧路",
+      "plain_explanation": "曾把旧命送进折风井的一段路，韩家被要求认下并领路查验。",
+      "evidence": "第九程旧路，指把旧命送进折风井的那一段路。"
+    }
+  ],
+  "unexplained_terms": []
+}
