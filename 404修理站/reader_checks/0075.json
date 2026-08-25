@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 75,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-25T14:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "24382b79fa40d9dc7d4ce42dbe6f268f8407d1df0a8b4972c0e838003f8c164f",
+  "questions": {
+    "previous_context": {
+      "answer": "猎犬承接上一章已复制苏弥收缆动作并拖动黑烟一号。",
+      "evidence": ["同动作猎犬刚学会苏弥的收缆动作，黑烟一号便被它拖向门外。"]
+    },
+    "immediate_problem": {
+      "answer": "猎犬只会重复收紧而不会松开，继续下去会折断右膝并拖走总柜和苏弥。",
+      "evidence": ["可它只会重复收紧，不会松开。再来两次，机甲的右膝会先断，接着总柜和苏弥一起被拖进校正光里。"]
+    },
+    "decision_basis": {
+      "answer": "陈序观察到猎犬会抓住同一条缆上最近形成的重复轨迹，叠加两种动作后无法选出标准路线。",
+      "evidence": ["陈序看见了依据：猎犬并不只复制最先看见的动作，它会抓住同一条缆上最近形成的重复轨迹。"]
+    },
+    "action_logic": {
+      "answer": "他让苏弥收半寸后停住，自己用断门牌制造歪斜滑行，让猎犬找不到可复制的下一步。",
+      "evidence": ["陈序把左脚伸到湿沟里，故意让身体向右滑；滑到一半，他用断门牌的边缘卡住履带，整台黑烟一号停在最难看的歪斜角度。"]
+    },
+    "result_and_cost": {
+      "answer": "猎犬被困在空循环里，黑烟一号右膝继续受损，校正线还保留了偏差方向。",
+      "evidence": ["黑烟一号的右膝又落下一粒细屑。总柜后的空位片同时传出一声新报码："]
+    },
+    "reader_hook": {
+      "answer": "悬念变成白塔将复制动作还是错误，以及责任应归给校正光还是教错的人。",
+      "evidence": ["白塔要复制的是动作，还是动作留下的错误？这口锅该扣给校正光，还是扣给教它犯错的人？"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

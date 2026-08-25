@@ -122,6 +122,21 @@
       "image_path": "images/creatures/same-motion-hound-v1.png",
       "verified_at": "2026-08-25T13:05:06.013442+08:00",
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1"
+    },
+    {
+      "chapter": 75,
+      "date": "2026-08-27",
+      "time": "12:00",
+      "status": "archived_local",
+      "archived_at": "2026-08-25T14:20:00+08:00",
+      "job_id": "20260825-123953-4ce8a77f",
+      "local_word_count": 1999,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/creatures/same-motion-hound-v1.png",
+      "verified_at": "2026-08-25T14:20:00+08:00",
+      "fanqie_url": null
     }
   ]
 }
