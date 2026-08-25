@@ -1093,6 +1093,31 @@
           "safe_area": "井壁、石台、斜向下风道、焦木路牌与井底暗红铁光均位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:return-route-tablet": {
+      "name": "回程骨牌",
+      "type": "item",
+      "first_chapter": 55,
+      "image_created_chapter": 55,
+      "source_excerpt": "黑木牌的用途很直白：这就是回程骨牌，能把被折风井打散的旧路暂时拼成可走方向",
+      "canonical_description": "一块巴掌大的黑木回程骨牌，牌面有还字，牌背刻七条折线，六条向下、一道折回左侧，边缘新裂",
+      "distinctive_features": ["巴掌大的黑木牌", "牌背七条折线", "六条向下且一条折回左侧", "边缘有新裂缝"],
+      "forbidden_features": ["人物或手", "剑、铃、绳索或火焰", "额外文字、符文、数字或水印"],
+      "image": {
+        "path": "images/items/return-route-tablet-v1.png",
+        "sha256": "9948978f0c4e5786d9f2ed7896e434af9189eb3b482b9413a61fa92c205916dd",
+        "alt_text": "巴掌大的黑木回程骨牌，牌背有七条折线与一道新裂缝",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0055-return-route-tablet.txt",
+        "prompt": "用途：小说设定参考图。实体名称：回程骨牌；类型：关键道具、折风井旧路工具。请严格依据正文已明确内容绘制：一块巴掌大的黑木牌，牌面只有一个汉字“还”（如无法准确绘制汉字则保持无文字黑木牌，不要添加任何其他文字），牌背刻着七条密集折线，其中六条向下、只有一条细线折回左侧；黑木材质被折风井的风磨出浅白边，边缘有一条刚形成的裂缝，表面有少量血迹但不夸张。道具完整居中，正面与背面以轻微倾斜或并置方式同时体现，四周至少百分之十安全边距，目标画幅 1:1。统一东方玄幻小说设定参考图风格，冷黑木、暗金细线、微弱青灰风痕，背景简洁的深色石台质感，不要加入人物、剑、铃、绳索、火焰或额外法器，不得新增设定，不得用相似替代物，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "骨牌完整居中，正反面与折线均位于中央80%区域，四周至少保留百分之十安全边距"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1239,6 +1264,11 @@
     "54": {
       "entity_ids": [
         "location:foldwind-well"
+      ]
+    },
+    "55": {
+      "entity_ids": [
+        "item:return-route-tablet"
       ]
     }
   }
