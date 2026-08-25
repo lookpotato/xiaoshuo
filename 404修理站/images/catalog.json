@@ -842,6 +842,30 @@
         }
       }
     },
+    "item:nonstandard-joint": {
+      "name": "反标准关节",
+      "type": "item",
+      "first_chapter": 77,
+      "image_created_chapter": 77,
+      "source_excerpt": "反标准关节不是加力，它只负责让同一个动作每次偏一点；偏得太大，左腕会自己甩脱。",
+      "canonical_description": "由弯曲铰接板、两枚错开承力销钉与一截短轴组成的废土机甲腕部改装件，让同一个拉杆动作在不同受力下走不同转角，把重复动作变成不重复的落点",
+      "distinctive_features": ["弯曲铰接板", "两枚错开承力销钉", "中心短轴与粗糙焊痕", "暗青锈蚀钢板和暗黄铜磨痕"],
+      "forbidden_features": ["加力装置或动力源", "完整机械手、武器或发光能源", "文字、数字、徽标、品牌或水印"],
+      "image": {
+        "path": "images/items/nonstandard-joint-v1.png",
+        "sha256": "d5d0f1db324c3bf3388726a04194bce3c11e96eba00bc307c9e0d4fd090388ba",
+        "alt_text": "弯曲铰接板、错开销钉与短轴组成的暗青锈蚀反标准关节",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt": "小说《404修理站》设定参考图，实体名称：反标准关节，类型：废土机甲腕部改装道具。目标画幅1:1，完整道具居中，主体和关键销钉位于中央70%安全区，四周至少10%安全边距。正文已明确：由弯曲铰接板、两枚错开承力销钉与一截短轴组成，装在黑烟一号左腕外侧；用途是让同一个拉杆动作在不同受力下走不同转角，把重复动作变成不重复的落点；不是加力装置。外观为暗青锈蚀钢板、暗黄铜磨痕、两枚大小略不同且明显错开的销钉、中心短轴和粗糙焊痕，临时拼装，禁止完整机器人、手臂人物、武器、文字、字母、水印、科幻光束或现代精密包装。统一《404修理站》废土机甲写实概念设定图，物理结构可信，无新增设定、无相似替代物、无文字、无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，弯曲铰接板、两枚错开销钉、短轴和焊痕均位于中央70%安全区，四周至少10%安全边距"
+        }
+      }
+    },
     "item:eccentric-flywheel": {
       "name": "偏心飞轮",
       "type": "item",
@@ -970,6 +994,11 @@
     "76": {
       "entity_ids": [
         "item:eccentric-flywheel"
+      ]
+    },
+    "77": {
+      "entity_ids": [
+        "item:nonstandard-joint"
       ]
     }
   }
