@@ -1043,6 +1043,31 @@
           "safe_area": "船体、三层甲板、东侧孤灯、三行木牌与远处倒悬城均在中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:reject-guest-bell": {
+      "name": "退客铃",
+      "type": "item",
+      "first_chapter": 51,
+      "image_created_chapter": 51,
+      "source_excerpt": "那是退客铃。验名船用它把不合名的人退回上一处承力点",
+      "canonical_description": "一只铃口朝下、边缘缺了一块的旧铜退客铃，挂在磨白的短绳上；可把不合名者退回上一处承力点，船内铃声会带走一段船路记忆",
+      "distinctive_features": ["不大的旧铜铃身", "铃口朝下且边缘缺口", "磨白短绳"],
+      "forbidden_features": ["人物或手", "完整船只", "剑或其他法器", "符文、可读文字、数字、发光法术或水印"],
+      "image": {
+        "path": "images/items/reject-guest-bell-v1.png",
+        "sha256": "2b13174a421f82e9cf00c501755ebd30c3eb99c2fa9813881b131d20b6307ecb",
+        "alt_text": "铃口朝下、边缘缺损并挂着磨白短绳的旧铜退客铃",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0051-reject-guest-bell.txt",
+        "prompt": "用途：小说《道友你这天命与我有缘》的设定参考图；实体名称：退客铃；类型：关键道具。请绘制一只独立的旧式验名船退客铃：用途是把不合名的人退回上一处承力点，铃声在船内会带走被退者关于船路的一段记忆。正文已经明确的外观：铃身不大，旧铜材质，铃口朝下，边缘缺了一块，挂在一根磨白的短绳上。道具完整居中，主体与缺口、短绳连接处位于中央约70%安全区，四周至少保留10%裁剪余量。准确1:1正方形画幅，番茄裁剪比例1:1。写实感中国仙侠叙事插画，冷青云灰、旧铜与磨白麻绳配色，材质纹理清楚，背景只用极简模糊的黑木船板和云雾作尺度陪衬。不得新增设定，不得用相似替代物；不得出现人物、手、完整船只、剑、法器、符文、可读文字、数字、现代物件、发光法术特效、水印、边框或额外零件。无文字、无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "退客铃铃身、缺口与短绳连接处位于中央约70%安全区，四周至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1179,6 +1204,11 @@
     "50": {
       "entity_ids": [
         "location:jia-qi-zhou"
+      ]
+    },
+    "51": {
+      "entity_ids": [
+        "item:reject-guest-bell"
       ]
     }
   }
