@@ -968,6 +968,31 @@
           "safe_area": "索绳主体与写入端位于中央70%安全区，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:binding-wind-rope": {
+      "name": "缚风索",
+      "type": "item",
+      "first_chapter": 48,
+      "image_created_chapter": 48,
+      "source_excerpt": "缚风索第三次收紧时，陆遥听见了自己的骨头响。",
+      "canonical_description": "一圈旧黑铁短索，索身由暗青金属筋与灰白风骨纤维绞成，末端有旧金扣和三枚棱形锁环；两条浅银导风槽可锁定飞行路线，但缚风索怕火。",
+      "distinctive_features": ["旧黑铁短索", "两条浅银导风槽", "扁平旧金扣与三枚棱形锁环", "灰白风骨纤维和焦黑磨损"],
+      "forbidden_features": ["人物、手、剑、盔甲、弓", "绳桥、门、石碑、火焰", "文字、符文、水印、发光法术或额外零件"],
+      "image": {
+        "path": "images/items/binding-wind-rope-v1.png",
+        "sha256": "f54690149509164136eaf0fa3d020fba0922c7c7da23c096ba886b2f7ca51ace",
+        "alt_text": "带浅银导风槽、旧金扣与三枚锁环的黑铁缚风索",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0048-binding-wind-rope.txt",
+        "prompt": "用途：小说设定参考图；实体名称：缚风索，关键实战道具。独立的旧黑铁短索，暗青色金属筋与灰白风骨纤维绞成，扁平旧金扣，三枚棱形锁环，两条浅银色导风槽，磨损、旧铁锈和少量焦黑痕迹；写实感中国仙侠轶事概念插画，墨青、云灰、旧金配色；严格1:1正方形，主体中央75%，关键特征位于中央80%安全区，四周至少10%裁剪余量；纯云灰背景；无人物、手、剑、盔甲、弓、绳桥、门、石碑、火焰、文字、符文、水印、发光法术、额外零件或第二件武器。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "缚风索主体、旧金扣、三枚锁环与两条导风槽均位于中央80%安全区，四周至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1089,6 +1114,11 @@
     "45": {
       "entity_ids": [
         "item:temporary-stay-rope"
+      ]
+    },
+    "48": {
+      "entity_ids": [
+        "item:binding-wind-rope"
       ]
     }
   }
