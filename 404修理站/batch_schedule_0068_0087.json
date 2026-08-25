@@ -205,16 +205,16 @@
       "chapter": 80,
       "date": "2026-08-29",
       "time": "12:00",
-      "status": "local_archived",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-25T21:50:00+08:00",
       "job_id": "20260825-194422-9164e73b",
       "local_word_count": 2109,
       "reader_check": "passed",
       "upload_status": "not_uploaded",
-      "author_note_image_uploaded": false,
+      "author_note_image_uploaded": true,
       "image_path": "images/items/cockpit-ejection-frame-v1.png",
-      "fanqie_url": null,
-      "verified_at": "2026-08-25T21:50:00+08:00"
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
+      "verified_at": "2026-08-25T21:39:02.626965+08:00"
     }
   ]
 }
