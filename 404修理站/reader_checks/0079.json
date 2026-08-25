@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 79,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-25T21:15:00+08:00",
+  "revision_rounds": 0,
+  "narrative_sha256": "8ea53de8a83abf69985d269b5f246922af8ead7a8fad27a06db6323d405f055d",
+  "questions": {
+    "previous_context": {
+      "answer": "门内敲击已经通过旧钢缆回收端影响三号回路，而上一章确认同一回声只能回收一次。",
+      "evidence": ["上一章他们已经知道，这个扁平的旧钢件只负责把门内敲击的压力接进三号回路，再把收到的压力送回去；它不能认人，不能替门里东西决定开门。"]
+    },
+    "immediate_problem": {
+      "answer": "回声从总柜内部反弹并牵动猎犬，继续处理可能损伤陈序或有效记录。",
+      "evidence": ["现在回声从总柜里面传出来，等于有人把门铃的另一头塞进了他们自己的账本。"]
+    },
+    "decision_basis": {
+      "answer": "总柜回声比门外慢半拍，说明它经由三号回路反弹，因此可用半格压力制造不完整回弹。",
+      "evidence": ["总柜里面的回声比门外慢半拍，说明它先经过了三号回路，再从第六列的退孔处反弹。"]
+    },
+    "action_logic": {
+      "answer": "苏弥放松泄力片让三号回路只掉半格，陈序把回收端撬离受力槽，使回弹擦过裂口后只传回半段。",
+      "evidence": ["只让它掉半格。稳住，回声就有完整结果；掉半格，它只能学到断句。"]
+    },
+    "result_and_cost": {
+      "answer": "回声被截成半段，猎犬复制失败，但三号回路降到三点六四、回收端裂口扩大，且总柜留下新的半圆压痕。",
+      "evidence": ["三号回路从三点六九降到三点六四。"]
+    },
+    "reader_hook": {
+      "answer": "门内学习者不再叫人开门，而是开始借总柜寻找门，留下下一处门把手的危险。",
+      "evidence": ["它开始学着，替他们找门。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "回声半段",
+      "plain_explanation": "把回弹截断后只剩一部分的压力结果，猎犬只能复制这个不完整结果。",
+      "evidence": "它复制到“回声半段”这个不完整结果，四肢同时发力，身体只抬起一半，随后被牵引机轮槽弹回。"
+    },
+    {
+      "term": "半圆压痕",
+      "plain_explanation": "总柜纸带上新出现的半圆形受力印记，像有人隔着纸面按门把手。",
+      "evidence": "只有一枚刚刚形成的半圆压痕，像有人隔着纸面按了一下门把手。"
+    }
+  ],
+  "unexplained_terms": []
+}
