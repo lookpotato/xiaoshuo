@@ -993,6 +993,31 @@
           "safe_area": "缚风索主体、旧金扣、三枚锁环与两条导风槽均位于中央80%安全区，四周至少保留10%裁剪余量"
         }
       }
+    },
+    "item:wind-fire-shard": {
+      "name": "引风火片",
+      "type": "item",
+      "first_chapter": 49,
+      "image_created_chapter": 49,
+      "source_excerpt": "引风火片的用途，就是把炉中余火引进风道，点着怕火的绳索",
+      "canonical_description": "一片两指可夹的暗红烧蚀薄片，边缘有灰白裂纹，表面藏着一线橙红余火，用来把温风小炉余火引进风道点燃怕火绳索",
+      "distinctive_features": ["暗红薄片", "灰白细碎裂纹", "裂纹中的橙红余火脉络"],
+      "forbidden_features": ["火焰本体、手、人物、剑、炉子全貌", "文字、符文、额外法术或水印"],
+      "image": {
+        "path": "images/items/wind-fire-shard-v1.png",
+        "sha256": "438b64b9deb0cb4e32d97c76a0b542d0976e072085e3c32d496976f8c939179f",
+        "alt_text": "暗红烧蚀引风火片，灰白裂纹中藏着橙红余火",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/free-sky-chapter-0049-wind-fire-shard.txt",
+        "prompt": "用途为小说设定参考图：关键道具“引风火片”，类型为炼器辅助道具。正文已经明确的外观与用途：一片从三足温风小炉余火中取出的薄片，用来把炉中余火引入风道，点燃怕火的缚风索；它不是火焰本身，不新增法术设定。薄片主体为暗红烧蚀色，边缘有细碎灰白裂纹，表面带一条清楚的橙红余火脉络，材质像薄薄的旧陶片与矿物熔渣结合，大小可被两指夹住。单一道具完整居中，正面略微倾斜，四周至少保留百分之十安全边距，目标画幅准确为1:1。写实感中国仙侠叙事概念插画，东方炼器器物结构清楚，冷暗云峡背景虚化，只衬托道具，不新增设定，不用相似替代物，不增加手、人物、武器、符文文字或额外部件，无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "道具完整居中，主体与橙红余火脉络均位于中央约80%安全区，四周至少保留10%裁剪余量"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1119,6 +1144,11 @@
     "48": {
       "entity_ids": [
         "item:binding-wind-rope"
+      ]
+    },
+    "49": {
+      "entity_ids": [
+        "item:wind-fire-shard"
       ]
     }
   }
