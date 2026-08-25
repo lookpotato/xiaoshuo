@@ -169,6 +169,21 @@
       "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
       "schedule_normalized_at": "2026-08-25T20:17:26.353316+08:00",
       "verified_at": "2026-08-25T20:17:52.490068+08:00"
+    },
+    {
+      "chapter": 78,
+      "date": "2026-08-28",
+      "time": "12:00",
+      "status": "archived_local",
+      "archived_at": "2026-08-25T20:50:00+08:00",
+      "job_id": "20260825-194422-9164e73b",
+      "local_word_count": 2096,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/old-steel-cable-receiver-v1.png",
+      "fanqie_url": null,
+      "verified_at": "2026-08-25T20:49:00+08:00"
     }
   ]
 }

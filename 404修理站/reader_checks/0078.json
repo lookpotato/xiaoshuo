@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "chapter_number": 78,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-25T20:45:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "47842472703610b9468bf8751fb5db5650cf46e09fb0a566d7672fe7a24f5b1b",
+  "questions": {
+    "previous_context": {"answer": "旧钢缆仍在收紧，门内学习者已学会用三号回路敲击叫人，猎犬被压回轮槽但没有拆毁。", "evidence": ["门里的敲击只响了一下，三号回路的压力表便往下掉了一格。"]},
+    "immediate_problem": {"answer": "门内敲击会经旧钢缆回收端继续抽走三号回路压力，并让学习者把他们的动作拖进复制链。", "evidence": ["再来两次，门里东西就能把我们拖进它的动作里。"]},
+    "decision_basis": {"answer": "回收端只能传递压力，缺口能暂时分开一次回弹，但新裂纹证明它不能无限承压；猎犬又会抓最近可重复的受力方向。", "evidence": ["回收端只能传压力，不能认人，也不能替门里东西决定开门。"]},
+    "action_logic": {"answer": "陈序让两次受力的方向和落点不同，利用反标准关节、履带打滑与总柜缺口，使回收端把压力折返给门内。", "evidence": ["两次动作只差半拍，落点却完全不同。"]},
+    "result_and_cost": {"answer": "回收端把门内压力原路弹回，猎犬撞回牵引机并短暂失去动作线；代价是三号回路继续下探、回收端出现新裂纹、陈序左腕受损。", "evidence": ["回收端猛地翻面，旧钢缆没有断，却把门内传来的压力原路弹回了门缝。"]},
+    "reader_hook": {"answer": "陈序决定先拆掉旧钢缆的第一节回声而不拆门，但下一次回声已经从总柜内部传来。", "evidence": ["这一次，回声来自总柜里面。"]}
+  },
+  "new_terms": [
+    {"term": "旧钢回收端", "plain_explanation": "套在旧钢缆末端、把门内敲击压力接入三号回路并送回去的扁平旧钢件，不能认人或决定开门。", "evidence": "缆端套着一只扁平的旧钢回收端，作用很直白：把门内的敲击压力接到三号回路，再把收到的压力送回去。"}
+  ],
+  "unexplained_terms": []
+}
