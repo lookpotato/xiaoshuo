@@ -1,0 +1,32 @@
+{
+  "timezone": "Asia/Shanghai",
+  "created_at": "2026-08-26T11:20:00+08:00",
+  "chapter_range": [88, 107],
+  "status": "writing",
+  "content_check": "basic_only",
+  "ai_usage": true,
+  "timed_publish": true,
+  "daily_target": 2,
+  "manual_extra_chapters_supported": true,
+  "primary_time": "12:00",
+  "secondary_time": "12:00",
+  "entries": [
+    {
+      "chapter": 88,
+      "date": "2026-09-02",
+      "time": "12:00",
+      "status": "submitted_pending_review",
+      "archived_at": "2026-08-26T11:20:00+08:00",
+      "job_id": "20260826-080406-9c52781a",
+      "local_word_count": 2161,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/formal-receiver-slot-v1.png",
+      "fanqie_url": null,
+      "schedule_source": "manager_config.default_publish_times",
+      "schedule_normalized_at": "2026-08-26T11:20:00+08:00",
+      "verified_at": "2026-08-26T11:20:00+08:00"
+    }
+  ]
+}
