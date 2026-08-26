@@ -1,11 +1,11 @@
 {
   "book_title": "404修理站",
   "current_volume": "第一卷：冰城的错误代码",
-  "last_completed_chapter": 84,
-  "next_chapter_number": 85,
+  "last_completed_chapter": 85,
+  "next_chapter_number": 86,
   "last_uploaded_chapter": 84,
   "latest_published_chapter": 38,
-  "last_uploaded_status": "submitted_pending_review",
+  "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": "2026-08-26T08:22:26.457767+08:00",
   "last_fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
   "latest_online_publish_at": "2026-08-14T12:00:00+08:00",
@@ -20,6 +20,8 @@
     "fourth_wall": "每章设置一个评论共创接口，让读者起外号、判责站队、预测回旋镖或续写工单；正文给足材料但不说完梗，下一章只回收可核验的真实高频评论，绝不伪造"
   },
   "notes_for_next_chapter": [
+    "第85章苏弥用撕开的纸质记录卡拆分动作与收件资格；老人撤回自愿压管动作，收件资格未成立。陈序用磁轨钉枪把黑线分叉钉住，黑线沿钢钉向左腕爬，不能拔出，否则压力回到老人。",
+    "第85章第六列两个空位合为一个更大的孔，岳无缺说下一份收件人将由陈序与苏弥共同撤回；来源、完整上限、隐藏代价和幕后操作者仍未知。",
     "第84章陶瓷散热片首次出现并立即触发：用于摊开磁轨钉枪枪管与磁轨热量，只能撑一次热冲，不是护甲；已被压裂成三块，后续同名同设定不得当作完整散热片复用。",
     "第84章陈序用磁轨钉枪把热管旁旧承力梁钉住，热管保住；居民自愿承担与拒绝承担被同时写入现场，两个黑孔吐出问题：自愿承担者是否算收件人。",
     "第84章陶瓷散热片碎裂，陈序左腕失力，苏弥右手义指仍卡死；同动作猎犬未拆毁，白塔第三台机甲肩甲被自钉，磁轨钉枪暂时缴获但反冲固定限制仍在。",
