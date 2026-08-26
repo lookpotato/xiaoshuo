@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 87,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-26T10:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "bd8e96453d8310966ddc54bbe6cfb0c52d9fa133e7c13a250c9d1a25d56bec10",
+  "questions": {
+    "previous_context": {"answer": "The station must deliver the next work order, and a second hot pipe is immediately threatened.", "evidence": ["\u5cb3\u65e0\u7f3a\u90a3\u53e5\u201c\u7ef4\u4fee\u7ad9\u5fc5\u987b\u81ea\u5df1\u9001\u6765\u201d\uff0c\u4ece\u9ed1\u5b54\u91cc\u843d\u4e0b\u65f6\uff0c\u5317\u5899\u5916\u7684\u7b2c\u4e8c\u6761\u70ed\u7ba1\u5df2\u7ecf\u4eae\u6210\u4e00\u6839\u70e7\u7ea2\u7684\u9aa8\u5934\u3002"]},
+    "immediate_problem": {"answer": "The white-tower machines are cracking the pipe; failure freezes heating, while naming Chen Xu creates a receiver.", "evidence": ["\u82e5\u4ed6\u4eec\u4e0d\u5904\u7406\uff0c\u5317\u5899\u4e0b\u7684\u4f9b\u6696\u4f1a\u5148\u65ad\uff0c\u5c45\u6c11\u64a4\u79bb\u7684\u901a\u9053\u4e5f\u4f1a\u51bb\u6b7b\uff1b\u82e5\u4ed6\u4eec\u628a\u9648\u5e8f\u7684\u540d\u5b57\u62a5\u4e0a\u53bb\uff0c\u4e0a\u4e00\u4efd\u5171\u540c\u64a4\u56de\u7559\u4e0b\u7684\u7a7a\u4f4d\u5c31\u4f1a\u6709\u65b0\u7684\u6536\u4ef6\u4eba\u3002"]},
+    "decision_basis": {"answer": "The receiver transfers pressure but cannot identify a person or decide the door.", "evidence": ["\u65e7\u94a2\u7f06\u56de\u6536\u7aef\u53ea\u80fd\u4f20\u538b\u529b\uff0c\u4e0d\u80fd\u8ba4\u4eba\uff0c\u4e5f\u4e0d\u80fd\u66ff\u6211\u4eec\u51b3\u5b9a\u5f00\u95e8\u3002"]},
+    "action_logic": {"answer": "Su Mi sends only pipe pressure; Chen Xu fixes the structure without accepting the record.", "evidence": ["\u8fd9\u6839\u7f06\u53ea\u628a\u70ed\u7ba1\u7684\u538b\u529b\u9001\u56de\u9ed1\u5b54\uff0c\u4e0d\u80fd\u66ff\u4efb\u4f55\u4eba\u627f\u62c5\u8bb0\u5f55\uff0c\u4e5f\u4e0d\u80fd\u628a\u4eba\u53d8\u6210\u6536\u4ef6\u4eba\u3002"]},
+    "result_and_cost": {"answer": "The crack stops, but the pipe takes no receiver; Su Mi, Chen Xu, and Black Smoke One all pay a cost.", "evidence": ["\u7b2c\u4e8c\u6761\u70ed\u7ba1\u7684\u88c2\u7eb9\u505c\u4f4f\u4e86\u3002"]},
+    "reader_hook": {"answer": "The black hole sets a deadline to submit a formal receiver before the next return.", "evidence": ["\u201c\u4e8b\u5b9e\u5df2\u6536\u3002\u7ef4\u4fee\u7ad9\u9700\u5728\u4e0b\u4e00\u6b21\u56de\u7a0b\u524d\u63d0\u4ea4\u4e00\u540d\u6b63\u5f0f\u6536\u4ef6\u4eba\u3002\u201d"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}
