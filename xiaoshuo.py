@@ -69,6 +69,14 @@ def run_commands(commands: list[tuple[dict, list[str]]]) -> int:
     return 0
 
 
+def target_count(book: dict, requested: int | None) -> int:
+    """Resolve an omitted count from the book's normal daily target."""
+    count = requested if requested is not None else book.get("daily_chapter_target", 1)
+    if not isinstance(count, int) or count < 1:
+        raise ValueError(f"书籍 {book.get('id', '<unknown>')} 的 daily_chapter_target 无效")
+    return count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="xiaoshuo",
@@ -175,14 +183,17 @@ def main() -> int:
     if args.reward_time:
         parser.error("--reward-time 只能与 --reward 一起使用")
     if args.count is None and not args.resume:
-        parser.error("请提供章节数、`--resume <job-id>` 或 `--check`")
+        print(
+            "未指定章节数，将按各书 daily_chapter_target 执行。",
+            flush=True,
+        )
     if args.resume and args.all:
         parser.error("--resume 只能续跑一个 job，请同时使用 --book")
     commands = []
     for book in books:
         command = [sys.executable, str(ON_DEMAND)]
-        if args.count is not None:
-            command.append(str(args.count))
+        if not args.resume:
+            command.append(str(target_count(book, args.count)))
         command.extend(["--book", book["id"]])
         if args.resume:
             command.extend(["--resume", args.resume])

@@ -41,6 +41,9 @@ python xiaoshuo 2 --book cosmic-404
 # 所有已启用作品各更新 2 章；按优先级串行，不并发
 python xiaoshuo 2 --all
 
+# 不指定章节数时，每本按 manager_config.json 的 daily_chapter_target 更新
+python xiaoshuo --all
+
 # 不写 --book 时，使用 manager_config.json 的 default_book_id
 python xiaoshuo 1
 ```

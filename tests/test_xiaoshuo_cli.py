@@ -71,6 +71,15 @@ class BookSelectionTests(unittest.TestCase):
 
 
 class SequentialRunTests(unittest.TestCase):
+    def test_omitted_count_uses_book_daily_target(self) -> None:
+        self.assertEqual(xiaoshuo.target_count(BOOKS[0], None), 1)
+        self.assertEqual(xiaoshuo.target_count({**BOOKS[0], "daily_chapter_target": 3}, None), 3)
+        self.assertEqual(xiaoshuo.target_count(BOOKS[0], 5), 5)
+
+    def test_invalid_daily_target_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "daily_chapter_target"):
+            xiaoshuo.target_count({**BOOKS[0], "daily_chapter_target": 0}, None)
+
     @patch.object(xiaoshuo.subprocess, "run")
     def test_stops_after_first_failure(self, run) -> None:
         run.side_effect = [type("Result", (), {"returncode": 3})()]
