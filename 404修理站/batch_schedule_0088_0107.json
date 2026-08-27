@@ -88,17 +88,18 @@
       "title": "履带足不能替人站槽",
       "date": "2026-09-04",
       "time": "12:00",
-      "status": "archived_local",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-27T21:25:00+08:00",
       "job_id": "20260827-200533-e1098819",
       "local_word_count": 2396,
       "reader_check": "passed",
       "upload_status": "not_uploaded",
-      "author_note_image_uploaded": false,
+      "author_note_image_uploaded": true,
       "image_path": "images/items/crawler-foot-v1.png",
-      "fanqie_url": null,
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
       "schedule_source": "manager_config.default_publish_times",
-      "schedule_normalized_at": "2026-08-27T21:25:00+08:00"
+      "schedule_normalized_at": "2026-08-27T21:25:00+08:00",
+      "verified_at": "2026-08-27T21:26:30.953033+08:00"
     }
   ]
 }
