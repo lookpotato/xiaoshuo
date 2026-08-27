@@ -1272,6 +1272,31 @@
           "safe_area": "隔热回收槽完整居中，窄槽口、机械压栓、内侧白霜和底部焦痕位于中央70%安全区，四周至少15%连续清晰留白"
         }
       }
+    },
+    "item:receipt-clip": {
+      "name": "回执夹",
+      "type": "item",
+      "first_chapter": 98,
+      "image_created_chapter": 98,
+      "source_excerpt": "它的用途是夹住纸质维修单，只让纸边和金属接触，不让整张单子贴上记录面；夹口只有一次锁合，锁死后不能把收件人改成别的人。",
+      "canonical_description": "一件旧钢制窄口机械回执夹，带单个铰链、锁舌和短尾环，用于悬住纸质维修单，锁合一次后不能改收件人",
+      "distinctive_features": ["厚重旧钢窄口夹具", "单个可见铰链", "单个锁舌", "短金属尾环", "盐霜与一次锁合磨损"],
+      "forbidden_features": ["人物或手", "机甲、车辆或武器", "第二个夹子", "屏幕、按钮阵列或能量光束", "文字、数字、字母、印章或水印"],
+      "image": {
+        "path": "images/items/receipt-clip-v1.png",
+        "sha256": "4854f86982be1b479970635ca1537d12012fd1efbd6c19400f97039e3a7da33b",
+        "alt_text": "旧钢制窄口机械回执夹，带铰链、锁舌和短尾环，夹住无字纸边",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/20260827-200533-e1098819-cosmic-404-chapter-0098-receipt-clip.txt",
+        "prompt": "用途：为科幻末世小说《404修理站》第98章首次出现、会持续影响读者理解的关键机械道具“回执夹”制作设定参考图。它的用途是夹住纸质维修单，只让纸边与金属接触，不让整张单子贴上记录面；夹口只有一次锁合，锁死后不能把收件人改成别的人。目标画幅：1:1正方形；generation_aspect_ratio=1:1；fanqie_crop_ratio=1:1；主体完整居中约65%，夹口、铰链、锁舌和短尾环位于中央70%安全区，四周至少15%连续清晰留白；无文字无水印。只画一件旧钢制机械回执夹和一小条无字纸边，不出现人物、手、机甲、车辆、武器、第二个夹子、屏幕、火焰或额外零件。写实感中国末世工业科幻概念插画，盐尘灰、旧钢铁、暗青为主，冷白工业反光，克制深灰维修台背景。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "回执夹完整居中约65%，夹口、铰链、锁舌和短尾环位于中央70%安全区，四周至少15%连续清晰留白"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1433,6 +1458,11 @@
     "96": {
       "entity_ids": [
         "item:thermal-recovery-slot"
+      ]
+    },
+    "98": {
+      "entity_ids": [
+        "item:receipt-clip"
       ]
     }
   }
