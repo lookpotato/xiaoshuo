@@ -3,18 +3,22 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 from pathlib import Path
 
+import xiaoshuo_on_demand
 from xiaoshuo_on_demand import (
     _codex_result_detail,
+    ensure_unique_chapter_title,
     expected_regular_slot,
     normalize_schedule_entry,
     should_publish_immediately,
     uploaded_today_count,
 )
+from fanqie_browser_worker import Chapter
 
 
 class RegularScheduleTests(unittest.TestCase):
@@ -46,6 +50,25 @@ class RegularScheduleTests(unittest.TestCase):
             json.dumps({"entries": entries}, ensure_ascii=False),
             encoding="utf-8",
         )
+
+    def test_duplicate_chapter_title_is_rejected_before_upload(self) -> None:
+        chapters = self.project / "chapters"
+        chapters.mkdir()
+        body = "正文 " * 300
+        existing_path = (chapters / "0001-先修热管.md").resolve()
+        existing_path.write_text("", encoding="utf-8")
+        existing = Chapter(
+            number=1, title="先修热管", body=body, path=existing_path
+        )
+        current = Chapter(
+            number=2,
+            title="先修热管！",
+            body=body,
+            path=(chapters / "0002-先修热管二.md").resolve(),
+        )
+        with patch.object(xiaoshuo_on_demand, "parse_chapter", return_value=existing):
+            with self.assertRaisesRegex(RuntimeError, "0001-先修热管.md"):
+                ensure_unique_chapter_title(self.project, current)
 
     def test_second_chapter_reuses_same_date_when_time_is_shared(self) -> None:
         self.write_entries(

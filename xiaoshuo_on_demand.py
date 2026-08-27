@@ -103,6 +103,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
 - 续跑失败批次时，先检查 next_chapter_number 对应的既有草稿和本书 images/ 中尚未登记的同章成图；正文与图片通过现行门禁后必须直接复用，不得仅因上次流程中断而重写正文、重复生图或覆盖文件；
+- 本书章节标题必须唯一；定稿前扫描 chapters/，禁止只差空格或标点的重复标题；
 - 列出本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象作为候选；同名同设定实体沿用目录，不重复生图；
 - 每章总计最多 1 张，只选择最需要视觉解释的新实体；同章其他新实体必须用正文白话解释。首次启用且本章没有更高优先级新实体时，可用唯一名额补齐主角参考图；
 - 生图前先确定目标画幅并写入提示词：人物默认 2:3，道具或徽记 1:1，宽场景或地点 16:9，横向异兽或动作画面 3:2，仅明确超长竖构图使用 9:16；catalog 的 generation_aspect_ratio 与 fanqie_crop_ratio 必须一致，并写清主体安全区；
@@ -110,7 +111,6 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 - 网页 GPT 成图下载后直接采用，禁止调用 view_image 或其他 Codex 视觉能力回看内容，也不得因主观画面判断要求重生或 verified；只做文件头、SHA-256、像素画幅、分类目录、正文引用和上传回显等机械校验；
 - 图片浏览器未登录、出现验证码/风控/政策提示、控件变化或连续失败时，只保留章节草稿，不得归档正文、推进状态、伪造图片或改用 Codex imagegen；
 - 只有网页未产出、下载失败、文件损坏或像素画幅错误时才重试；不对网页 GPT 已完成的图片做内容复审；
-- 番茄作者有话说中的配图解释必须明确标为非正文：固定以“【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】”开头，以“【辅助说明结束】”结尾；它只能帮助识图，正文因果不得依赖该说明；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
 必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
 
@@ -327,6 +327,36 @@ def pending_chapter(project: Path) -> tuple[Path, dict, Path] | None:
     return None
 
 
+def _title_key(title: str) -> str:
+    return re.sub(r"[\s，。！？、：；‘’“”《》【】（）()\[\]{}]+", "", title).casefold()
+
+
+def duplicate_title_paths(project: Path, chapter) -> list[Path]:
+    """Find earlier local chapters whose titles Fanqie would reject."""
+    key = _title_key(chapter.title)
+    duplicates = []
+    for path in sorted((project / "chapters").glob("*.md")):
+        if path.resolve() == chapter.path:
+            continue
+        try:
+            existing = parse_chapter(path)
+        except (OSError, ValueError):
+            continue
+        if _title_key(existing.title) == key:
+            duplicates.append(path)
+    return duplicates
+
+
+def ensure_unique_chapter_title(project: Path, chapter) -> None:
+    duplicates = duplicate_title_paths(project, chapter)
+    if duplicates:
+        names = "、".join(path.name for path in duplicates[:3])
+        raise RuntimeError(
+            f"第{chapter.number}章标题《{chapter.title}》与本书已有章节重复：{names}；"
+            "请修改标题后再上传"
+        )
+
+
 def resolved_time(data: dict, book_id: str, value: str) -> str:
     if re.fullmatch(r"\d{2}:\d{2}", value or ""):
         return value
@@ -341,6 +371,7 @@ def publish_with_retry(
     publish_date: str,
     publish_time: str,
     debug_browser: bool,
+    immediate: bool = False,
 ) -> dict:
     """Retry only failures known to have happened before confirmation started."""
     for attempt in range(1, 4):
@@ -351,6 +382,7 @@ def publish_with_retry(
                 publish_date,
                 publish_time,
                 debug_browser=debug_browser,
+                immediate=immediate,
             )
         except FanqieRetryable as exc:
             if debug_browser or not exc.safe_to_retry or attempt == 3:
@@ -495,6 +527,7 @@ def run(
     resume: str | None,
     dry_run: bool,
     debug_browser: bool,
+    immediate: bool = False,
 ) -> int:
     data = manager.config()
     book = manager.find_book(data, book_id)
@@ -559,6 +592,10 @@ def run(
                 after = int(state["last_completed_chapter"])
                 if after != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                chapter_path = next(
+                    project.joinpath("chapters").glob(f"{after:04d}-*.md")
+                )
+                ensure_unique_chapter_title(project, parse_chapter(chapter_path))
                 manager.cmd_job_progress(
                     data,
                     argparse.Namespace(
@@ -595,6 +632,7 @@ def run(
                     raise RuntimeError("新章节未进入待上传排期")
             schedule_path, entry, chapter_path = pending
             chapter = parse_chapter(chapter_path)
+            ensure_unique_chapter_title(project, chapter)
             current_time = manager.now_for(data)
             immediate_for_chapter = should_publish_immediately(
                 data, book_id, project, current_time
@@ -733,6 +771,11 @@ def main() -> int:
     parser.add_argument("--resume")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--debug-browser", action="store_true")
+    parser.add_argument(
+        "--immediate",
+        action="store_true",
+        help="本次上传关闭定时发布，直接提交；仅用于用户明确要求的临时补更",
+    )
     args = parser.parse_args()
     if args.resume and args.count is None:
         args.count = int(manager.read_job(args.resume)["target_chapters"])
@@ -745,6 +788,7 @@ def main() -> int:
             args.resume,
             args.dry_run,
             args.debug_browser,
+            args.immediate,
         )
     except (RuntimeError, ValueError, OSError) as exc:
         print(str(exc), file=sys.stderr)
