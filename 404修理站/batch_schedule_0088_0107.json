@@ -136,6 +136,24 @@
       "schedule_source": "manager_config.default_publish_times",
       "schedule_normalized_at": "2026-08-27T22:50:00+08:00",
       "verified_at": "2026-08-27T22:27:30.268418+08:00"
+    },
+    {
+      "chapter": 95,
+      "title": "锅炉余烬先咬谁",
+      "date": "2026-09-05",
+      "time": "12:00",
+      "status": "written_local",
+      "archived_at": "2026-08-27T23:12:00+08:00",
+      "job_id": "20260827-200533-e1098819",
+      "local_word_count": 2177,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": null,
+      "fanqie_url": null,
+      "schedule_source": "manager_config.default_publish_times",
+      "schedule_normalized_at": "2026-08-27T23:12:00+08:00",
+      "verified_at": "2026-08-27T23:12:00+08:00"
     }
   ]
 }
