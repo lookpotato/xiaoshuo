@@ -172,6 +172,24 @@
       "schedule_source": "manager_config.default_publish_times",
       "schedule_normalized_at": "2026-08-27T23:50:00+08:00",
       "verified_at": "2026-08-27T23:10:15.151062+08:00"
+    },
+    {
+      "chapter": 97,
+      "title": "门内的旧账不能活人签收",
+      "date": "2026-09-06",
+      "time": "12:00",
+      "status": "archived_local",
+      "archived_at": "2026-08-27T23:58:00+08:00",
+      "job_id": "20260827-200533-e1098819",
+      "local_word_count": 2252,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": null,
+      "fanqie_url": null,
+      "schedule_source": "manager_config.default_publish_times",
+      "schedule_normalized_at": "2026-08-27T23:58:00+08:00",
+      "verified_at": "2026-08-27T23:58:00+08:00"
     }
   ]
 }

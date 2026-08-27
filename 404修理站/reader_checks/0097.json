@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 97,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-27T23:58:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "1f311be6e62e393024247161e7bb2bde80dbed050552e90d7163121ff3f25e46",
+  "questions": {
+    "previous_context": {"answer": "上一章余烬被锁进回收槽但门内声音引来白塔，陈序和苏弥必须守门。", "evidence": ["每敲一次，隔热回收槽里的蓝红线就跳一下。"]},
+    "immediate_problem": {"answer": "三台白塔机甲要借门内声音重新锁定活人记录，维修站会被攻破。", "evidence": ["第一台机甲抬臂指向门，第二台压住黑烟一号，第三台沿墙根切断退路。"]},
+    "decision_basis": {"answer": "敲击会让余烬跳动，旧维修编号能吸引校正光，而声音并未证明陈默本人在门内。", "evidence": ["它可能接的是编号，不是人。"]},
+    "action_logic": {"answer": "用空铜管和喊话把白塔引向旧编号，再用铁牌和黑烟一号的惯性把编号送出门外。", "evidence": ["它们追的不是声音的真假，而是能把编号和旧维修记录接起来的路径。"]},
+    "result_and_cost": {"answer": "维修站暂时守住，旧编号被引出，但黑烟一号右膝报废、苏弥负伤、锈钉编号受损，白塔得到新目标。", "evidence": ["黑烟一号的右膝悬架报废，肩甲再凹一块，苏弥左掌的血沿着铁牌边缘滴下，锈钉的胸口编号被红光烧掉一角。"]},
+    "reader_hook": {"answer": "门内正在等陈序的名字成为活人签名，旧账来源和收件人将被迫现形。", "evidence": ["这一回，纸背露出的不是收件人，而是一枚刚刚写下、还没有干透的陈序名字。"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}
