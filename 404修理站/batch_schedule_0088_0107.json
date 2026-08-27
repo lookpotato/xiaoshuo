@@ -53,7 +53,7 @@
       "title": "更换也得本人站进槽",
       "date": "2026-09-03",
       "time": "12:00",
-      "status": "archived_local_only",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-27T12:00:00+08:00",
       "job_id": "20260827-105346-16b6c945",
       "local_word_count": 2400,
@@ -61,8 +61,9 @@
       "upload_status": "not_uploaded",
       "author_note_image_uploaded": false,
       "image_path": null,
-      "fanqie_url": null,
-      "schedule_source": "manager_config.default_publish_times"
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
+      "schedule_source": "manager_config.default_publish_times",
+      "verified_at": "2026-08-27T20:05:56.152214+08:00"
     }
   ]
 }
