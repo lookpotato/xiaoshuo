@@ -1,12 +1,12 @@
 {
   "book_title": "404修理站",
   "current_volume": "第一卷：冰城的错误代码",
-  "last_completed_chapter": 93,
-  "next_chapter_number": 94,
+  "last_completed_chapter": 94,
+  "next_chapter_number": 95,
   "last_uploaded_chapter": 93,
   "latest_published_chapter": 38,
-  "last_uploaded_status": "submitted_pending_review",
-  "last_uploaded_at": "2026-08-27T21:55:22.181798+08:00",
+  "last_uploaded_status": "not_uploaded",
+  "last_uploaded_at": null,
   "last_fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
   "latest_online_publish_at": "2026-08-14T12:00:00+08:00",
   "schedule_synced_at": "2026-08-10T20:21:46+08:00",
@@ -20,6 +20,9 @@
     "fourth_wall": "每章设置一个评论共创接口，让读者起外号、判责站队、预测回旋镖或续写工单；正文给足材料但不说完梗，下一章只回收可核验的真实高频评论，绝不伪造"
   },
   "notes_for_next_chapter": [
+    "第94章一次性跃迁喷筒沿当前轨道把黑烟一号推出回程缝，喷筒塌陷、临时锅炉心失压，不能再次使用；北区供热管避免爆裂但复温顺序提前一格。苏弥左掌起泡，右手义指仍坏，陈序左腕与右膝损耗未恢复。",
+    "第94章回程缝内浮出‘一次跳跃，落点由在场者共同承担’，仍不等于共同签收；失压锅炉心出现无燃料蓝红余烬，下一次点火已在黑烟一号身上。来源、完整上限、隐藏代价和幕后操作者仍未知。",
+    "第94章评论共创接口开放‘喷筒跳槽’与‘落点共同背’之外的第三个工单名，未读取番茄真实评论，不得伪造回收。参考图登记 images/items/disposable-jump-drum-v1.png。",
     "第92章履带足把黑烟一号右膝重量分出并让机体低速横移到正式收件槽前；它不是完整修复，短履带片连接销已磨响，黑油承重轮仍在转并以旋转次数发出敲击。盐霜承重轮被白塔打飞，同动作猎犬未拆毁。",
     "第92章苏弥本人到场但未提交名字，正式收件槽只写出‘本人已到场，选择——’半句；苏弥左肩旧伤、右手义指仍坏，陈序左腕麻意与黑烟一号右履带损耗未恢复。",
     "第92章工业母机深处自行启动，红光回程缝向更深铁轨延长；来源、完整上限、隐藏代价和幕后操作者仍未知，下一章先查是谁在里面替他们点火。",
