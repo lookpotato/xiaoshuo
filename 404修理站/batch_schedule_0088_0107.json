@@ -1,7 +1,10 @@
 {
   "timezone": "Asia/Shanghai",
   "created_at": "2026-08-26T11:20:00+08:00",
-  "chapter_range": [88, 107],
+  "chapter_range": [
+    88,
+    107
+  ],
   "status": "writing",
   "content_check": "basic_only",
   "ai_usage": true,
@@ -30,9 +33,9 @@
     },
     {
       "chapter": 89,
-      "date": "2026-09-03",
+      "date": "2026-09-02",
       "time": "12:00",
-      "status": "local_archived",
+      "status": "submitted_pending_review",
       "archived_at": "2026-08-27T11:00:00+08:00",
       "job_id": "20260827-105346-16b6c945",
       "local_word_count": 2393,
@@ -40,10 +43,10 @@
       "upload_status": "not_uploaded",
       "author_note_image_uploaded": false,
       "image_path": null,
-      "fanqie_url": null,
+      "fanqie_url": "https://fanqienovel.com/main/writer/chapter-manage/7665708834681277465&404%E4%BF%AE%E7%90%86%E7%AB%99?type=1",
       "schedule_source": "manager_config.default_publish_times",
-      "schedule_normalized_at": "2026-08-27T11:00:00+08:00",
-      "verified_at": "2026-08-27T11:00:00+08:00"
+      "schedule_normalized_at": "2026-08-27T11:06:17.567047+08:00",
+      "verified_at": "2026-08-27T11:06:37.627110+08:00"
     }
   ]
 }
