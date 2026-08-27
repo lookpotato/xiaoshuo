@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "chapter_number": 93,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-27T22:15:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "fa73db837223dbed8cef1e5f9c3f66c0340784f5b1411d3ab78b0fe1bb10a51a",
+  "questions": {
+    "previous_context": {"answer": "履带足已分担右膝但连接销磨损，锅炉心也只剩一次高压，众人被卡在回程缝边。", "evidence": ["他们已经把能走的履带和能烧的锅炉都压在这条缝边，退回去会失去修理站的移动能力"]},
+    "immediate_problem": {"answer": "工业母机内的点火声让校正光追踪并使回程缝收缩，缝关闭就会困死众人。", "evidence": ["它每点一次火，回程缝就往母机深处缩一寸。缝没了，我们和锅炉心一起留在这里。"]},
+    "decision_basis": {"answer": "苏弥看到三处等距焦黑点和余烬随白塔转向，且锅炉管口没有升温，判断火在轨道里、光跟着火走。", "evidence": ["三处焦黑点间距相同，只有最里面那处还冒着蓝红色余烬；每次余烬亮起，白塔机甲就转头。锅炉心管口的温度却没有上升"]},
+    "action_logic": {"answer": "回拨点火阀能把下一次点火脉冲拨回旧管路，使火只在阀前响一下；苏弥拨阀、陈序稳管并用最后蒸汽避开攻击。", "evidence": ["用途是把下一次点火脉冲拨回旧管路，让火只在阀前响一下，不让它进校正光的管线"]},
+    "result_and_cost": {"answer": "余烬熄灭、白塔撞入自己的引导架、回程缝恢复半丈，但阀芯烧死、苏弥左掌起泡、履带片弹出且锅炉密封缝裂开。", "evidence": ["阀体却烫得发黑，短柄卡在中间。她的左掌起了一层水泡，右手义指仍没有动。"]},
+    "reader_hook": {"answer": "阀门另一端似乎还有人拨动，维修站内部出现下一次点火，点火者还拒绝认领。", "evidence": ["下一次点火，已经在维修站里面。"]}
+  },
+  "new_terms": [
+    {"term": "回拨点火阀", "plain_explanation": "把下一次点火脉冲拨回旧管路、让火不进入校正光管线的旧机械阀，不能造火或增加锅炉压力，连续拨动会烧坏阀芯。", "evidence": "“这是回拨点火阀。”苏弥先直说"}
+  ],
+  "unexplained_terms": []
+}
