@@ -53,6 +53,7 @@ def selected_books(book_id: str | None, all_books: bool, feature: str) -> list[d
 
 
 def run_commands(commands: list[tuple[dict, list[str]]]) -> int:
+    failures: list[tuple[str, int]] = []
     for index, (book, command) in enumerate(commands, 1):
         print(
             f"\n[{index}/{len(commands)}] {book['title']} ({book['id']})",
@@ -60,12 +61,15 @@ def run_commands(commands: list[tuple[dict, list[str]]]) -> int:
         )
         result = subprocess.run(command, cwd=ROOT).returncode
         if result:
+            failures.append((book["id"], result))
             print(
-                f"批量执行在 {book['id']} 停止，退出码 {result}；"
-                "尚未开始的小说未被修改。",
+                f"{book['id']} 执行失败，退出码 {result}；继续处理剩余小说。",
                 file=sys.stderr,
             )
-            return result
+    if failures:
+        summary = "、".join(f"{book_id}（{code}）" for book_id, code in failures)
+        print(f"批量执行完成，但以下小说失败：{summary}", file=sys.stderr)
+        return failures[0][1]
     return 0
 
 

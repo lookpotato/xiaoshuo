@@ -81,13 +81,16 @@ class SequentialRunTests(unittest.TestCase):
             xiaoshuo.target_count({**BOOKS[0], "daily_chapter_target": 0}, None)
 
     @patch.object(xiaoshuo.subprocess, "run")
-    def test_stops_after_first_failure(self, run) -> None:
-        run.side_effect = [type("Result", (), {"returncode": 3})()]
+    def test_continues_after_one_book_fails(self, run) -> None:
+        run.side_effect = [
+            type("Result", (), {"returncode": 3})(),
+            type("Result", (), {"returncode": 0})(),
+        ]
         result = xiaoshuo.run_commands(
             [(BOOKS[0], ["first"]), (BOOKS[1], ["second"])]
         )
         self.assertEqual(result, 3)
-        run.assert_called_once()
+        self.assertEqual(run.call_count, 2)
 
 
 if __name__ == "__main__":
