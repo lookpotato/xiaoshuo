@@ -1297,6 +1297,31 @@
           "safe_area": "回执夹完整居中约65%，夹口、铰链、锁舌和短尾环位于中央70%安全区，四周至少15%连续清晰留白"
         }
       }
+    },
+    "item:mother-machine-switch-disc": {
+      "name": "母机换向盘",
+      "type": "item",
+      "first_chapter": 99,
+      "image_created_chapter": 99,
+      "source_excerpt": "它的用途是把母机输出的方向切到不同旧工位，转到哪一格，材料就会从哪条轨道送出。",
+      "canonical_description": "灰黑色旧工业母机换向圆盘，边缘有手指缺口，底下连接三根粗短拉杆，用于切换输出工位",
+      "distinctive_features": ["灰黑旧工业圆盘", "一圈手指卡槽", "三根粗短拉杆", "结霜盐尘", "中央磨损"],
+      "forbidden_features": ["人物或手", "机甲、车辆或武器", "动力源或电子屏幕", "文字、数字、字母、徽记或水印", "第二件道具"],
+      "image": {
+        "path": "images/items/mother-machine-switch-disc-v1.png",
+        "sha256": "89d8ba920c41e867f31c1ae24ceca7d4fc3a14c024781d4ade5185be7321a742",
+        "alt_text": "灰黑色旧工业母机换向盘，带手指卡槽、三根粗短拉杆、霜痕和磨损",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/20260830-225954-9daf9b13-cosmic-404-chapter-0099-mother-machine-switch-disc.txt",
+        "prompt": "用途：为科幻末世小说《404修理站》第99章首次出现、会持续影响读者理解的关键机械道具“母机换向盘”制作设定参考图。实体名称与类型：母机换向盘，独立关键机械道具。正文明确用途：把工业母机输出的方向切到不同旧工位，转到哪一格，材料就从哪条轨道送出；它不是按钮，也不是动力源。正文明确外观与结构：灰黑色旧工业圆盘，边缘一圈可供手指卡住的缺口，底下连接三根粗短拉杆，表面结霜、有盐尘和磨损痕迹。目标画幅1:1正方形；generation_aspect_ratio=1:1；fanqie_crop_ratio=1:1；主体完整居中约65%，圆盘边缘缺口、三根拉杆连接处和中央磨损区域位于中央70%安全区，四周至少15%连续清晰留白。写实感中国末世工业科幻设定参考插画，冷硬脏旧，旧钢铁黑灰、盐尘灰、暗青锈斑，冷白工业反光，极简深灰维修台阴影背景。只画一件完整的母机换向盘，不出现人物、手、机甲、车辆、武器、火焰、能量光束、电子屏幕、按钮阵列、额外道具、文字、数字、字母、徽记、品牌、水印、边框或第二件物品。无文字，无水印。",
+        "display": {
+          "content_kind": "item",
+          "generation_aspect_ratio": "1:1",
+          "fanqie_crop_ratio": "1:1",
+          "safe_area": "母机换向盘完整居中约65%，边缘缺口、三根拉杆连接处和中央磨损位于中央70%安全区，四周至少15%连续清晰留白"
+        }
+      }
     }
   },
   "chapter_images": {
@@ -1463,6 +1488,11 @@
     "98": {
       "entity_ids": [
         "item:receipt-clip"
+      ]
+    },
+    "99": {
+      "entity_ids": [
+        "item:mother-machine-switch-disc"
       ]
     }
   }

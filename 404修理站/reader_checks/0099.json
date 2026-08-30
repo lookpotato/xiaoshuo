@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 99,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-30T23:45:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "ba338fb0892ae52ff376de5a4438031992ad00915cac63c08fc941b963a7861b",
+  "questions": {
+    "previous_context": {"answer": "旧维修印从门内按下，白塔机甲转而追向母机，纸背名字仍被回执夹悬着。", "evidence": ["门内那枚旧维修印已经按下半寸。"]},
+    "immediate_problem": {"answer": "必须阻止母机把旧印接入收件栏，否则门内的人会被写成陈默替身。", "evidence": ["一旦母机接上旧印，门里的收件栏就有了实体。"]},
+    "decision_basis": {"answer": "陈序看见三台机甲压在旧轨上，依据换向盘能改变输出方向且旧轨会在启动时断裂作判断。", "evidence": ["陈序扭头看见三台机甲的重量都压在门外一条冻裂的旧轨上，轨道正被母机启动的震动抬起。"]},
+    "action_logic": {"answer": "用半圈轮缘抬断旧轨制造斜面，再把换向盘从第三格偏到第二格，让旧印沿轨道导向白塔而不落地。", "evidence": ["圆盘从第三格卡到第二格，拉杆先发出闷响，随后整条旧工位轨道向门外弹出。"]},
+    "result_and_cost": {"answer": "旧印被三台白塔机甲分抢，未完成活人签收；陈序、苏弥、锈钉和黑烟一号都付出损耗。", "evidence": ["三台机甲同时响起白塔播报："]},
+    "reader_hook": {"answer": "旧印背面写出下一次只收一个人，且通往母机深处的轨道自行移动。", "evidence": ["动的是陈序脚下那条通往工业母机深处的轨道。"]}
+  },
+  "new_terms": [{"term": "母机换向盘", "plain_explanation": "把工业母机输出方向切到不同旧工位的圆盘，不是动力源。", "evidence": "“母机换向盘。”苏弥说，“能把输出导向不同工位，但现在卡在第三格。"}],
+  "unexplained_terms": []
+}
