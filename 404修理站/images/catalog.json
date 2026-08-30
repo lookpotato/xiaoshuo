@@ -1322,6 +1322,26 @@
           "safe_area": "母机换向盘完整居中约65%，边缘缺口、三根拉杆连接处和中央磨损位于中央70%安全区，四周至少15%连续清晰留白"
         }
       }
+    },
+    "item:rail-stop-clamp": {
+      "name": "轨道止退夹",
+      "type": "item",
+      "first_chapter": 100,
+      "image_created_chapter": 100,
+      "source_excerpt": "轨道止退夹。它的用途很直白——用两片咬合的旧钢板卡住轨道",
+      "canonical_description": "两片咬合的旧钢板组成的轨道止退夹，用于卡住轨道防止工业母机继续送料；夹不住黑线，受力过大时会先裂开",
+      "distinctive_features": ["两片厚重旧钢板", "咬合卡齿", "短夹柄", "受力长裂缝", "盐霜灰与暗青锈斑"],
+      "forbidden_features": ["人物或手", "机甲、车辆或轨道", "第二个夹子", "屏幕、文字、数字或徽记", "能量光束或火焰"],
+      "image": {
+        "path": "images/items/rail-stop-clamp-v1.png",
+        "sha256": "9f39b8c3878346b1ef455ad13d93dacb39ff9115b58fa439c3e33c2643d3deea",
+        "alt_text": "轨道止退夹：两片咬合旧钢板、短夹柄与受力长裂缝",
+        "generated_with": "chrome-web",
+        "web_provider": "chatgpt-plus",
+        "prompt_file": ".tmp-image-prompts/20260830-225954-9daf9b13-cosmic-404-chapter-0100-rail-stop-clamp.txt",
+        "prompt": "用途：为《404修理站》第100章首次出现的轨道止退夹制作设定参考图。目标画幅1:1正方形，主体完整居中，中央70%安全区，四周至少15%留白；两片咬合旧钢板、卡齿、短夹柄和长裂缝清晰可见。写实中国末世工业科幻，无人物、手、机甲、车辆、轨道、第二个夹子、文字、数字、徽记、火焰或水印。",
+        "display": {"content_kind": "item", "generation_aspect_ratio": "1:1", "fanqie_crop_ratio": "1:1", "safe_area": "轨道止退夹完整居中，两片钢板、卡齿、短夹柄与长裂缝位于中央70%安全区，四周至少15%连续清晰留白"}
+      }
     }
   },
   "chapter_images": {
@@ -1493,6 +1513,11 @@
     "99": {
       "entity_ids": [
         "item:mother-machine-switch-disc"
+      ]
+    },
+    "100": {
+      "entity_ids": [
+        "item:rail-stop-clamp"
       ]
     }
   }

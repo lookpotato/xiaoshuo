@@ -226,6 +226,24 @@
       "schedule_source": "manager_config.default_publish_times",
       "schedule_normalized_at": "2026-08-30T23:19:38.326129+08:00",
       "verified_at": "2026-08-30T23:20:02.553843+08:00"
+    },
+    {
+      "chapter": 100,
+      "title": "先把轨道夹住再谈联手",
+      "date": "2026-09-08",
+      "time": "12:00",
+      "status": "archived_local",
+      "archived_at": "2026-08-30T23:59:00+08:00",
+      "job_id": "20260830-225954-9daf9b13",
+      "local_word_count": 2240,
+      "reader_check": "passed",
+      "upload_status": "not_uploaded",
+      "author_note_image_uploaded": false,
+      "image_path": "images/items/rail-stop-clamp-v1.png",
+      "fanqie_url": null,
+      "schedule_source": "manager_config.default_publish_times",
+      "schedule_normalized_at": "2026-08-30T23:59:00+08:00",
+      "verified_at": "2026-08-30T23:59:00+08:00"
     }
   ]
 }

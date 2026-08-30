@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 100,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-30T23:59:00+08:00",
+  "revision_rounds": 3,
+  "narrative_sha256": "28dd40a88b10e23ebd6d42bca5fe1eda3ea86c9507f5c34f5eea1fee9d4c5f9a",
+  "questions": {
+    "previous_context": {"answer": "第99章后轨道继续把人往母机深处送。", "evidence": ["脚下的轨道往母机深处滑了一寸。"]},
+    "immediate_problem": {"answer": "必须卡住轨道，否则至少有一人会成为收件人。", "evidence": ["如果不把脚下的轨道卡住，母机就会把陈序和苏弥送进旧印的收件位，至少有一个人会被写成收件人。"]},
+    "decision_basis": {"answer": "黑线只缠住第一台而不在第三台脚底，证明收件资格受位置影响。", "evidence": ["证据够了：旧印要的不是最强的东西，而是被轨道送到它面前、又没有拒绝位置的人。"]},
+    "action_logic": {"answer": "止退夹卡住轨道但不能夹黑线或替人签收，过载会裂开。", "evidence": ["止退夹两片旧钢板咬合，卡齿先崩掉一枚，轨道仍在滑；她没有松手，改用膝盖顶住夹柄。"]},
+    "result_and_cost": {"answer": "轨道停住，陈序和苏弥受伤加重，止退夹裂开。", "evidence": ["轨道停了。\n\n代价也立刻落下来。"]},
+    "reader_hook": {"answer": "第二格接上一条没有脚印的新轨道，下一份工单指向活人。", "evidence": ["母机第二格深处，另一条没有脚印的轨道正朝他们这里接上来。"]}
+  },
+  "new_terms": [{"term": "轨道止退夹", "plain_explanation": "用两片咬合旧钢板卡住轨道，不能夹黑线或替人签收，受力过大会裂开。", "evidence": "它的用途很直白——用两片咬合的旧钢板卡住轨道，防止母机继续把车和人送进深处；夹不住黑线，也不能替谁签收，受力过大时会先裂开。"}],
+  "unexplained_terms": []
+}
