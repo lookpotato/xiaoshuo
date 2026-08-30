@@ -17,6 +17,17 @@
       "subplot_rule": "支线必须由人物独立目标推动，并在后续与主线产生碰撞或代价。",
       "anti_ai_gate": "归档前执行人物独立性检查和反解释编辑；允许答非所问、误解、停顿、无关动作和不完整表达。"
     },
+    "parallel_character_pipeline": {
+      "enabled": true,
+      "shared_rules": "shared/parallel_character_pipeline.md",
+      "required_before_draft": true,
+      "private_thread_directory": "character_threads/<chapter-number>/",
+      "final_output": "只上传单一视角汇总正文；人物私线、交织表和状态回写不上传",
+      "pov_information_boundary": "主视角只能写看见、听见、记得、推断或被告知的内容；其他人物私线不得直接泄露内心",
+      "reading_depth": "主视角最近3—5章，重要配角最近2—3次出场，普通配角最近1—2次出场，离场人物读取上一条动向和相关公共事件",
+      "state_writeback": "汇总后更新所有出场人物的地点、身体、资源、知识、关系、承诺、秘密暴露程度和下一步行动",
+      "hard_gate": "没有私线、交织表、视角边界检查或全体状态回写，不得归档正文"
+    },
     "chapter_length": {
       "target": "正文 1900—2200 字，以约 2000 字为中心",
       "hard_ceiling": "常规不得超过 2400 字；预计超长时在阶段胜负处拆成连续短章",

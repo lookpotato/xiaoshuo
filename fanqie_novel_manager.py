@@ -528,6 +528,7 @@ def cmd_session(data, args):
         "required_read_order": [
             str(project / "automation_prompt.md"),
             str(ROOT / "shared" / "character_engine.md"),
+            str(ROOT / "shared" / "parallel_character_pipeline.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
             str(ROOT / "shared" / "image_workflow.md"),
             str(ROOT / "shared" / "reader_gate.md"),
@@ -555,6 +556,10 @@ def cmd_session(data, args):
             ),
         },
         "batch_workflow": [
+            "每章必须执行 shared\\parallel_character_pipeline.md：先为所有有戏份人物建立 character_threads\\<章节号>\\ 私线，再建立 interaction_map.md，之后以单一主要第三人称视角汇总正式正文，最后回写 state_update.md。",
+            "按人物等级分配上下文：主视角最近3—5章，重要配角最近2—3次出场，普通配角最近1—2次出场，离场人物读取上一条动向和相关公共事件；私线之间不得互相泄露内心。",
+            "汇总时只写当前视角能看见、听见、记得、推断或被告知的内容；看不见的行动通过痕迹、错位、物件、伤势、缺席、传话和后果体现，不得用全知播报拼接。",
+            "汇总后必须为所有出场人物写回本章后的地点、身体、资源、知识、关系、承诺、秘密暴露程度和下一步行动；缺少私线、交织表或状态回写不得归档。",
             "写作前必须读取 shared\\character_engine.md；更新核心人物与持续配角的人物运行卡，模拟主角未介入时各自会采取的行动，再让独立行动线在本章碰撞。",
             "每个有戏份的人物都要有自己的目标、误解、底线、隐瞒和下一步；主角只是主要镜头，不是其他人物的行动发动机。支线必须由人物独立目标推动。",
             "完稿后执行人物独立性检查与反解释编辑：删除替人物总结情绪和意义的句子，保留答非所问、停顿、误解、无关动作、失误和不完整表达；不得删掉眼前行动所需的因果。",

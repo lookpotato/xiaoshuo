@@ -9,7 +9,7 @@
    会话交接包和 `pending_batch_chapters`；再执行
    `python .\fanqie_novel_manager.py next`。返回空对象时当天无任务，立即结束；
    领取成功后只处理返回的 `cosmic-404`。
-2. 共享层必须先读取根目录 `shared\character_engine.md`，并读取 `shared\quality_scorecard.md`、`shared/image_workflow.md` 和
+2. 共享层必须先读取根目录 `shared\character_engine.md`、`shared\parallel_character_pipeline.md`，并读取 `shared\quality_scorecard.md`、`shared/image_workflow.md` 和
    `shared/reader_gate.md` 作为底层质量门禁；创作风格只读取并服从本书 `novel_config.md`、
    `outline.md`、`characters.md`、`world.md`、`style_guide.md`、`chapter_state.json`、
    `continuity_ledger.md`、最近 3 章及最近一次运行日志。
@@ -20,7 +20,7 @@
    只有没有批量待处理项，且 `last_uploaded_chapter < last_completed_chapter` 时，
    才按状态重传最早缺失章节。恢复时禁止重写或推进章节号；该章确认上传成功后，
    立即更新对应 `batch_schedule_*.json`，才进入下一轮。
-4. 若没有待上传章节，则先按 `shared\character_engine.md` 更新本章所有有戏份人物的运行卡，模拟主角未介入时各自的行动，再规划并生成 `next_chapter_number`，进行连续性、章节结构、文风、
+4. 若没有待上传章节，则先按 `shared\character_engine.md` 更新本章所有有戏份人物的运行卡，按 `shared\parallel_character_pipeline.md` 为人物分别生成私线并建立交织表，模拟主角未介入时各自的行动，再规划并生成 `next_chapter_number`，进行连续性、章节结构、文风、
    平台风险和 100 分质量评分；先按本书 `style_guide.md` 确定本章主情绪、一个可围观的瓜、
    两个轻松/痛快互动节拍与一个评论区按钮，再设计必要剧情。第65章起情绪价值是首要硬门槛；人物独立运行和反AI味是更底层的硬门槛：
    若正文主要体验仍是核验装置、比对档案或公布推理答案，即使逻辑无误也只能留草稿重写。
@@ -36,7 +36,7 @@
    围绕剧情玩梗，不索要支持、点赞、打赏或催更。写章前若番茄页可正常读取上一章真实评论，抽样查看最新与
    高赞评论并把高频梗匿名记录到运行日志；适合时让其进入本章人物语言或工单并产生小后果。读不到就不回收，
    严禁伪造“读者都说”。允许出现“读者老爷、评论区”，但仍禁止暴露AI与生产流程。
-   不得把其他人物写成主角的解释器、吐槽器、救援工具或等主角发令的演员；至少保留一处人物误解、答非所问、停顿、无关动作或不够聪明但符合经历的选择。完稿后必须做反解释编辑，删除替人物总结情绪和意义的句子。复杂规则可拆成多章，但每章都要有趣味场面和情绪小闭环。另外必须执行 `style_guide.md` 的
+   汇总正文只能使用主视角可获得的信息，看不见的私线通过痕迹和后果进入；不得把其他人物写成主角的解释器、吐槽器、救援工具或等主角发令的演员；至少保留一处人物误解、答非所问、停顿、无关动作或不够聪明但符合经历的选择。汇总后必须写回所有出场人物状态。完稿后必须做反解释编辑，删除替人物总结情绪和意义的句子。复杂规则可拆成多章，但每章都要有趣味场面和情绪小闭环。另外必须执行 `style_guide.md` 的
    “一遍读懂”自检。不得把
    “有逻辑”误写成省略推理：每个关键解法都要在正文中呈现“现象→判断→行动→后果”，
    旧规则回归要做情境回顾，多数字或多人任务先概括总办法再给代表案例。四个自检问题有
