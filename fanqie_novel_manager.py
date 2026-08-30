@@ -357,6 +357,62 @@ def validate_book(book, require_publish_complete=True):
     return errors
 
 
+def _character_token(value: str) -> str:
+    """用于人物名与人物私线文件名的宽松匹配。"""
+    return re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]", "", str(value)).casefold()
+
+
+def validate_parallel_character_threads(project: Path, chapter_number: int) -> list[str]:
+    """校验新章是否具备可汇总的人物并行线材料。"""
+    thread_dir = project / "character_threads" / f"{int(chapter_number):04d}"
+    errors: list[str] = []
+    if not thread_dir.is_dir():
+        try:
+            display_dir = thread_dir.relative_to(ROOT)
+        except ValueError:
+            display_dir = thread_dir
+        return [f"缺少并行人物线目录 {display_dir}/"]
+
+    cast_path = thread_dir / "00-cast.md"
+    interaction_path = thread_dir / "interaction_map.md"
+    state_path = thread_dir / "state_update.md"
+    for path in (cast_path, interaction_path, state_path):
+        if not path.is_file():
+            errors.append(f"并行人物线缺少 {path.name}")
+
+    if not cast_path.is_file():
+        return errors
+    cast_text = cast_path.read_text(encoding="utf-8")
+    names = re.findall(r"^\s*-\s*([^：:|\n]+?)\s*[：:]", cast_text, flags=re.MULTILINE)
+    names = [name.strip() for name in names if _character_token(name.strip())]
+    if not names:
+        errors.append("00-cast.md 未列出人物名单")
+
+    private_lines = [
+        path for path in thread_dir.glob("*.md")
+        if path.name not in {"00-cast.md", "interaction_map.md", "state_update.md"}
+    ]
+    private_text = {
+        path: path.read_text(encoding="utf-8") for path in private_lines
+    }
+    for name in names:
+        token = _character_token(name)
+        if not any(token in _character_token(path.stem) or name in text
+                   for path, text in private_text.items()):
+            errors.append(f"人物 {name} 缺少独立人物线")
+
+    if interaction_path.is_file():
+        interaction_text = interaction_path.read_text(encoding="utf-8").strip()
+        if not interaction_text or "|" not in interaction_text:
+            errors.append("interaction_map.md 没有形成可读的人物交织表")
+    if state_path.is_file():
+        state_text = state_path.read_text(encoding="utf-8")
+        for name in names:
+            if name not in state_text:
+                errors.append(f"state_update.md 未回写人物 {name} 的状态")
+    return errors
+
+
 def scheduled_today(book, now):
     schedule = book.get("schedule", {})
     if DAY_KEYS[now.weekday()] not in schedule.get("days", []):

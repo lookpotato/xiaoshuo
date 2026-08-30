@@ -10,6 +10,7 @@ from datetime import timezone
 from pathlib import Path
 
 import xiaoshuo_on_demand
+from fanqie_novel_manager import validate_parallel_character_threads
 from xiaoshuo_on_demand import (
     _codex_result_detail,
     ensure_unique_chapter_title,
@@ -19,6 +20,40 @@ from xiaoshuo_on_demand import (
     uploaded_today_count,
 )
 from fanqie_browser_worker import Chapter
+
+
+class ParallelCharacterThreadTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.project = Path(self.temp.name)
+        self.thread_dir = self.project / "character_threads" / "0007"
+        self.thread_dir.mkdir(parents=True)
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def write_valid_threads(self) -> None:
+        (self.thread_dir / "00-cast.md").write_text(
+            "# 本章人物\n- 甲：目标\n- 乙：阻力\n", encoding="utf-8"
+        )
+        (self.thread_dir / "01-甲.md").write_text("甲的独立动向\n", encoding="utf-8")
+        (self.thread_dir / "02-乙.md").write_text("乙的独立动向\n", encoding="utf-8")
+        (self.thread_dir / "interaction_map.md").write_text(
+            "|人物|交织|\n|---|---|\n|甲|乙|\n", encoding="utf-8"
+        )
+        (self.thread_dir / "state_update.md").write_text(
+            "甲：下一状态\n乙：下一状态\n", encoding="utf-8"
+        )
+
+    def test_valid_parallel_threads_pass(self) -> None:
+        self.write_valid_threads()
+        self.assertEqual(validate_parallel_character_threads(self.project, 7), [])
+
+    def test_missing_character_private_line_is_rejected(self) -> None:
+        self.write_valid_threads()
+        (self.thread_dir / "02-乙.md").unlink()
+        errors = validate_parallel_character_threads(self.project, 7)
+        self.assertTrue(any("人物 乙 缺少独立人物线" in error for error in errors))
 
 
 class RegularScheduleTests(unittest.TestCase):

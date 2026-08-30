@@ -113,6 +113,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 - 只有网页未产出、下载失败、文件损坏或像素画幅错误时才重试；不对网页 GPT 已完成的图片做内容复审；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
 必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
+每次新章完成后必须建立 character_threads/NNNN/：先写 00-cast.md，再为名单中的每个人物写独立私线，写 interaction_map.md 汇总交织，最后用 state_update.md 回写所有人物的下一状态；不得只围绕主角编写。人物线门禁通过前不得进入归档、推进状态或上传。
 
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；
@@ -592,6 +593,9 @@ def run(
                 after = int(state["last_completed_chapter"])
                 if after != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                parallel_errors = manager.validate_parallel_character_threads(project, after)
+                if parallel_errors:
+                    raise RuntimeError("并行人物线门禁失败：" + "；".join(parallel_errors))
                 chapter_path = next(
                     project.joinpath("chapters").glob(f"{after:04d}-*.md")
                 )
@@ -618,6 +622,9 @@ def run(
                 ]
                 if int(after) != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                parallel_errors = manager.validate_parallel_character_threads(project, int(after))
+                if parallel_errors:
+                    raise RuntimeError("并行人物线门禁失败：" + "；".join(parallel_errors))
                 normalized_schedule = normalize_schedule_entry(
                     data, book_id, project, int(after)
                 )
