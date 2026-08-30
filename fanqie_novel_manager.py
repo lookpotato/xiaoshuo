@@ -527,6 +527,7 @@ def cmd_session(data, args):
         "pending_batch_chapters": pending_publish_entries(project),
         "required_read_order": [
             str(project / "automation_prompt.md"),
+            str(ROOT / "shared" / "character_engine.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
             str(ROOT / "shared" / "image_workflow.md"),
             str(ROOT / "shared" / "reader_gate.md"),
@@ -554,6 +555,9 @@ def cmd_session(data, args):
             ),
         },
         "batch_workflow": [
+            "写作前必须读取 shared\\character_engine.md；更新核心人物与持续配角的人物运行卡，模拟主角未介入时各自会采取的行动，再让独立行动线在本章碰撞。",
+            "每个有戏份的人物都要有自己的目标、误解、底线、隐瞒和下一步；主角只是主要镜头，不是其他人物的行动发动机。支线必须由人物独立目标推动。",
+            "完稿后执行人物独立性检查与反解释编辑：删除替人物总结情绪和意义的句子，保留答非所问、停顿、误解、无关动作、失误和不完整表达；不得删掉眼前行动所需的因果。",
             "正文目标1900—2200字、以约2000字为中心，常规不超过2400字；超长内容在阶段胜负处拆成连续短章，每章仍须有目标、交锋、兑现和钩子。",
             "推理与规则只服务于行动，低潮最多连续2章且必须取得反攻筹码；按本书规范安排战斗、小高潮、中高潮与大高潮。",
             "新道具首次出现时先直说用途并尽快触发效果；跨章再用时先做一句情境化回顾，悬念只留来源、上限或代价。",

@@ -7,6 +7,16 @@
   "default_failure_policy": "retry_same_day",
   "default_book_id": "cosmic-404",
   "writing_policy": {
+    "character_engine": {
+      "enabled": true,
+      "shared_rules": "shared/character_engine.md",
+      "required_before_draft": true,
+      "principle": "每个有戏份的人物都必须有独立时间线、当前状态、欲望、误解、底线和下一步行动；主角只是主要镜头，不是所有人物的行动发动机。",
+      "minimum_model": "核心人物与持续配角使用完整人物运行卡；临时人物至少记录眼前诉求、判断偏差和离场后的动作。",
+      "pov_rule": "幕后维护人物模型，正文遵守当前第三人称视角；不无依据读取非视角人物内心。",
+      "subplot_rule": "支线必须由人物独立目标推动，并在后续与主线产生碰撞或代价。",
+      "anti_ai_gate": "归档前执行人物独立性检查和反解释编辑；允许答非所问、误解、停顿、无关动作和不完整表达。"
+    },
     "chapter_length": {
       "target": "正文 1900—2200 字，以约 2000 字为中心",
       "hard_ceiling": "常规不得超过 2400 字；预计超长时在阶段胜负处拆成连续短章",
