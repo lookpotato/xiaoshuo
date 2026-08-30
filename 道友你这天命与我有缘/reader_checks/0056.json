@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 56,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-30T23:55:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "7648c92de6e411c4ef7556fda47807b583fde96b92e788187f905f9c47f86ec8",
+  "questions": {
+    "previous_context": {
+      "answer": "陆遥和韩照夜仍被折风井与旧金线困在第三层石台，且两人都有伤势。",
+      "evidence": ["血还在往外渗，右臂不能发力，回程骨牌贴在第三层石台边缘"]
+    },
+    "immediate_problem": {
+      "answer": "井底要求韩家领路人先验路，错误会让陆遥替韩照夜走假路并继续承压。",
+      "evidence": ["那股力不是要拉他下井，而是要让他替韩照夜先走那条左折的假路"]
+    },
+    "decision_basis": {
+      "answer": "陆遥根据黑砂每次左折时最外一粒先停在第三块石台空缝，判断左路是真的。",
+      "evidence": ["黑砂每次向左折，最外一粒都会先停一下；停住的位置，正好压在第三块石台的空缝上"]
+    },
+    "action_logic": {
+      "answer": "他用回程骨牌暂时拼路、用横放的残竹剑拨开引火槽，再把移动点火芯装进小炉让火线分路。",
+      "evidence": ["骨牌只负责拼回一条暂时能走的旧路，不负责替人选路"]
+    },
+    "result_and_cost": {
+      "answer": "移动点火芯让小炉分出两条风线，残竹剑形成双路剑，但骨牌加裂、旧抱箍脱落，局面被顾姓和青眼再次推向失衡。",
+      "evidence": ["两道风线同时贴上剑身，青竹的裂纹里亮起一黑一白两色微光"]
+    },
+    "reader_hook": {
+      "answer": "井底露出未完的顾姓并亮起对准陆遥左眼的青色眼睛，沈雁回也拒绝松绳。",
+      "evidence": ["下一刻，井壁最深处亮起一只青色的眼睛，正对着陆遥左眼"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "移动点火芯",
+      "plain_explanation": "它把三足温风小炉的火点带走，使炉子能够移动并预存两条风线。",
+      "evidence": "这是移动点火芯。"
+    },
+    {
+      "term": "双路剑",
+      "plain_explanation": "它是残竹飞剑重铸后的状态，能同时保留两条风线，但存错会反烧持剑人。",
+      "evidence": "双路剑的用途，就是同时保留两条风线；它能让剑走一条路，给另一条路留回风。"
+    }
+  ],
+  "unexplained_terms": []
+}
