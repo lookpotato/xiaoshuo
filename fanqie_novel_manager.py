@@ -253,10 +253,23 @@ def batch_publish_entries(project: Path):
 
 
 def pending_publish_entries(project: Path):
-    return [
-        entry for entry in batch_publish_entries(project)
-        if str(entry.get("status", "")).strip() not in SUBMITTED_UPLOAD_STATUSES
-    ]
+    pending = []
+    for entry in batch_publish_entries(project):
+        status = str(entry.get("status", "")).strip()
+        if status not in SUBMITTED_UPLOAD_STATUSES:
+            pending.append(entry)
+            continue
+        chapter = int(entry.get("chapter", 0) or 0)
+        chapter_paths = list((project / "chapters").glob(f"{chapter:04d}-*.md"))
+        if len(chapter_paths) != 1:
+            continue
+        local_text = chapter_paths[0].read_text(encoding="utf-8")
+        local_status = re.search(
+            r"(?m)^-\s*upload_status\s*:\s*(\S+)\s*$", local_text
+        )
+        if local_status and local_status.group(1).strip() == "not_uploaded":
+            pending.append(entry)
+    return pending
 
 
 def config():
