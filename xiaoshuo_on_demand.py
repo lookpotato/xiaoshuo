@@ -209,6 +209,13 @@ def schedule_entries(project: Path) -> list[tuple[Path, dict]]:
     return output
 
 
+def chapter_metadata_status(path: Path) -> str | None:
+    """Read the explicit local upload status without parsing the whole chapter."""
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r"(?m)^-\s*upload_status\s*:\s*(\S+)\s*$", text)
+    return match.group(1).strip() if match else None
+
+
 def expected_regular_slot(
     data: dict,
     book_id: str,
@@ -319,11 +326,17 @@ def pending_chapter(project: Path) -> tuple[Path, dict, Path] | None:
     for schedule_path, entry in sorted(
         schedule_entries(project), key=lambda item: int(item[1]["chapter"])
     ):
-        if entry.get("status") in manager.SUBMITTED_UPLOAD_STATUSES:
-            continue
         number = int(entry["chapter"])
         files = list((project / "chapters").glob(f"{number:04d}-*.md"))
         if len(files) == 1:
+            # A stale schedule status must not hide a chapter whose own
+            # metadata explicitly says the upload never happened.
+            local_status = chapter_metadata_status(files[0])
+            if (
+                entry.get("status") in manager.SUBMITTED_UPLOAD_STATUSES
+                and local_status != "not_uploaded"
+            ):
+                continue
             return schedule_path, entry, files[0]
     return None
 
@@ -445,14 +458,16 @@ def record_upload(
 
     state_path = project / "chapter_state.json"
     state = manager.read_json(state_path)
-    state.update(
-        {
-            "last_uploaded_chapter": number,
-            "last_uploaded_status": local_status,
-            "last_uploaded_at": manager.now_for(data).isoformat(),
-            "last_fanqie_url": result["url"],
-        }
-    )
+    previous_number = int(state.get("last_uploaded_chapter", 0) or 0)
+    if number >= previous_number:
+        state.update(
+            {
+                "last_uploaded_chapter": number,
+                "last_uploaded_status": local_status,
+                "last_uploaded_at": manager.now_for(data).isoformat(),
+                "last_fanqie_url": result["url"],
+            }
+        )
     manager.write_json(state_path, state)
     update_metadata(chapter_path, local_status)
 

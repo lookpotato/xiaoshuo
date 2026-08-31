@@ -16,6 +16,8 @@ from xiaoshuo_on_demand import (
     ensure_unique_chapter_title,
     expected_regular_slot,
     normalize_schedule_entry,
+    pending_chapter,
+    record_upload,
     should_publish_immediately,
     uploaded_today_count,
 )
@@ -229,6 +231,69 @@ class RegularScheduleTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertIn("孔位数量未通过", _codex_result_detail(result))
+
+    def test_explicit_local_not_uploaded_status_overrides_stale_schedule(self) -> None:
+        chapters = self.project / "chapters"
+        chapters.mkdir()
+        chapter_path = chapters / "0098-漏传.md"
+        chapter_path.write_text(
+            "# 第98章 漏传\n\n" + ("正文 " * 250) +
+            "\n\n---\n\n## Metadata\n\n- upload_status: not_uploaded\n",
+            encoding="utf-8",
+        )
+        self.write_entries([
+            {
+                "chapter": 98,
+                "date": "2026-08-20",
+                "time": "12:00",
+                "status": "submitted_pending_review",
+            }
+        ])
+        pending = pending_chapter(self.project)
+        self.assertIsNotNone(pending)
+        self.assertEqual(pending[2], chapter_path)
+
+    def test_backfill_does_not_regress_last_uploaded_chapter(self) -> None:
+        self.write_entries([
+            {
+                "chapter": 98,
+                "date": "2026-08-20",
+                "time": "12:00",
+                "status": "local_archived",
+            }
+        ])
+        chapter_path = self.project / "chapters" / "0098-漏传.md"
+        chapter_path.parent.mkdir(exist_ok=True)
+        (self.project / "logs").mkdir(exist_ok=True)
+        chapter_path.write_text(
+            "# 第98章 漏传\n\n正文\n\n---\n\n## Metadata\n\n"
+            "- upload_status: not_uploaded\n",
+            encoding="utf-8",
+        )
+        state_path = self.project / "chapter_state.json"
+        state_path.write_text(
+            json.dumps({
+                "last_uploaded_chapter": 99,
+                "last_uploaded_status": "submitted_pending_review",
+                "last_uploaded_at": "2026-08-20T12:00:00+08:00",
+            }),
+            encoding="utf-8",
+        )
+        result = {
+            "status": "审核中",
+            "url": "https://fanqienovel.com/main/writer/chapter-manage/test",
+        }
+        record_upload(
+            self.data,
+            "cosmic-404",
+            self.project,
+            self.schedule,
+            {"chapter": 98, "date": "2026-08-20", "time": "12:00"},
+            chapter_path,
+            result,
+        )
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertEqual(state["last_uploaded_chapter"], 99)
 
 
 if __name__ == "__main__":
