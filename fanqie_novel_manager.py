@@ -49,7 +49,7 @@ PUBLISH_ATTENTION_NOTES = [
     "章节只有明确显示为待发布、审核中或已发布，才算完成。",
     "章节已存入番茄草稿但尚未确认定时发布时，记录 publish_pending。",
     "遇到 publish_pending 时，只从现有番茄草稿继续发布，不重写、不推进章节号。",
-    "记录 success 前必须核对章节号、标题、日期时间、AI=是、定时发布开关和最终列表状态。",
+    "补传或修改本地章节时默认立即提交，不设置定时发布；只有新建且明确需要排期时才核对日期时间。",
 ]
 FANQIE_FIXED_UPLOAD_STEPS = [
     "打开 publish_config.md 中的 fanqie_writer_url，并核对 book_id 与作品名。",
@@ -63,8 +63,8 @@ FANQIE_FIXED_UPLOAD_STEPS = [
     "点击“下一步”；若出现错别字未修改提示，确认目标作品无误后点击“提交”。",
     "内容检测方式固定选择“仅基础检测”或同义的“基础检测”，不选择“全面检测”。",
     "发布设置中“是否使用AI”固定选择“是”。",
-    "打开“定时发布”开关；日期和时间使用可见选择器点击，禁止直接 fill 受控输入框。",
-    "选择后回读日期输入值、时间输入值、AI 单选 checked 和定时开关 aria-checked。",
+    "补传或修改章节时关闭“定时发布”；只有明确的新建排期任务才打开并用可见选择器选择日期时间。",
+    "发布模式变更后回读 AI 单选 checked 和定时开关 aria-checked；排期任务另外回读日期和时间。",
     "四项与计划完全一致时才点击一次“确认发布”，不得在未知结果下重复确认。",
     "确认后应返回章节管理页；按章节号和标题唯一定位该行，读取状态与计划时间。",
     "目标行显示待发布、审核中或已发布才算成功；审核中通过后会自动转为待发布。",
@@ -159,7 +159,7 @@ def build_batch_prompt(job: dict) -> str:
 - 先恢复 pending/session 中章节号最小的既有番茄草稿；既有草稿算一个槽位。
 - 没有待发布草稿后，才从 next_chapter_number 写新章。
 - 每个槽位必须完整执行：读取连续性 → 写作或恢复 → 质检 → 归档 → 上传 →
-  设置排期 → 章节管理页权威核验 → 本地状态与日志回写 → Git 提交并推送。
+  章节管理页权威核验 → 本地状态与日志回写 → Git 提交并推送。补传或修改本地章节默认立即提交，不设置定时发布。
 - 当前槽位未在番茄显示待发布、审核中或已发布时，不得进入下一槽位。
 
 启动顺序：
@@ -267,7 +267,9 @@ def pending_publish_entries(project: Path):
         local_status = re.search(
             r"(?m)^-\s*upload_status\s*:\s*(\S+)\s*$", local_text
         )
-        if local_status and local_status.group(1).strip() == "not_uploaded":
+        state = read_json(project / "chapter_state.json", {})
+        recent_gap = chapter >= int(state.get("last_uploaded_chapter", 0) or 0) - 1
+        if local_status and local_status.group(1).strip() == "not_uploaded" and recent_gap:
             pending.append(entry)
     return pending
 

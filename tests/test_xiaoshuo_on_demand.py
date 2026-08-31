@@ -224,13 +224,15 @@ class RegularScheduleTests(unittest.TestCase):
             ("2026-08-21", "18:30"),
         )
 
-    def test_codex_result_detail_exposes_image_gate_failure(self) -> None:
+    def test_codex_result_detail_does_not_copy_codex_chapter_text(self) -> None:
         result = self.project / "result.md"
         result.write_text(
             "已调用 ImageGen，但道具孔位数量未通过视觉核验，因此只保留草稿。",
             encoding="utf-8",
         )
-        self.assertIn("孔位数量未通过", _codex_result_detail(result))
+        detail = _codex_result_detail(result)
+        self.assertIn("未发现章节归档", detail)
+        self.assertNotIn("孔位数量", detail)
 
     def test_explicit_local_not_uploaded_status_overrides_stale_schedule(self) -> None:
         chapters = self.project / "chapters"

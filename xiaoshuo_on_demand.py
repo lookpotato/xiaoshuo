@@ -118,7 +118,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；
 2. 更新 chapter_state.json、continuity_ledger.md、reader_checks、batch_schedule 和当日日志；
-3. 新排期沿用 manager_config.json 的每日发布时间，未特别指定时固定 12:00；
+3. 排期文件沿用 manager_config.json 的每日发布时间；补传或修改章节时不要设置定时发布，改为立即提交；
 4. Metadata 的 upload_status 写为 not_uploaded；
 5. 只允许 browser_image_worker.py 访问图片专用 Chrome 生成和下载配图；不访问番茄浏览器、不上传番茄、不调用 job-progress/job-finish/claim/finish；
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
@@ -128,16 +128,12 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 
 
 def _codex_result_detail(result_file: Path) -> str:
+    # Codex's final response may contain the generated chapter. Never copy that
+    # response into job errors or run logs; diagnostics come from the process
+    # exit code and the local gate checks instead.
     if not result_file.is_file():
-        return "Codex 未写入任务结果文件"
-    text = re.sub(
-        r"\s+",
-        " ",
-        result_file.read_text(encoding="utf-8", errors="replace"),
-    ).strip()
-    if not text:
-        return "Codex 任务结果为空"
-    return text if len(text) <= 800 else text[-800:]
+        return "Codex 未写入任务结果文件；未发现章节归档"
+    return "Codex 已结束但未发现章节归档；请检查本地门禁和终端错误信息"
 
 
 def write_one(book_id: str, job: dict) -> None:
@@ -279,8 +275,13 @@ def should_publish_immediately(
     book_id: str,
     project: Path,
     now: datetime | None = None,
+    chapter_path: Path | None = None,
 ) -> bool:
-    """Use immediate submission until today's configured chapter quota is full."""
+    """Use immediate submission for local backfills and until today's quota is full."""
+    if chapter_path is not None and chapter_metadata_status(chapter_path) in {
+        "not_uploaded", "local_archived", "upload_pending"
+    }:
+        return True
     book = manager.find_book(data, book_id)
     target = max(1, int(book.get("daily_chapter_target", 1)))
     return uploaded_today_count(data, project, now) < target
@@ -334,7 +335,13 @@ def pending_chapter(project: Path) -> tuple[Path, dict, Path] | None:
             local_status = chapter_metadata_status(files[0])
             if (
                 entry.get("status") in manager.SUBMITTED_UPLOAD_STATUSES
-                and local_status != "not_uploaded"
+                and not (
+                    local_status == "not_uploaded"
+                    and number >= int(
+                        manager.read_json(project / "chapter_state.json", {})
+                        .get("last_uploaded_chapter", 0)
+                    ) - 1
+                )
             ):
                 continue
             return schedule_path, entry, files[0]
@@ -657,7 +664,7 @@ def run(
             ensure_unique_chapter_title(project, chapter)
             current_time = manager.now_for(data)
             immediate_for_chapter = should_publish_immediately(
-                data, book_id, project, current_time
+                data, book_id, project, current_time, chapter_path
             )
             if immediate_for_chapter:
                 publish_date = current_time.date().isoformat()
