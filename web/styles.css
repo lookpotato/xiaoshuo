@@ -99,6 +99,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .run-list, .job-list { display: grid; gap: 9px; }
 .job-list:not(:empty) { margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--line); }
 .activity { padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.45); }
+.activity.active-run { border-color: rgba(31,128,101,.45); box-shadow: inset 3px 0 var(--green); }
 .activity-top { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
 .activity-top strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status { flex: 0 0 auto; font-size: 10px; font-weight: 800; text-transform: uppercase; }
@@ -109,6 +110,14 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .progress i { display: block; height: 100%; background: var(--red); }
 .activity p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .resume { margin-top: 9px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; font-size: 10px; font-weight: 700; }
+.log-button { margin-top: 9px; padding: 6px 9px; border: 0; border-radius: 7px; color: var(--green); background: rgba(31,128,101,.1); font-size: 10px; font-weight: 800; }
+.log-button:hover { color: white; background: var(--green); }
+.backend-log-panel { margin-top: 14px; }
+.log-actions { display: flex; align-items: center; gap: 10px; }
+.log-actions .resume { margin-top: 0; }
+.log-actions .resume:disabled { cursor: not-allowed; opacity: .45; }
+.log-caption { margin: -6px 0 12px; color: var(--muted); font-size: 10px; }
+.backend-log { min-height: 220px; max-height: 480px; margin: 0; padding: 17px; overflow: auto; border: 1px solid #353832; border-radius: 12px; color: #dce7dc; background: #171a17; font: 12px/1.7 "Cascadia Mono", "Microsoft YaHei UI", monospace; white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-color: #555b52 #171a17; }
 .gate-details { color: var(--muted); font-size: 12px; line-height: 1.65; }
 .gate-ok { display: flex; align-items: center; gap: 9px; color: var(--green); font-weight: 800; }
 .gate-ok::before { content: "✓"; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: white; background: var(--green); }

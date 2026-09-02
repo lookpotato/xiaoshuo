@@ -82,12 +82,41 @@ function ChapterList({ book, onOpen }) {
   </article>;
 }
 
-function Activity({ data, bookId, onResume }) {
+function Activity({ data, bookId, onResume, onOpenLog, selectedRunId }) {
   const jobs = data.jobs.filter((job) => job.book_id === bookId).slice(0, 5);
   return <article className="panel jobs-panel">
     <div className="panel-head"><div><p className="eyebrow">ACTIVITY</p><h2>任务进度</h2></div></div>
-    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className="activity" key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p></div>) : <div className="empty">暂无网页启动记录</div>}</div>
+    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>查看后端日志</button></div>) : <div className="empty">暂无网页启动记录</div>}</div>
     <div className="job-list">{jobs.map((job) => { const ratio = job.target ? Math.min(100, Math.round(job.completed / job.target * 100)) : 0; const resumable = ["failed", "partial", "blocked"].includes(job.result); const delivery = [job.options?.publish_fanqie && "番茄", job.options?.sync_git && "Git"].filter(Boolean).join(" + ") || "仅本地"; return <div className="activity" key={job.id}><div className="activity-top"><strong>{job.id}</strong><span className={`status ${job.result || job.status}`}>{statusLabel(job.status, job.result)}</span></div><div className="progress"><i style={{ width: `${ratio}%` }} /></div><p>{job.completed}/{job.target} 章 · {delivery}{job.message ? ` · ${job.message}` : ""}</p>{resumable && <button className="resume" onClick={() => onResume(job.id)}>按原配置续跑</button>}</div>; })}</div>
+  </article>;
+}
+
+function BackendLog({ run }) {
+  const [log, setLog] = useState(null);
+  const [error, setError] = useState("");
+  const outputRef = useRef(null);
+  const loadLog = useCallback(async () => {
+    if (!run) return;
+    try {
+      const next = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=300`);
+      setLog(next); setError("");
+    } catch (nextError) { setError(nextError.message); }
+  }, [run?.id]);
+
+  useEffect(() => {
+    setLog(null); setError("");
+    if (!run) return undefined;
+    loadLog();
+    const timer = window.setInterval(loadLog, run.status === "running" ? 2000 : 5000);
+    return () => window.clearInterval(timer);
+  }, [run?.id, run?.status, loadLog]);
+  useEffect(() => {
+    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  }, [log?.content]);
+
+  return <article className="panel backend-log-panel">
+    <div className="panel-head"><div><p className="eyebrow">BACKEND OUTPUT</p><h2>后端实时日志</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button></div></div>
+    {run ? <><p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 仅显示最新日志" : ""}{log?.content_hidden ? " · 正文已过滤" : ""}</p><pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会实时显示 Python 输出和错误信息</div>}
   </article>;
 }
 
@@ -106,6 +135,7 @@ export default function App() {
   const [data, setData] = useState(null);
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [chapter, setChapter] = useState(null);
+  const [selectedRunId, setSelectedRunId] = useState(null);
   const [notice, setNotice] = useState("");
 
   const loadOverview = useCallback(async (announce = false) => {
@@ -119,6 +149,11 @@ export default function App() {
   useEffect(() => { loadOverview(); const timer = window.setInterval(loadOverview, 5000); return () => window.clearInterval(timer); }, [loadOverview]);
   useEffect(() => { if (!notice) return undefined; const timer = window.setTimeout(() => setNotice(""), 3200); return () => window.clearTimeout(timer); }, [notice]);
   const book = useMemo(() => data?.books.find((item) => item.id === selectedBookId) || data?.books[0], [data, selectedBookId]);
+  useEffect(() => {
+    if (!data?.runs.length) return;
+    setSelectedRunId((current) => data.runs.some((run) => run.id === current) ? current : data.runs[0].id);
+  }, [data?.runs]);
+  const selectedRun = useMemo(() => data?.runs.find((run) => run.id === selectedRunId) || data?.runs[0], [data, selectedRunId]);
 
   async function openChapter(bookId, number) { try { setChapter(await api(`/api/chapter?book_id=${encodeURIComponent(bookId)}&number=${number}`)); } catch (error) { setNotice(error.message); } }
   async function resume(jobId) { try { await api("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jobId }) }); setNotice("续跑任务已启动"); loadOverview(); } catch (error) { setNotice(error.message); } }
@@ -130,7 +165,8 @@ export default function App() {
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
       <Metrics book={book} />
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
-      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} /><ValidationPanel validation={book.validation} /></div></section>
+      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={setSelectedRunId} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
+      <BackendLog run={selectedRun} />
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />
     <div className={`toast ${notice ? "show" : ""}`} role="status">{notice}</div>

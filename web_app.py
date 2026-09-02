@@ -29,6 +29,37 @@ RUNS_ROOT = RUNTIME_ROOT / "runs"
 SAFE_JOB_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
+MAX_LOG_BYTES = 256 * 1024
+MAX_LOG_LINE_LENGTH = 1600
+OPERATIONAL_LOG_PREFIXES = (
+    "[",
+    "本批进度",
+    "正在调用",
+    "正在排期",
+    "当天",
+    "已完成本地",
+    "已记录",
+    "本次运行失败",
+    "项目校验失败",
+    "本地归档门禁",
+    "人物线门禁",
+    "并行人物线门禁",
+    "批量执行",
+    "警告",
+    "错误",
+    "失败",
+    "字数：",
+    "校验：",
+    "Traceback",
+    "File \"",
+    "usage:",
+    "fatal:",
+    "error:",
+)
+SAFE_JSON_LOG_FIELDS = re.compile(
+    r'^\s*"(?:type|at|chapter|platform_status|status|result|message|finished_at|'
+    r'completed|target|git_push_pending|publish_fanqie|sync_git)"\s*:'
+)
 
 
 def read_json(path: Path, default=None):
@@ -208,6 +239,24 @@ def refresh_run(meta: dict) -> dict:
                 meta["finished_at"] = datetime.now().astimezone().isoformat()
                 write_json(run_metadata_path(run_id), meta)
                 RUN_PROCESSES.pop(run_id, None)
+        elif meta.get("status") == "running":
+            pid = int(meta.get("pid", 0) or 0)
+            if pid and not manager.process_is_running(pid):
+                log_path = RUNS_ROOT / f"{run_id}.log"
+                log_tail = ""
+                if log_path.is_file():
+                    with log_path.open("rb") as handle:
+                        handle.seek(max(0, log_path.stat().st_size - 64 * 1024))
+                        log_tail = handle.read().decode("utf-8", errors="replace")
+                if '"result": "failed"' in log_tail or "本次运行失败" in log_tail:
+                    meta["status"] = "failed"
+                elif '"result": "success"' in log_tail:
+                    meta["status"] = "success"
+                else:
+                    meta["status"] = "finished"
+                meta["finished_at"] = datetime.now().astimezone().isoformat()
+                meta["recovered_after_restart"] = True
+                write_json(run_metadata_path(run_id), meta)
     return meta
 
 
@@ -225,11 +274,92 @@ def list_runs(limit: int = 12) -> list[dict]:
     return rows
 
 
+def operational_log_lines(content: str) -> tuple[list[str], bool]:
+    """Keep diagnostics and progress while removing model prose and file diffs."""
+    kept: list[str] = []
+    hidden = False
+    in_diff = False
+    for raw_line in content.splitlines():
+        line = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", raw_line).rstrip()
+        stripped = line.strip()
+        if stripped.startswith("diff --git "):
+            in_diff = True
+            hidden = True
+            continue
+        operational = (
+            stripped.startswith(OPERATIONAL_LOG_PREFIXES)
+            or bool(SAFE_JSON_LOG_FIELDS.match(line))
+            or "退出码" in stripped
+            or "Exception:" in stripped
+            or re.search(r"\b(?:ERROR|WARN)\b", stripped) is not None
+            or re.match(
+                r"(?i)^(?:password|passwd|token|cookie|authorization)\b", stripped
+            )
+            is not None
+        )
+        if in_diff and not operational:
+            hidden = True
+            continue
+        if operational:
+            in_diff = False
+            kept.append(line)
+        elif stripped:
+            hidden = True
+    if hidden:
+        kept.insert(0, "[已隐藏小说正文和补丁内容，仅显示进度与报错]")
+    return kept, hidden
+
+
+def run_log(run_id: str, tail_lines: int = 240) -> dict:
+    if not SAFE_JOB_ID.fullmatch(run_id):
+        raise ValueError("run id 格式不正确")
+    tail_lines = max(20, min(int(tail_lines), 500))
+    path = RUNS_ROOT / f"{run_id}.log"
+    if not path.is_file():
+        raise ValueError("找不到该运行日志")
+    with path.open("rb") as handle:
+        size = path.stat().st_size
+        start = max(0, size - MAX_LOG_BYTES)
+        handle.seek(start)
+        raw = handle.read()
+    content = raw.decode("utf-8", errors="replace")
+    if start:
+        content = content.split("\n", 1)[-1]
+    lines, content_hidden = operational_log_lines(content)
+    filtered_line_count = len(lines)
+    lines = lines[-tail_lines:]
+    hidden_notice = "[已隐藏小说正文和补丁内容，仅显示进度与报错]"
+    if content_hidden and hidden_notice not in lines:
+        lines.insert(0, hidden_notice)
+    clipped_lines = []
+    for line in lines:
+        line = re.sub(
+            r"(?i)\b(password|passwd|token|cookie|authorization)\b\s*[:=]\s*\S+",
+            r"\1=<已隐藏>",
+            line,
+        )
+        if len(line) > MAX_LOG_LINE_LENGTH:
+            line = line[:MAX_LOG_LINE_LENGTH] + "… [本行过长，已截断]"
+        clipped_lines.append(line)
+    meta = read_json(run_metadata_path(run_id), {}) or {}
+    return {
+        "id": run_id,
+        "status": refresh_run(meta).get("status", "unknown") if meta else "unknown",
+        "content": "\n".join(clipped_lines),
+        "truncated": bool(start or filtered_line_count > tail_lines),
+        "content_hidden": content_hidden,
+        "updated_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(),
+    }
+
+
 def launch_command(command: list[str], kind: str, label: str) -> dict:
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)
     log_path = RUNS_ROOT / f"{run_id}.log"
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
+    child_env["PYTHONUTF8"] = "1"
     log_handle = log_path.open("w", encoding="utf-8")
     try:
         process = subprocess.Popen(
@@ -242,6 +372,7 @@ def launch_command(command: list[str], kind: str, label: str) -> dict:
             encoding="utf-8",
             errors="replace",
             creationflags=creationflags,
+            env=child_env,
         )
     finally:
         log_handle.close()
@@ -356,6 +487,12 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/runs":
                 self.send_json({"runs": list_runs()})
+                return
+            if parsed.path == "/api/run-log":
+                query = parse_qs(parsed.query)
+                run_id = query.get("run_id", [""])[0]
+                tail_lines = int(query.get("tail", ["240"])[0])
+                self.send_json(run_log(run_id, tail_lines))
                 return
             if parsed.path == "/api/chapter":
                 query = parse_qs(parsed.query)

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import web_app
@@ -97,6 +99,43 @@ class WebAppDataTests(unittest.TestCase):
         command = launch.call_args.args[0]
         self.assertEqual(command[-2:], ["--book", "free-sky"])
         self.assertIn("--resume", command)
+
+    def test_run_log_returns_tail_and_redacts_credentials(self) -> None:
+        with TemporaryDirectory() as temp, patch.object(
+            web_app, "RUNS_ROOT", Path(temp)
+        ):
+            log_path = Path(temp) / "12345678.log"
+            log_path.write_text(
+                "第一行\n+段野抬起头，这是一段小说正文。\n"
+                "Token: abc123\n项目校验失败：缺少人物线\n",
+                encoding="utf-8",
+            )
+            payload = web_app.run_log("12345678", 20)
+        self.assertIn("项目校验失败", payload["content"])
+        self.assertIn("Token=<已隐藏>", payload["content"])
+        self.assertNotIn("abc123", payload["content"])
+        self.assertNotIn("段野抬起头", payload["content"])
+        self.assertIn("已隐藏小说正文", payload["content"])
+
+    def test_run_log_rejects_unsafe_id(self) -> None:
+        with self.assertRaisesRegex(ValueError, "格式"):
+            web_app.run_log("../outside")
+
+    def test_refresh_run_recovers_finished_process_after_server_restart(self) -> None:
+        with (
+            TemporaryDirectory() as temp,
+            patch.object(web_app, "RUNS_ROOT", Path(temp)),
+            patch.object(web_app.manager, "process_is_running", return_value=False),
+        ):
+            (Path(temp) / "12345678.log").write_text(
+                '{"result": "failed", "message": "门禁失败"}',
+                encoding="utf-8",
+            )
+            meta = web_app.refresh_run(
+                {"id": "12345678", "pid": 4321, "status": "running"}
+            )
+        self.assertEqual(meta["status"], "failed")
+        self.assertTrue(meta["recovered_after_restart"])
 
 
 if __name__ == "__main__":
