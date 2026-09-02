@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -91,6 +92,32 @@ class SequentialRunTests(unittest.TestCase):
         )
         self.assertEqual(result, 3)
         self.assertEqual(run.call_count, 2)
+
+    def test_forwards_api_delivery_options_to_on_demand_worker(self) -> None:
+        with (
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "xiaoshuo",
+                    "10",
+                    "--book",
+                    "first",
+                    "--sync-git",
+                    "--no-publish-fanqie",
+                ],
+            ),
+            patch.object(
+                xiaoshuo,
+                "load_books",
+                return_value=({"default_book_id": "first"}, BOOKS),
+            ),
+            patch.object(xiaoshuo, "run_commands", return_value=0) as run_commands,
+        ):
+            self.assertEqual(xiaoshuo.main(), 0)
+        command = run_commands.call_args.args[0][0][1]
+        self.assertIn("--sync-git", command)
+        self.assertIn("--no-publish-fanqie", command)
 
 
 if __name__ == "__main__":

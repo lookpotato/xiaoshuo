@@ -17,6 +17,48 @@ cd C:\Users\16007\Desktop\小说\xiaoshuo
 - `cosmic-404`：《404修理站》
 - `free-sky`：《道友你这天命与我有缘》
 
+### 本地前后端工作台
+
+直接启动网页管理界面：
+
+```powershell
+python .\web_app.py
+```
+
+Windows 下也可以直接双击根目录的 `启动小说工作台.cmd`。
+
+浏览器会打开 `http://127.0.0.1:8765`。工作台使用 React + Vite 前端和 Python 后端，可以查看作品状态、质量门禁、下一章接力点、章节归档和最近任务，也可以启动单本/全部作品生成或从失败 job 断点续跑。每次运行都能独立配置章数、是否同步 Git、是否更新番茄正式环境；两个外部交付开关默认关闭，未绑定番茄书号的作品不能开启正式环境。失败任务会保存本次配置，续跑时不会改变交付范围。网页后端不会绕开原有串行锁、人物线、读者验收、发布和安全规则。
+
+前端通过 `POST /api/run` 提交完整配置，例如：
+
+```json
+{
+  "book_id": "cosmic-404",
+  "count": 10,
+  "sync_git": true,
+  "publish_fanqie": false
+}
+```
+
+如果不希望自动打开浏览器，或默认端口被占用：
+
+```powershell
+python .\web_app.py --no-browser
+python .\web_app.py --port 8877
+```
+
+服务仅监听本机 `127.0.0.1`；运行记录保存在被 Git 忽略的 `.web_runtime/`，不会保存密码、Cookie、Token或小说正文。
+
+需要修改 React 页面时，在另一个终端运行开发服务器：
+
+```powershell
+cd .\web
+npm install
+npm run dev
+```
+
+Vite 开发地址为 `http://127.0.0.1:5173`，会把 `/api` 转发到 Python 后端。修改完成后运行 `npm run build`，正式工作台仍由 `web_app.py` 一体化提供。
+
 ### 检查与安全预演
 
 ```powershell

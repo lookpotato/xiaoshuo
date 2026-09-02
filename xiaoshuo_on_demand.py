@@ -29,7 +29,9 @@ def project_for(data: dict, book_id: str) -> Path:
     return manager.project_path(manager.find_book(data, book_id))
 
 
-def queued_job(book_id: str, count: int) -> dict | None:
+def queued_job(
+    book_id: str, count: int, publish_fanqie: bool, sync_git: bool
+) -> dict | None:
     if not manager.JOB_DIR.exists():
         return None
     candidates = []
@@ -40,12 +42,21 @@ def queued_job(book_id: str, count: int) -> dict | None:
             and job.get("book_id") == book_id
             and int(job.get("target_chapters", 0)) == count
             and not job.get("completed_chapters")
+            and job.get("run_options", {})
+            == {"publish_fanqie": publish_fanqie, "sync_git": sync_git}
         ):
             candidates.append(job)
     return min(candidates, key=lambda item: item["created_at"]) if candidates else None
 
 
-def start_job(data: dict, book_id: str, count: int, resume: str | None) -> dict:
+def start_job(
+    data: dict,
+    book_id: str,
+    count: int,
+    resume: str | None,
+    publish_fanqie: bool,
+    sync_git: bool,
+) -> dict:
     if resume:
         job = manager.read_job(resume)
         if job["book_id"] != book_id:
@@ -53,7 +64,13 @@ def start_job(data: dict, book_id: str, count: int, resume: str | None) -> dict:
         if job.get("result") == "success":
             raise ValueError("该 job 已成功完成")
     else:
-        job = queued_job(book_id, count) or manager.create_job(data, book_id, count)
+        job = queued_job(book_id, count, publish_fanqie, sync_git) or manager.create_job(
+            data, book_id, count
+        )
+        job["run_options"] = {
+            "publish_fanqie": publish_fanqie,
+            "sync_git": sync_git,
+        }
     result = manager.cmd_claim(
         data, argparse.Namespace(book=book_id, force=True)
     )
@@ -95,10 +112,16 @@ def resolve_codex() -> str:
 
 
 def local_write_prompt(book_id: str, job: dict) -> str:
+    book = manager.find_book(manager.config(), book_id)
+    if book.get("mode") == "write_only" and not job.get("run_options", {}).get(
+        "publish_fanqie", False
+    ):
+        return local_write_only_prompt(book_id, job)
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
-这是由 `python xiaoshuo` 启动的一次性串行批次，job id 为 `{job["id"]}`。
+这是由小说工作台 API 启动的一次性串行批次，job id 为 `{job["id"]}`。
 完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
+必须读取 shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md 与 shared/chinese_dialogue_feedback.jsonl；若目标项目存在 narrative_style_pack.md，也必须读取。每场固定一个认知中心，新人物必须有来路、先行动和关系锚，新道具必须先交代眼下用途与使用代价。对白先按人物关系、共同经历、场合和情绪确定称呼与省略，不得用固定方言词替换冒充真人口语，完稿前抽查至少十句执行口语逆翻译。
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
@@ -113,7 +136,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 - 只有网页未产出、下载失败、文件损坏或像素画幅错误时才重试；不对网页 GPT 已完成的图片做内容复审；
 - 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
 必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
-每次新章完成后必须建立 character_threads/NNNN/：先写 00-cast.md，再为名单中的每个人物写独立私线，写 interaction_map.md 汇总交织，最后用 state_update.md 回写所有人物的下一状态；不得只围绕主角编写。人物线门禁通过前不得进入归档、推进状态或上传。
+每次新章完成后必须建立 character_threads/NNNN/：先写 00-cast.md，再为名单中的每个人物写独立私线，写 interaction_map.md 汇总交织，最后用 state_update.md 回写所有人物的下一状态；不得只围绕主角编写。00-cast.md 必须用“## 角色名单”分节，且每名真实人物单独一行“- 人物名：...”；“主要视角、出场人物、当章目标、当章小胜负、主要钩子”等是元数据，不能写成会被解析为人物的列表项；车、锅、机甲等行动性物件放在“## 行动物件”下，不建立人物私线。人物线门禁通过前不得进入归档、推进状态或上传。
 
 本次仅处理 `chapter_state.json` 的 next_chapter_number：
 1. 写作、质检、修订并保存 drafts 与 chapters 文件；
@@ -122,9 +145,27 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 4. Metadata 的 upload_status 写为 not_uploaded；
 5. 只允许 browser_image_worker.py 访问图片专用 Chrome 生成和下载配图；不访问番茄浏览器、不上传番茄、不调用 job-progress/job-finish/claim/finish；
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
-7. 按 AGENTS.md 只提交并推送本章涉及的文件。
+7. 本写作子任务不上传番茄、不运行 Git；外层任务会严格按照本次 API 运行配置决定是否更新番茄正式环境以及是否同步 Git。
 
 完成一章后立即结束，不得生成第二章。"""
+
+
+def local_write_only_prompt(book_id: str, job: dict) -> str:
+    return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
+
+这是工作台 API 的本地创作子任务，job id 为 `{job["id"]}`。只处理下一章；本子任务不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git。外层任务会按照本次运行配置决定是否同步 Git。
+
+读取 AGENTS.md、目标项目 automation_prompt.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及目标项目的 novel_config.md、story_bible.md、resource_ledger.md、characters.md、world.md、style_guide.md、存在时的 narrative_style_pack.md、character_voice_bible.md、voice_packs/、continuity_ledger.md、chapter_state.json 和最近三章正文。不要读取其他书。
+
+对白开写前先确定每对人物的关系、共同经历、当下场合、谁更有权力以及各自此刻想藏什么；称呼可以是哥、姐、老哥、大哥、兄弟、姐们、姓名、外号或直接省略，必须由关系决定，不能全书固定替换。完稿前抽查至少十句执行口语逆翻译：删掉现场不会主动交代的完整背景、书面连接词和过分清楚的步骤说明，让人物按中国人的共享语境说话，同时保留读者理解眼前行动所需的因果。
+
+严格按人物线流程：先为每个出场人物记录独立目标、误解、底线、行动、代价和下一步，再写 interaction_map.md 和 state_update.md。interaction_map.md 可以使用 Markdown 表格，也可以使用至少 2 条带人物相互影响、行动与结果的编号交织记录。00-cast.md 只列真实人物，必须使用“## 角色名单”及逐人一行的“- 人物名：...”格式；不要把“主要视角/出场人物/当章目标/当章小胜负/主要钩子”写成角色列表项。正文必须让至少三名人物独立行动，资源必须有消耗或获得，完成一个当章小胜负并留下钩子。
+
+新版《404修理站》从旧稿素材中重建，书名不变但旧世界观不继承。文风优先热血和现场感；对白必须按 voice_packs 写，每个人有自己的地域、年龄、职业、关系和情绪声音。允许省略、抢话、重复、损人、适量脏话和不完整句子，不能让人物说成统一的清晰书面语。
+
+正文写入 drafts/ 和 chapters/，正文目标 2000—2600 字；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
+
+只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。"""
 
 
 def _codex_result_detail(result_file: Path) -> str:
@@ -136,12 +177,48 @@ def _codex_result_detail(result_file: Path) -> str:
     return "Codex 已结束但未发现章节归档；请检查本地门禁和终端错误信息"
 
 
+def normalize_character_thread_dir(project: Path, chapter_number: int) -> None:
+    """Normalize a uniquely matching unpadded character-thread directory."""
+    parent = project / "character_threads"
+    target = parent / f"{int(chapter_number):04d}"
+    if target.is_dir() or not parent.is_dir():
+        return
+    candidates = [
+        path for path in parent.iterdir()
+        if path.is_dir() and path.name.isdigit()
+        and int(path.name) == int(chapter_number)
+    ]
+    if len(candidates) == 1:
+        candidates[0].rename(target)
+
+
+def enforce_local_archive_gates(
+    project: Path,
+    chapter_number: int,
+    reader_gate_from: int,
+    original_state: dict,
+) -> None:
+    """Run all local archive gates before a chapter can be reported complete."""
+    normalize_character_thread_dir(project, chapter_number)
+    errors = manager.validate_parallel_character_threads(project, chapter_number)
+    errors.extend(manager.validate_reader_checks(project, reader_gate_from))
+    if errors:
+        manager.write_json(project / "chapter_state.json", original_state)
+        raise RuntimeError(
+            "本地归档门禁未通过，已回滚章节状态：" + "；".join(errors)
+        )
+
+
 def write_one(book_id: str, job: dict) -> None:
     codex = resolve_codex()
-    project = project_for(manager.config(), book_id)
+    data = manager.config()
+    book = manager.find_book(data, book_id)
+    project = project_for(data, book_id)
+    reader_gate_from = int(book["reader_gate_from_chapter"])
     expected_chapter = int(
         manager.read_json(project / "chapter_state.json")["next_chapter_number"]
     )
+    original_state = manager.read_json(project / "chapter_state.json", {})
     result_file = manager.JOB_DIR / f"{job['id']}-write-{datetime.now():%H%M%S}.md"
     command = [
         codex,
@@ -172,6 +249,9 @@ def write_one(book_id: str, job: dict) -> None:
         if not process.returncode:
             state = manager.read_json(project / "chapter_state.json", {})
             if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
+                enforce_local_archive_gates(
+                    project, expected_chapter, reader_gate_from, original_state
+                )
                 return
             raise RuntimeError(
                 "Codex 已结束但章节未通过归档门禁。"
@@ -180,8 +260,11 @@ def write_one(book_id: str, job: dict) -> None:
 
         state = manager.read_json(project / "chapter_state.json", {})
         if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
+            enforce_local_archive_gates(
+                project, expected_chapter, reader_gate_from, original_state
+            )
             print(
-                "Codex 回传中断，但新章节已完整归档；继续执行上传。",
+                "Codex 回传中断，但新章节已完整归档；继续执行本地流程。",
                 flush=True,
             )
             return
@@ -505,12 +588,49 @@ def record_upload(
     ]
 
 
+def project_file_snapshot(project: Path) -> dict[Path, tuple[int, int]]:
+    """Capture enough local state to identify files changed by one writing step."""
+    snapshot: dict[Path, tuple[int, int]] = {}
+    for path in project.rglob("*"):
+        if path.is_file():
+            stat = path.stat()
+            snapshot[path.resolve()] = (stat.st_mtime_ns, stat.st_size)
+    return snapshot
+
+
+def changed_project_files(
+    project: Path, before: dict[Path, tuple[int, int]]
+) -> list[Path]:
+    after = project_file_snapshot(project)
+    return sorted(
+        path for path in set(before) | set(after) if before.get(path) != after.get(path)
+    )
+
+
 def git_sync(paths: list[Path], message: str) -> bool:
-    unique_paths = sorted({path.resolve() for path in paths if path.exists()})
-    if not unique_paths:
-        return True
-    relative = [str(path.relative_to(ROOT)) for path in unique_paths]
-    subprocess.run(["git", "add", "--", *relative], cwd=ROOT, check=True)
+    unique_paths = sorted({path.resolve() for path in paths})
+    relative: list[str] = []
+    for path in unique_paths:
+        try:
+            relative.append(str(path.relative_to(ROOT)))
+        except ValueError as exc:
+            raise RuntimeError(f"拒绝同步项目目录外文件：{path}") from exc
+    staged_before = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=True,
+    ).stdout.strip()
+    if staged_before:
+        raise RuntimeError(
+            "Git 暂存区已有其他文件，为避免混入本批内容，本次没有提交；"
+            "请先处理暂存区后续跑"
+        )
+    if relative:
+        subprocess.run(["git", "add", "--", *relative], cwd=ROOT, check=True)
     staged = subprocess.run(
         ["git", "diff", "--cached", "--quiet"], cwd=ROOT
     )
@@ -551,11 +671,22 @@ def run(
     dry_run: bool,
     debug_browser: bool,
     immediate: bool = False,
+    publish_fanqie: bool | None = None,
+    sync_git: bool | None = None,
 ) -> int:
     data = manager.config()
     book = manager.find_book(data, book_id)
     project = project_for(data, book_id)
-    write_only = book.get("mode") == "write_only"
+    legacy_publish_default = book.get("mode") != "write_only"
+    publish_fanqie = (
+        legacy_publish_default if publish_fanqie is None else publish_fanqie
+    )
+    sync_git = publish_fanqie if sync_git is None else sync_git
+    if resume:
+        saved_options = manager.read_job(resume).get("run_options")
+        if isinstance(saved_options, dict):
+            publish_fanqie = bool(saved_options.get("publish_fanqie", False))
+            sync_git = bool(saved_options.get("sync_git", False))
     errors = manager.validate_book(
         book, require_publish_complete=False
     )
@@ -568,15 +699,19 @@ def run(
                     "mode": "on_demand",
                     "book": book_id,
                     "target": count,
-                    "delivery": "local_archive" if write_only else "fanqie_publish",
+                    "delivery": {
+                        "local_archive": True,
+                        "publish_fanqie": publish_fanqie,
+                        "sync_git": sync_git,
+                    },
                     "background_polling": False,
                     "steps": [
                         "调用一次 Codex 写一章并完成本地质检归档",
-                        *([] if write_only else [
+                        *([] if not publish_fanqie else [
                             "恢复未发布章节或启动专用 Chrome 上传并排期",
                             "平台列表核验",
                         ]),
-                        "更新本地状态、提交并推送 Git",
+                        "提交并推送本批文件" if sync_git else "不执行 Git",
                         "进程退出",
                     ],
                 },
@@ -585,17 +720,19 @@ def run(
             )
         )
         return 0
-    if not write_only and not PROFILE_READY.is_file():
+    if publish_fanqie and not PROFILE_READY.is_file():
         raise RuntimeError(
             "专用 Chrome 尚未完成首次登录配置；"
             "请先在 VS Code 终端运行 `python xiaoshuo --setup-browser`"
         )
-    job = start_job(data, book_id, count, resume)
+    job = start_job(
+        data, book_id, count, resume, publish_fanqie, sync_git
+    )
     try:
         recovery_paths = [
             Path(item) for item in job.get("changed_paths_pending_git", [])
         ]
-        if recovery_paths:
+        if recovery_paths and sync_git:
             if git_sync(recovery_paths, f"恢复按需批次 {job['id']} 状态"):
                 job.pop("changed_paths_pending_git", None)
             manager.write_json(manager.job_path(job["id"]), job)
@@ -606,7 +743,8 @@ def run(
                 "准备下一章",
                 flush=True,
             )
-            if write_only:
+            if not publish_fanqie:
+                before_files = project_file_snapshot(project)
                 before = manager.read_json(project / "chapter_state.json")[
                     "last_completed_chapter"
                 ]
@@ -615,6 +753,7 @@ def run(
                 after = int(state["last_completed_chapter"])
                 if after != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                normalize_character_thread_dir(project, after)
                 parallel_errors = manager.validate_parallel_character_threads(project, after)
                 if parallel_errors:
                     raise RuntimeError("并行人物线门禁失败：" + "；".join(parallel_errors))
@@ -622,15 +761,37 @@ def run(
                     project.joinpath("chapters").glob(f"{after:04d}-*.md")
                 )
                 ensure_unique_chapter_title(project, parse_chapter(chapter_path))
+                archive_errors = manager.validate_book(
+                    book, require_publish_complete=False
+                )
+                if archive_errors:
+                    raise RuntimeError(
+                        "新章不得记录为成功，项目归档校验失败："
+                        + "；".join(archive_errors)
+                    )
                 manager.cmd_job_progress(
                     data,
                     argparse.Namespace(
                         job=job["id"],
                         chapter=after,
                         platform_status="local_archived",
-                        message="新章已完成本地质检、归档与 Git 同步；未访问番茄",
+                        message=(
+                            "新章已完成本地质检与本地归档；未访问番茄；"
+                            + ("等待本批结束后同步 Git" if sync_git else "未执行 Git")
+                        ),
                     ),
                 )
+                if sync_git:
+                    job = manager.read_job(job["id"])
+                    pending_git = {
+                        Path(item).resolve()
+                        for item in job.get("changed_paths_pending_git", [])
+                    }
+                    pending_git.update(changed_project_files(project, before_files))
+                    job["changed_paths_pending_git"] = [
+                        str(path) for path in sorted(pending_git)
+                    ]
+                    manager.write_json(manager.job_path(job["id"]), job)
                 completed += 1
                 continue
             pending = pending_chapter(project)
@@ -644,6 +805,7 @@ def run(
                 ]
                 if int(after) != int(before) + 1:
                     raise RuntimeError("Codex 退出后未发现唯一的新章节")
+                normalize_character_thread_dir(project, int(after))
                 parallel_errors = manager.validate_parallel_character_threads(project, int(after))
                 if parallel_errors:
                     raise RuntimeError("并行人物线门禁失败：" + "；".join(parallel_errors))
@@ -715,9 +877,15 @@ def run(
                 chapter_path,
                 upload,
             )
-            job["changed_paths_pending_git"] = [
-                str(path.resolve()) for path in changed
-            ]
+            if sync_git:
+                pending_git = {
+                    Path(item).resolve()
+                    for item in job.get("changed_paths_pending_git", [])
+                }
+                pending_git.update(path.resolve() for path in changed)
+                job["changed_paths_pending_git"] = [
+                    str(path) for path in sorted(pending_git)
+                ]
             manager.write_json(manager.job_path(job["id"]), job)
             manager.cmd_job_progress(
                 data,
@@ -735,18 +903,30 @@ def run(
                     ),
                 ),
             )
-            pushed = git_sync(changed, f"发布第{chapter.number}章《{chapter.title}》")
-            job = manager.read_job(job["id"])
-            if pushed:
-                job.pop("changed_paths_pending_git", None)
-            manager.write_json(manager.job_path(job["id"]), job)
             completed += 1
+        if sync_git:
+            job = manager.read_job(job["id"])
+            pending_paths = [
+                Path(item) for item in job.get("changed_paths_pending_git", [])
+            ]
+            if git_sync(
+                pending_paths,
+                f"{book.get('title', book_id)} 按需完成 {completed} 章",
+            ):
+                job.pop("changed_paths_pending_git", None)
+                manager.write_json(manager.job_path(job["id"]), job)
         git_push_pending = bool(job.get("changed_paths_pending_git"))
         completion_message = f"按需完成 {completed}/{job['target_chapters']} 章"
-        if write_only:
-            completion_message += "；本书为本地创作模式，未访问番茄"
+        if not publish_fanqie:
+            completion_message += "；未更新番茄正式环境"
+        else:
+            completion_message += "；已按配置更新番茄正式环境"
+        if sync_git and not git_push_pending:
+            completion_message += "；Git 已同步"
+        elif not sync_git:
+            completion_message += "；未同步 Git"
         if git_push_pending:
-            completion_message += "；番茄已成功，Git 推送待恢复"
+            completion_message += "；Git 推送待恢复"
         finish_job(
             data,
             job,
@@ -805,6 +985,18 @@ def main() -> int:
         action="store_true",
         help="本次上传关闭定时发布，直接提交；仅用于用户明确要求的临时补更",
     )
+    git_group = parser.add_mutually_exclusive_group()
+    git_group.add_argument("--sync-git", dest="sync_git", action="store_true")
+    git_group.add_argument("--no-sync-git", dest="sync_git", action="store_false")
+    parser.set_defaults(sync_git=None)
+    publish_group = parser.add_mutually_exclusive_group()
+    publish_group.add_argument(
+        "--publish-fanqie", dest="publish_fanqie", action="store_true"
+    )
+    publish_group.add_argument(
+        "--no-publish-fanqie", dest="publish_fanqie", action="store_false"
+    )
+    parser.set_defaults(publish_fanqie=None)
     args = parser.parse_args()
     if args.resume and args.count is None:
         args.count = int(manager.read_job(args.resume)["target_chapters"])
@@ -818,6 +1010,8 @@ def main() -> int:
             args.dry_run,
             args.debug_browser,
             args.immediate,
+            args.publish_fanqie,
+            args.sync_git,
         )
     except (RuntimeError, ValueError, OSError) as exc:
         print(str(exc), file=sys.stderr)

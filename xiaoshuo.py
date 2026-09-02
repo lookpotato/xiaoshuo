@@ -125,6 +125,34 @@ def main() -> int:
         help="报错时保留 Chrome 窗口，便于人工查看页面",
     )
     parser.add_argument("--resume", help="续跑 `.manager_jobs` 中已有的 job id")
+    git_group = parser.add_mutually_exclusive_group()
+    git_group.add_argument(
+        "--sync-git",
+        dest="sync_git",
+        action="store_true",
+        help="本批结束后提交并推送本批生成或更新的文件",
+    )
+    git_group.add_argument(
+        "--no-sync-git",
+        dest="sync_git",
+        action="store_false",
+        help="本批不提交或推送 Git",
+    )
+    parser.set_defaults(sync_git=None)
+    publish_group = parser.add_mutually_exclusive_group()
+    publish_group.add_argument(
+        "--publish-fanqie",
+        dest="publish_fanqie",
+        action="store_true",
+        help="本批更新番茄正式环境",
+    )
+    publish_group.add_argument(
+        "--no-publish-fanqie",
+        dest="publish_fanqie",
+        action="store_false",
+        help="本批只处理本地文件，不更新番茄正式环境",
+    )
+    parser.set_defaults(publish_fanqie=None)
     args = parser.parse_args()
     if args.setup_image_browser or args.check_image_browser:
         if args.count is not None or args.reward is not None or args.resume:
@@ -205,6 +233,14 @@ def main() -> int:
             command.append("--dry-run")
         if args.debug_browser:
             command.append("--debug-browser")
+        if args.sync_git is not None:
+            command.append("--sync-git" if args.sync_git else "--no-sync-git")
+        if args.publish_fanqie is not None:
+            command.append(
+                "--publish-fanqie"
+                if args.publish_fanqie
+                else "--no-publish-fanqie"
+            )
         commands.append((book, command))
     return run_commands(commands)
 
