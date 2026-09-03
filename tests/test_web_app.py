@@ -116,6 +116,7 @@ class WebAppDataTests(unittest.TestCase):
         self.assertNotIn("abc123", payload["content"])
         self.assertNotIn("段野抬起头", payload["content"])
         self.assertIn("已隐藏小说正文", payload["content"])
+        self.assertIn("项目校验失败", payload["error_summary"])
 
     def test_run_log_rejects_unsafe_id(self) -> None:
         with self.assertRaisesRegex(ValueError, "格式"):

@@ -31,6 +31,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
+API_VERSION = 2
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -197,6 +198,7 @@ def overview() -> dict:
     data = config()
     books = [book_summary(book) for book in data.get("books", []) if book.get("enabled")]
     return {
+        "api_version": API_VERSION,
         "name": "番茄小说工作台",
         "generated_at": datetime.now().astimezone().isoformat(),
         "default_book_id": data.get("default_book_id"),
@@ -341,6 +343,19 @@ def run_log(run_id: str, tail_lines: int = 240) -> dict:
         if len(line) > MAX_LOG_LINE_LENGTH:
             line = line[:MAX_LOG_LINE_LENGTH] + "… [本行过长，已截断]"
         clipped_lines.append(line)
+    error_summary = ""
+    for line in reversed(clipped_lines):
+        stripped = line.strip()
+        if (
+            "本次运行失败" in stripped
+            or "门禁未通过" in stripped
+            or "项目校验失败" in stripped
+            or "执行失败" in stripped
+            or "ERROR" in stripped
+            or "Exception:" in stripped
+        ):
+            error_summary = stripped
+            break
     meta = read_json(run_metadata_path(run_id), {}) or {}
     return {
         "id": run_id,
@@ -348,6 +363,7 @@ def run_log(run_id: str, tail_lines: int = 240) -> dict:
         "content": "\n".join(clipped_lines),
         "truncated": bool(start or filtered_line_count > tail_lines),
         "content_hidden": content_hidden,
+        "error_summary": error_summary,
         "updated_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(),
     }
 

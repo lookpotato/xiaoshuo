@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 async function api(path, options = {}) {
   const response = await fetch(path, options);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("当前后端版本过旧，日志接口不可用。请关闭旧服务后重新运行 python web_app.py");
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || `请求失败 ${response.status}`);
   return data;
@@ -30,7 +34,7 @@ function Metrics({ book }) {
   </section>;
 }
 
-function CreatePanel({ books, selectedBookId, onNotice, onRefresh }) {
+function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted }) {
   const [count, setCount] = useState(1);
   const [scope, setScope] = useState(selectedBookId);
   const [syncGit, setSyncGit] = useState(false);
@@ -47,7 +51,7 @@ function CreatePanel({ books, selectedBookId, onNotice, onRefresh }) {
     setBusy(true); setFeedback("正在创建后台任务……");
     try {
       const result = await api("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: scope, count, sync_git: syncGit, publish_fanqie: publishFanqie }) });
-      setFeedback(`已启动：${result.run.label}`); onNotice("任务已在后台启动"); onRefresh();
+      setFeedback(`已启动：${result.run.label}`); onNotice("任务已在后台启动，日志窗口已打开"); onRunStarted(result.run); onRefresh();
     } catch (error) { setFeedback(error.message); onNotice(error.message); }
     finally { setBusy(false); }
   }
@@ -91,7 +95,7 @@ function Activity({ data, bookId, onResume, onOpenLog, selectedRunId }) {
   </article>;
 }
 
-function BackendLog({ run }) {
+function BackendLog({ run, open, onClose }) {
   const [log, setLog] = useState(null);
   const [error, setError] = useState("");
   const outputRef = useRef(null);
@@ -114,10 +118,20 @@ function BackendLog({ run }) {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
   }, [log?.content]);
 
-  return <article className="panel backend-log-panel">
-    <div className="panel-head"><div><p className="eyebrow">BACKEND OUTPUT</p><h2>后端实时日志</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button></div></div>
-    {run ? <><p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 仅显示最新日志" : ""}{log?.content_hidden ? " · 正文已过滤" : ""}</p><pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会实时显示 Python 输出和错误信息</div>}
-  </article>;
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnEscape = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return <div className="log-overlay" role="dialog" aria-modal="true" aria-label="后端运行日志" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <article className="panel backend-log-panel">
+      <div className="panel-head"><div><p className="eyebrow">BACKEND OUTPUT</p><h2>后端运行日志</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button><button className="icon-button" aria-label="关闭日志" onClick={onClose}>×</button></div></div>
+      {run ? <><p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 仅显示最新日志" : ""}{log?.content_hidden ? " · 正文已过滤" : ""}</p>{log?.error_summary && <div className="log-error-summary"><strong>失败原因</strong><span>{log.error_summary}</span></div>}<pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会实时显示 Python 输出和错误信息</div>}
+    </article>
+  </div>;
 }
 
 function ValidationPanel({ validation }) {
@@ -136,7 +150,9 @@ export default function App() {
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [selectedRunId, setSelectedRunId] = useState(null);
+  const [logOpen, setLogOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const announcedFailures = useRef(new Set());
 
   const loadOverview = useCallback(async (announce = false) => {
     try {
@@ -154,6 +170,12 @@ export default function App() {
     setSelectedRunId((current) => data.runs.some((run) => run.id === current) ? current : data.runs[0].id);
   }, [data?.runs]);
   const selectedRun = useMemo(() => data?.runs.find((run) => run.id === selectedRunId) || data?.runs[0], [data, selectedRunId]);
+  const openLog = useCallback((runId) => { setSelectedRunId(runId); setLogOpen(true); }, []);
+  useEffect(() => {
+    const failed = data?.runs.find((run) => run.status === "failed" && !announcedFailures.current.has(run.id));
+    data?.runs.forEach((run) => { if (run.status === "failed") announcedFailures.current.add(run.id); });
+    if (failed) openLog(failed.id);
+  }, [data?.runs, openLog]);
 
   async function openChapter(bookId, number) { try { setChapter(await api(`/api/chapter?book_id=${encodeURIComponent(bookId)}&number=${number}`)); } catch (error) { setNotice(error.message); } }
   async function resume(jobId) { try { await api("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jobId }) }); setNotice("续跑任务已启动"); loadOverview(); } catch (error) { setNotice(error.message); } }
@@ -164,11 +186,11 @@ export default function App() {
     <div className="shell"><Sidebar books={data.books} selected={book.id} onSelect={setSelectedBookId} /><main className="main">
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
       <Metrics book={book} />
-      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
-      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={setSelectedRunId} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
-      <BackendLog run={selectedRun} />
+      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
+      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />
+    <BackendLog run={selectedRun} open={logOpen} onClose={() => setLogOpen(false)} />
     <div className={`toast ${notice ? "show" : ""}`} role="status">{notice}</div>
   </>;
 }
