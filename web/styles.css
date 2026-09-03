@@ -190,6 +190,30 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .document-editor textarea { width: 100%; min-height: 440px; padding: 16px; resize: vertical; border: 1px solid #353832; border-radius: 11px; color: #dce7dc; background: #171a17; font: 12px/1.75 "Cascadia Mono", "Microsoft YaHei UI", monospace; }
 .document-editor > p { margin: 0; color: var(--muted); font-size: 9px; }
 .settings-loading { color: var(--muted); text-align: center; }
+.section-description { max-width: 760px; margin: 7px 0 0; color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.65; }
+.character-story-panel > .settings-lock { margin-bottom: 14px; }
+.character-story-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 14px; }
+.character-roster { display: grid; align-content: start; gap: 7px; max-height: 720px; overflow: auto; }
+.character-roster button { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(255,255,255,.45); text-align: left; }
+.character-roster button:hover { background: white; }
+.character-roster button.active { border-color: rgba(228,69,47,.42); background: rgba(228,69,47,.07); box-shadow: inset 3px 0 var(--red); }
+.character-roster strong { font-size: 12px; }
+.character-roster small { color: var(--muted); font-size: 9px; }
+.character-roster i { color: var(--red); font-size: 9px; font-style: normal; }
+.character-timeline { display: grid; gap: 12px; min-width: 0; }
+.storyline-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.storyline-head strong, .storyline-head small { display: block; }
+.storyline-head strong { font-size: 15px; }
+.storyline-head small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.timeline-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; max-height: 210px; overflow: auto; padding-right: 3px; }
+.timeline-list button { display: grid; gap: 6px; min-height: 78px; padding: 11px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: rgba(255,255,255,.45); text-align: left; }
+.timeline-list button:hover { background: white; }
+.timeline-list button.active { border-color: rgba(31,128,101,.42); background: rgba(31,128,101,.08); }
+.timeline-list b { color: var(--green); font-size: 10px; }
+.timeline-list span { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.storyline-editor { display: grid; gap: 8px; }
+.storyline-editor > div { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 9px; }
+.storyline-editor textarea { width: 100%; min-height: 380px; padding: 16px; resize: vertical; border: 1px solid #353832; border-radius: 11px; color: #dce7dc; background: #171a17; font: 12px/1.75 "Cascadia Mono", "Microsoft YaHei UI", monospace; }
 
 @media (max-width: 1050px) {
   .shell { grid-template-columns: 86px minmax(0, 1fr); }
@@ -206,6 +230,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
   .content-grid { grid-template-columns: 1fr; }
   .settings-form-grid, .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .document-workspace { grid-template-columns: 220px minmax(0, 1fr); }
+  .timeline-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
@@ -238,4 +263,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
   .book-settings-switch select { width: 100%; min-width: 0; margin: 8px 0 0; }
   .document-workspace { min-height: 0; }
   .document-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
+  .character-story-layout { grid-template-columns: 1fr; }
+  .character-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
+  .storyline-head { align-items: stretch; flex-direction: column; }
 }

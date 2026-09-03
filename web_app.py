@@ -20,6 +20,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import fanqie_novel_manager as manager
+import character_story_service
 import settings_service
 
 
@@ -525,6 +526,12 @@ class AppHandler(BaseHTTPRequestHandler):
                 book_id = query.get("book_id", [""])[0]
                 self.send_json(settings_service.get_settings(scope, book_id))
                 return
+            if parsed.path == "/api/character-stories":
+                query = parse_qs(parsed.query)
+                book_id = query.get("book_id", [""])[0]
+                character = query.get("character", [""])[0]
+                self.send_json(character_story_service.get_character_stories(book_id, character))
+                return
             if parsed.path == "/api/chapter":
                 query = parse_qs(parsed.query)
                 book_id = query.get("book_id", [""])[0]
@@ -548,7 +555,8 @@ class AppHandler(BaseHTTPRequestHandler):
             return
         try:
             declared_length = int(self.headers.get("Content-Length", "0"))
-            body_limit = 1024 * 1024 if parsed.path == "/api/settings" else 64 * 1024
+            body_limits = {"/api/settings": 1024 * 1024, "/api/character-story": 256 * 1024}
+            body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
                 self.send_error_json("Content-Length 无效", HTTPStatus.BAD_REQUEST)
                 return
@@ -565,6 +573,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/settings":
                 self.send_json({"ok": True, "settings": settings_service.save_settings(payload)})
+                return
+            if parsed.path == "/api/character-story":
+                self.send_json({"ok": True, "stories": character_story_service.save_character_story(payload)})
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

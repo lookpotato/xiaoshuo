@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
+import CharacterStorylines from "./CharacterStorylines";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -125,6 +126,7 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
       <div className="panel-head"><div><p className="eyebrow">BASICS</p><h2>{scope === "system" ? "运行底座" : "作品运行参数"}</h2></div></div>
       {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} onChange={(registry) => setDraft({ ...draft, registry })} />}
     </article>
+    {scope === "book" && <CharacterStorylines bookId={bookId} onNotice={onNotice} />}
     {scope === "system" && <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">MODULE REGISTRY</p><h2>底层能力模块</h2></div><span className="count-label">{draft.modules.length} 个模块</span></div>
       <div className="module-grid">{draft.modules.map((module) => <div className="module-card" key={module.id}><span className={module.enabled ? "module-dot enabled" : "module-dot"} /><div><strong>{module.id}</strong><small>{module.rules.length ? module.rules.join(" · ") : `${module.field_count} 个内联规则`}</small></div></div>)}</div>
