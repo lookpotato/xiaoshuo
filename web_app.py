@@ -20,6 +20,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import fanqie_novel_manager as manager
+import settings_service
 
 
 ROOT = Path(__file__).resolve().parent
@@ -31,7 +32,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 2
+API_VERSION = 3
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -518,6 +519,12 @@ class AppHandler(BaseHTTPRequestHandler):
                 tail_lines = int(query.get("tail", ["240"])[0])
                 self.send_json(run_log(run_id, tail_lines))
                 return
+            if parsed.path == "/api/settings":
+                query = parse_qs(parsed.query)
+                scope = query.get("scope", [""])[0]
+                book_id = query.get("book_id", [""])[0]
+                self.send_json(settings_service.get_settings(scope, book_id))
+                return
             if parsed.path == "/api/chapter":
                 query = parse_qs(parsed.query)
                 book_id = query.get("book_id", [""])[0]
@@ -540,7 +547,15 @@ class AppHandler(BaseHTTPRequestHandler):
             self.send_error_json("请求必须使用 application/json", HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
             return
         try:
-            length = min(int(self.headers.get("Content-Length", "0")), 64 * 1024)
+            declared_length = int(self.headers.get("Content-Length", "0"))
+            body_limit = 1024 * 1024 if parsed.path == "/api/settings" else 64 * 1024
+            if declared_length < 0:
+                self.send_error_json("Content-Length 无效", HTTPStatus.BAD_REQUEST)
+                return
+            if declared_length > body_limit:
+                self.send_error_json("请求内容过大", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return
+            length = declared_length
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
             if parsed.path == "/api/run":
                 self.send_json({"ok": True, "run": launch_generation(payload)}, HTTPStatus.ACCEPTED)
@@ -548,7 +563,12 @@ class AppHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/resume":
                 self.send_json({"ok": True, "run": launch_resume(payload)}, HTTPStatus.ACCEPTED)
                 return
+            if parsed.path == "/api/settings":
+                self.send_json({"ok": True, "settings": settings_service.save_settings(payload)})
+                return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
+        except settings_service.SettingsConflict as exc:
+            self.send_error_json(str(exc), HTTPStatus.CONFLICT)
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
             self.send_error_json(str(exc), HTTPStatus.BAD_REQUEST)
         except Exception as exc:
