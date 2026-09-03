@@ -23,6 +23,15 @@ from fanqie_browser_worker import (
 
 
 ROOT = Path(__file__).resolve().parent
+MAX_AUTOMATIC_REPAIRS = 2
+
+
+class ArchiveGateFailure(RuntimeError):
+    """A generated chapter exists but its local archive artifacts are inconsistent."""
+
+    def __init__(self, errors: list[str]):
+        self.errors = errors
+        super().__init__("；".join(errors))
 
 
 def project_for(data: dict, book_id: str) -> Path:
@@ -168,6 +177,31 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
 只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。"""
 
 
+def local_repair_prompt(
+    book_id: str,
+    job: dict,
+    chapter_number: int,
+    errors: list[str],
+    repair_number: int,
+) -> str:
+    error_payload = json.dumps(errors, ensure_ascii=False, indent=2)
+    return f"""使用 fanqie-auto-novel 技能，修复书籍 `{book_id}` 第 {chapter_number} 章现有本地稿件。
+
+这是工作台 API 自动发起的第 {repair_number}/{MAX_AUTOMATIC_REPAIRS} 次门禁修复，job id 为 `{job['id']}`。不要另写下一章，不要删除有效情节，不要输出小说正文；只检查并定点修复现有第 {chapter_number} 章及其配套状态文件。
+
+本轮机器校验错误如下：
+{error_payload}
+
+修复要求：
+1. 先读取报错涉及的正文、reader_checks/{chapter_number:04d}.json、character_threads/{chapter_number:04d}/、chapter_state.json、continuity_ledger.md 和本书写作规范；只修改解决错误所需的文件。
+2. 正文若有改动，必须最后重新生成 reader_checks/{chapter_number:04d}.json：正文哈希与最终正文完全一致，所有 evidence 必须逐字存在，因果证据必须按依据→行动原理→结果代价排列，新名词按规定及时用白话解释。
+3. 修正人物线时，00-cast.md 只列真实人物；每个出场人物都有独立私线；interaction_map.md 写清人物相互影响、行动与结果；state_update.md 回写全部出场人物状态。
+4. 修复完成后运行实际项目校验。只有全部门禁通过，才把 chapter_state.json 推进到第 {chapter_number} 章完成；仍有错误就继续修，不得伪造 passed。
+5. 本轮不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git，也不改 `.manager_jobs` 或 `.manager_runtime.json`。
+
+结束时只报告修复项和校验结果，不得粘贴正文。"""
+
+
 def _codex_result_detail(result_file: Path) -> str:
     # Codex's final response may contain the generated chapter. Never copy that
     # response into job errors or run logs; diagnostics come from the process
@@ -192,21 +226,71 @@ def normalize_character_thread_dir(project: Path, chapter_number: int) -> None:
         candidates[0].rename(target)
 
 
+def collect_local_archive_errors(
+    project: Path,
+    chapter_number: int,
+    reader_gate_from: int,
+    book: dict | None = None,
+) -> list[str]:
+    normalize_character_thread_dir(project, chapter_number)
+    errors = list(manager.validate_parallel_character_threads(project, chapter_number))
+    errors.extend(manager.validate_reader_checks(project, reader_gate_from))
+    if book is not None:
+        errors.extend(manager.validate_book(book, require_publish_complete=False))
+    state = manager.read_json(project / "chapter_state.json", {})
+    if int(state.get("last_completed_chapter", 0) or 0) < chapter_number:
+        errors.append(
+            f"第 {chapter_number} 章未正确推进 chapter_state.json；"
+            "门禁通过后必须更新完成章节和下一章编号"
+        )
+    return list(dict.fromkeys(errors))
+
+
 def enforce_local_archive_gates(
     project: Path,
     chapter_number: int,
     reader_gate_from: int,
     original_state: dict,
+    book: dict | None = None,
 ) -> None:
     """Run all local archive gates before a chapter can be reported complete."""
-    normalize_character_thread_dir(project, chapter_number)
-    errors = manager.validate_parallel_character_threads(project, chapter_number)
-    errors.extend(manager.validate_reader_checks(project, reader_gate_from))
+    errors = collect_local_archive_errors(
+        project, chapter_number, reader_gate_from, book
+    )
     if errors:
         manager.write_json(project / "chapter_state.json", original_state)
-        raise RuntimeError(
-            "本地归档门禁未通过，已回滚章节状态：" + "；".join(errors)
-        )
+        raise ArchiveGateFailure(errors)
+
+
+def recoverable_draft_errors(project: Path, errors: list[str]) -> bool:
+    """Allow an interrupted next-chapter draft back into the AI repair loop."""
+    state = manager.read_json(project / "chapter_state.json", {})
+    chapter_number = int(state.get("next_chapter_number", 0) or 0)
+    if chapter_number < 1:
+        return False
+    chapter_exists = any((project / "chapters").glob(f"{chapter_number:04d}-*.md"))
+    draft_exists = any((project / "drafts").glob(f"*{chapter_number:04d}*.md"))
+    if not chapter_exists and not draft_exists:
+        return False
+    explicit_chapters = {
+        int(value)
+        for error in errors
+        for value in re.findall(r"第\s*(\d+)\s*章", error)
+    }
+    if explicit_chapters - {chapter_number}:
+        return False
+    allowed_prefixes = (
+        f"第 {chapter_number} 章",
+        f"第{chapter_number}章",
+        "归档最高章节为",
+        "人物 ",
+        "interaction_map.md",
+        "state_update.md",
+        "00-cast.md",
+        "人物线",
+        "并行人物线",
+    )
+    return bool(errors) and all(error.startswith(allowed_prefixes) for error in errors)
 
 
 def write_one(book_id: str, job: dict) -> None:
@@ -235,9 +319,11 @@ def write_one(book_id: str, job: dict) -> None:
         "-",
     ]
     prompt = local_write_prompt(book_id, job)
-    for attempt in range(1, 3):
-        suffix = "" if attempt == 1 else "（仅重试一次）"
-        print(f"正在调用 Codex 生成下一章……{suffix}", flush=True)
+    repair_count = 0
+    connection_retry_count = 0
+    while True:
+        action = "生成下一章" if repair_count == 0 else f"自动修复第 {expected_chapter} 章"
+        print(f"正在调用 Codex {action}……", flush=True)
         process = subprocess.run(
             command,
             cwd=ROOT,
@@ -246,36 +332,83 @@ def write_one(book_id: str, job: dict) -> None:
             encoding="utf-8",
             errors="replace",
         )
-        if not process.returncode:
-            state = manager.read_json(project / "chapter_state.json", {})
-            if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
-                enforce_local_archive_gates(
-                    project, expected_chapter, reader_gate_from, original_state
-                )
-                return
-            raise RuntimeError(
-                "Codex 已结束但章节未通过归档门禁。"
-                f"任务报告：{_codex_result_detail(result_file)}"
-            )
-
         state = manager.read_json(project / "chapter_state.json", {})
-        if int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter:
-            enforce_local_archive_gates(
-                project, expected_chapter, reader_gate_from, original_state
+        chapter_advanced = int(state.get("last_completed_chapter", 0) or 0) >= expected_chapter
+        candidate_exists = any(
+            any((project / folder).glob(pattern))
+            for folder, pattern in (
+                ("chapters", f"{expected_chapter:04d}-*.md"),
+                ("drafts", f"*{expected_chapter:04d}*.md"),
             )
-            print(
-                "Codex 回传中断，但新章节已完整归档；继续执行本地流程。",
-                flush=True,
-            )
-            return
-        if attempt == 1:
+        )
+        if chapter_advanced or candidate_exists:
+            try:
+                enforce_local_archive_gates(
+                    project,
+                    expected_chapter,
+                    reader_gate_from,
+                    original_state,
+                    book,
+                )
+            except ArchiveGateFailure as exc:
+                if repair_count >= MAX_AUTOMATIC_REPAIRS:
+                    raise RuntimeError(
+                        f"第 {expected_chapter} 章自动修复 {repair_count} 次后仍未通过，"
+                        "已回滚章节状态：" + "；".join(exc.errors)
+                    ) from exc
+                repair_count += 1
+                print(
+                    f"第 {expected_chapter} 章门禁未通过，正在把 {len(exc.errors)} 项问题"
+                    f"回传给 AI 自动修复（{repair_count}/{MAX_AUTOMATIC_REPAIRS}）。",
+                    flush=True,
+                )
+                for error in exc.errors:
+                    print(f"[自动修复问题] {error}", flush=True)
+                prompt = local_repair_prompt(
+                    book_id, job, expected_chapter, exc.errors, repair_count
+                )
+                continue
+            if chapter_advanced:
+                if process.returncode:
+                    print(
+                        "Codex 回传中断，但新章节已通过全部本地门禁；继续执行本地流程。",
+                        flush=True,
+                    )
+                elif repair_count:
+                    print(
+                        f"第 {expected_chapter} 章已由 AI 自动修复并通过全部门禁。",
+                        flush=True,
+                    )
+                return
+
+        if process.returncode and connection_retry_count < 1:
+            connection_retry_count += 1
             print(
                 "Codex 写作连接中断；本次命令将在隔离远程插件后仅重试一次。",
                 flush=True,
             )
             continue
+        missing_errors = [
+            f"第 {expected_chapter} 章没有形成可校验的本地稿件或没有正确推进章节状态"
+        ]
+        if repair_count < MAX_AUTOMATIC_REPAIRS:
+            repair_count += 1
+            print(
+                f"第 {expected_chapter} 章没有完成归档，正在回传给 AI 自动修复"
+                f"（{repair_count}/{MAX_AUTOMATIC_REPAIRS}）。",
+                flush=True,
+            )
+            prompt = local_repair_prompt(
+                book_id, job, expected_chapter, missing_errors, repair_count
+            )
+            continue
+        if process.returncode:
+            raise RuntimeError(
+                f"Codex 写作任务及自动修复均失败，最后退出码 {process.returncode}"
+            )
         raise RuntimeError(
-            f"Codex 写作任务连续两次失败，最后退出码 {process.returncode}"
+            f"第 {expected_chapter} 章自动修复 {repair_count} 次后仍未形成有效归档。"
+            f"任务报告：{_codex_result_detail(result_file)}"
         )
 
 
@@ -690,8 +823,15 @@ def run(
     errors = manager.validate_book(
         book, require_publish_complete=False
     )
-    if errors:
+    if errors and not recoverable_draft_errors(project, errors):
         raise RuntimeError("项目校验失败：" + "；".join(errors))
+    if errors:
+        print(
+            "检测到上一轮遗留的下一章门禁问题；将保留现有稿件并交给 AI 自动修复。",
+            flush=True,
+        )
+        for error in errors:
+            print(f"[待自动修复] {error}", flush=True)
     if dry_run:
         print(
             json.dumps(
@@ -706,7 +846,7 @@ def run(
                     },
                     "background_polling": False,
                     "steps": [
-                        "调用一次 Codex 写一章并完成本地质检归档",
+                        "调用 Codex 写一章并完成本地质检归档；门禁失败时最多自动修复两次",
                         *([] if not publish_fanqie else [
                             "恢复未发布章节或启动专用 Chrome 上传并排期",
                             "平台列表核验",

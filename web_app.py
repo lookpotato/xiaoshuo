@@ -292,6 +292,9 @@ def operational_log_lines(content: str) -> tuple[list[str], bool]:
             stripped.startswith(OPERATIONAL_LOG_PREFIXES)
             or bool(SAFE_JSON_LOG_FIELDS.match(line))
             or "退出码" in stripped
+            or "回传给 AI 自动修复" in stripped
+            or "已由 AI 自动修复" in stripped
+            or stripped.startswith("检测到上一轮遗留")
             or "Exception:" in stripped
             or re.search(r"\b(?:ERROR|WARN)\b", stripped) is not None
             or re.match(
