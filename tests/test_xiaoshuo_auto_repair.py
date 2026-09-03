@@ -106,6 +106,30 @@ class AutomaticRepairTests(unittest.TestCase):
             self.assertIn("正文哈希不一致", repair_input)
             self.assertIn("自动发起", repair_input)
 
+    def test_start_job_uses_repair_claim_for_recoverable_draft(self) -> None:
+        job = {
+            "id": "job-12345678",
+            "book_id": "cosmic-404",
+            "status": "queued",
+            "completed_chapters": [],
+            "events": [],
+        }
+        book = {"id": "cosmic-404"}
+        with (
+            patch.object(worker, "queued_job", return_value=job),
+            patch.object(worker, "project_for", return_value=Path("project")),
+            patch.object(worker.manager, "find_book", return_value=book),
+            patch.object(worker.manager, "validate_book", return_value=["current error"]),
+            patch.object(worker, "recoverable_draft_errors", return_value=True),
+            patch.object(worker, "claim_repair_job", return_value=0) as repair_claim,
+            patch.object(worker.manager, "cmd_claim") as ordinary_claim,
+            patch.object(worker.manager, "read_json", return_value={}),
+            patch.object(worker.manager, "write_json"),
+        ):
+            worker.start_job({}, "cosmic-404", 1, None, False, False)
+        repair_claim.assert_called_once_with({}, "cosmic-404")
+        ordinary_claim.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

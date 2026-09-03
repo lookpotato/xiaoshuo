@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -80,9 +81,15 @@ def start_job(
             "publish_fanqie": publish_fanqie,
             "sync_git": sync_git,
         }
-    result = manager.cmd_claim(
-        data, argparse.Namespace(book=book_id, force=True)
+    claim_errors = manager.validate_book(
+        manager.find_book(data, book_id), require_publish_complete=False
     )
+    if recoverable_draft_errors(project_for(data, book_id), claim_errors):
+        result = claim_repair_job(data, book_id)
+    else:
+        result = manager.cmd_claim(
+            data, argparse.Namespace(book=book_id, force=True)
+        )
     if result:
         raise RuntimeError("无法取得小说管理器运行锁")
     lock = manager.read_json(manager.LOCK, {})
@@ -101,6 +108,60 @@ def start_job(
     )
     manager.write_json(manager.job_path(job["id"]), job)
     return job
+
+
+def claim_repair_job(data: dict, book_id: str) -> int:
+    """Claim the normal manager lock while an interrupted next chapter is repaired."""
+    now = manager.now_for(data)
+    lock = manager.live_lock(data, now)
+    if lock:
+        print(
+            f"已有任务运行: {lock['book_id']}，领取于 {lock['claimed_at']}",
+            file=sys.stderr,
+        )
+        return 2
+    payload = {
+        "book_id": book_id,
+        "claimed_at": now.isoformat(),
+        "pid": os.getpid(),
+        "repairing_interrupted_chapter": True,
+    }
+    try:
+        fd = os.open(manager.LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+    except FileExistsError:
+        print("任务刚被另一个进程领取", file=sys.stderr)
+        return 2
+    runtime = manager.read_json(manager.RUNTIME, {"books": {}})
+    status = runtime.setdefault("books", {}).setdefault(book_id, {})
+    previous_claim = status.get("last_claimed_at")
+    if previous_claim and datetime.fromisoformat(previous_claim).date() == now.date():
+        status["attempt_count"] = status.get("attempt_count", 0) + 1
+    else:
+        status["attempt_count"] = 1
+    status.update(
+        {
+            "last_claimed_at": now.isoformat(),
+            "run_status": "claimed_for_auto_repair",
+            "retry_after": None,
+            "message": "正在自动修复上一轮遗留的下一章",
+        }
+    )
+    manager.write_json(manager.RUNTIME, runtime)
+    print(
+        json.dumps(
+            {
+                **payload,
+                "project_path": str(
+                    project_for(data, book_id)
+                ),
+                "mode": manager.find_book(data, book_id).get("mode"),
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 def resolve_codex() -> str:

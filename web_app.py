@@ -367,6 +367,11 @@ def run_log(run_id: str, tail_lines: int = 240) -> dict:
         "truncated": bool(start or filtered_line_count > tail_lines),
         "content_hidden": content_hidden,
         "error_summary": error_summary,
+        "context_limit": {
+            "lines": tail_lines,
+            "max_lines": 500,
+            "max_bytes": MAX_LOG_BYTES,
+        },
         "updated_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(),
     }
 

@@ -51,7 +51,7 @@ function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted 
     setBusy(true); setFeedback("正在创建后台任务……");
     try {
       const result = await api("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: scope, count, sync_git: syncGit, publish_fanqie: publishFanqie }) });
-      setFeedback(`已启动：${result.run.label}`); onNotice("任务已在后台启动，日志窗口已打开"); onRunStarted(result.run); onRefresh();
+      setFeedback(`已启动：${result.run.label}`); onNotice("任务已启动，后端控制台已切换到本次运行"); onRunStarted(result.run); onRefresh();
     } catch (error) { setFeedback(error.message); onNotice(error.message); }
     finally { setBusy(false); }
   }
@@ -90,22 +90,23 @@ function Activity({ data, bookId, onResume, onOpenLog, selectedRunId }) {
   const jobs = data.jobs.filter((job) => job.book_id === bookId).slice(0, 5);
   return <article className="panel jobs-panel">
     <div className="panel-head"><div><p className="eyebrow">ACTIVITY</p><h2>任务进度</h2></div></div>
-    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>查看后端日志</button></div>) : <div className="empty">暂无网页启动记录</div>}</div>
+    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>在控制台查看</button></div>) : <div className="empty">暂无网页启动记录</div>}</div>
     <div className="job-list">{jobs.map((job) => { const ratio = job.target ? Math.min(100, Math.round(job.completed / job.target * 100)) : 0; const resumable = ["failed", "partial", "blocked"].includes(job.result); const delivery = [job.options?.publish_fanqie && "番茄", job.options?.sync_git && "Git"].filter(Boolean).join(" + ") || "仅本地"; return <div className="activity" key={job.id}><div className="activity-top"><strong>{job.id}</strong><span className={`status ${job.result || job.status}`}>{statusLabel(job.status, job.result)}</span></div><div className="progress"><i style={{ width: `${ratio}%` }} /></div><p>{job.completed}/{job.target} 章 · {delivery}{job.message ? ` · ${job.message}` : ""}</p>{resumable && <button className="resume" onClick={() => onResume(job.id)}>按原配置续跑</button>}</div>; })}</div>
   </article>;
 }
 
-function BackendLog({ run, open, onClose }) {
+function BackendLog({ run, runs, onSelect }) {
   const [log, setLog] = useState(null);
   const [error, setError] = useState("");
+  const [tailLimit, setTailLimit] = useState(300);
   const outputRef = useRef(null);
   const loadLog = useCallback(async () => {
     if (!run) return;
     try {
-      const next = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=300`);
+      const next = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=${tailLimit}`);
       setLog(next); setError("");
     } catch (nextError) { setError(nextError.message); }
-  }, [run?.id]);
+  }, [run?.id, tailLimit]);
 
   useEffect(() => {
     setLog(null); setError("");
@@ -118,20 +119,11 @@ function BackendLog({ run, open, onClose }) {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
   }, [log?.content]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const closeOnEscape = (event) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [open, onClose]);
-
-  if (!open) return null;
-  return <div className="log-overlay" role="dialog" aria-modal="true" aria-label="后端运行日志" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <article className="panel backend-log-panel">
-      <div className="panel-head"><div><p className="eyebrow">BACKEND OUTPUT</p><h2>后端运行日志</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button><button className="icon-button" aria-label="关闭日志" onClick={onClose}>×</button></div></div>
-      {run ? <><p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 仅显示最新日志" : ""}{log?.content_hidden ? " · 正文已过滤" : ""}</p>{log?.error_summary && <div className="log-error-summary"><strong>失败原因</strong><span>{log.error_summary}</span></div>}<pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会实时显示 Python 输出和错误信息</div>}
-    </article>
-  </div>;
+  return <article className="panel backend-log-panel" aria-label="后端实时控制台">
+    <div className="panel-head"><div><p className="eyebrow">BACKEND CONSOLE</p><h2>后端实时控制台</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<label className="log-limit">上下文<select aria-label="日志上下文上限" value={tailLimit} onChange={(event) => setTailLimit(Number(event.target.value))}><option value="100">100 行</option><option value="300">300 行</option><option value="500">500 行</option></select></label><button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button></div></div>
+    {runs.length > 0 && <select className="run-selector" aria-label="选择后端运行记录" value={run?.id || ""} onChange={(event) => onSelect(event.target.value)}>{runs.map((item) => <option value={item.id} key={item.id}>{statusLabel(item.status)} · {item.label} · {item.id}</option>)}</select>}
+    {run ? <><p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 已按上下文上限截取" : ""}{log?.content_hidden ? " · 正文已过滤" : ""} · 最大 500 行 / 256 KB</p>{log?.error_summary && <div className="log-error-summary"><strong>失败原因</strong><span>{log.error_summary}</span></div>}<pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会持续显示 Python 输出和错误信息</div>}
+  </article>;
 }
 
 function ValidationPanel({ validation }) {
@@ -150,7 +142,6 @@ export default function App() {
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [selectedRunId, setSelectedRunId] = useState(null);
-  const [logOpen, setLogOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const announcedFailures = useRef(new Set());
 
@@ -170,7 +161,7 @@ export default function App() {
     setSelectedRunId((current) => data.runs.some((run) => run.id === current) ? current : data.runs[0].id);
   }, [data?.runs]);
   const selectedRun = useMemo(() => data?.runs.find((run) => run.id === selectedRunId) || data?.runs[0], [data, selectedRunId]);
-  const openLog = useCallback((runId) => { setSelectedRunId(runId); setLogOpen(true); }, []);
+  const openLog = useCallback((runId) => { setSelectedRunId(runId); }, []);
   useEffect(() => {
     const failed = data?.runs.find((run) => run.status === "failed" && !announcedFailures.current.has(run.id));
     data?.runs.forEach((run) => { if (run.status === "failed") announcedFailures.current.add(run.id); });
@@ -187,10 +178,10 @@ export default function App() {
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
       <Metrics book={book} />
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
+      <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
       <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />
-    <BackendLog run={selectedRun} open={logOpen} onClose={() => setLogOpen(false)} />
     <div className={`toast ${notice ? "show" : ""}`} role="status">{notice}</div>
   </>;
 }
