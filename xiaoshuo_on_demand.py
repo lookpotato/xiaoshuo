@@ -25,6 +25,7 @@ from fanqie_browser_worker import (
 
 ROOT = Path(__file__).resolve().parent
 MAX_AUTOMATIC_REPAIRS = 2
+MAX_CODEX_PROCESS_RETRIES = 2
 
 
 class ArchiveGateFailure(RuntimeError):
@@ -412,6 +413,30 @@ def write_one(book_id: str, job: dict) -> None:
                     book,
                 )
             except ArchiveGateFailure as exc:
+                if process.returncode:
+                    if connection_retry_count < MAX_CODEX_PROCESS_RETRIES:
+                        connection_retry_count += 1
+                        print(
+                            "Codex 连接中断，现有章节已保留；"
+                            f"正在重试连接（{connection_retry_count}/"
+                            f"{MAX_CODEX_PROCESS_RETRIES}），不消耗内容修复次数。",
+                            flush=True,
+                        )
+                        for error in exc.errors:
+                            print(f"[连接恢复后待修复] {error}", flush=True)
+                        prompt = local_repair_prompt(
+                            book_id,
+                            job,
+                            expected_chapter,
+                            exc.errors,
+                            min(repair_count + 1, MAX_AUTOMATIC_REPAIRS),
+                        )
+                        continue
+                    raise RuntimeError(
+                        "Codex 连接连续中断，未消耗内容修复次数；"
+                        f"第 {expected_chapter} 章现有稿件已保留，可按原 job 续跑。"
+                        "当前待修复：" + "；".join(exc.errors)
+                    ) from exc
                 if repair_count >= MAX_AUTOMATIC_REPAIRS:
                     raise RuntimeError(
                         f"第 {expected_chapter} 章自动修复 {repair_count} 次后仍未通过，"
@@ -442,13 +467,20 @@ def write_one(book_id: str, job: dict) -> None:
                     )
                 return
 
-        if process.returncode and connection_retry_count < 1:
-            connection_retry_count += 1
-            print(
-                "Codex 写作连接中断；本次命令将在隔离远程插件后仅重试一次。",
-                flush=True,
+        if process.returncode:
+            if connection_retry_count < MAX_CODEX_PROCESS_RETRIES:
+                connection_retry_count += 1
+                print(
+                    "Codex 连接中断且尚未形成可校验稿件；"
+                    f"正在重试连接（{connection_retry_count}/"
+                    f"{MAX_CODEX_PROCESS_RETRIES}），不消耗内容修复次数。",
+                    flush=True,
+                )
+                continue
+            raise RuntimeError(
+                "Codex 连接连续中断，且没有形成可校验的本地稿件；"
+                "未消耗内容修复次数，可按原 job 续跑"
             )
-            continue
         missing_errors = [
             f"第 {expected_chapter} 章没有形成可校验的本地稿件或没有正确推进章节状态"
         ]
@@ -463,10 +495,6 @@ def write_one(book_id: str, job: dict) -> None:
                 book_id, job, expected_chapter, missing_errors, repair_count
             )
             continue
-        if process.returncode:
-            raise RuntimeError(
-                f"Codex 写作任务及自动修复均失败，最后退出码 {process.returncode}"
-            )
         raise RuntimeError(
             f"第 {expected_chapter} 章自动修复 {repair_count} 次后仍未形成有效归档。"
             f"任务报告：{_codex_result_detail(result_file)}"

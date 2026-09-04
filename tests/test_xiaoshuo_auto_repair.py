@@ -106,6 +106,86 @@ class AutomaticRepairTests(unittest.TestCase):
             self.assertIn("正文哈希不一致", repair_input)
             self.assertIn("自动发起", repair_input)
 
+    def test_connection_failures_do_not_consume_content_repair_quota(self) -> None:
+        with TemporaryDirectory() as temp:
+            project = Path(temp)
+            (project / "chapters").mkdir()
+            (project / "drafts").mkdir()
+            state_path = project / "chapter_state.json"
+            original = {"last_completed_chapter": 39, "next_chapter_number": 40}
+            state_path.write_text(json.dumps(original), encoding="utf-8")
+            (project / "chapters" / "0040-test.md").write_text(
+                "# 第 40 章 test", encoding="utf-8"
+            )
+            book = {
+                "id": "cosmic-404",
+                "mode": "write_only",
+                "reader_gate_from_chapter": 1,
+            }
+            with (
+                patch.object(worker, "resolve_codex", return_value="codex"),
+                patch.object(worker, "project_for", return_value=project),
+                patch.object(worker.manager, "JOB_DIR", project),
+                patch.object(worker.manager, "config", return_value={}),
+                patch.object(worker.manager, "find_book", return_value=book),
+                patch.object(
+                    worker,
+                    "enforce_local_archive_gates",
+                    side_effect=worker.ArchiveGateFailure(["第 40 章正文哈希不一致"]),
+                ),
+                patch.object(
+                    worker.subprocess,
+                    "run",
+                    return_value=subprocess.CompletedProcess([], 1),
+                ) as run_codex,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "未消耗内容修复次数"):
+                    worker.write_one("cosmic-404", {"id": "job-12345678"})
+            self.assertEqual(run_codex.call_count, worker.MAX_CODEX_PROCESS_RETRIES + 1)
+
+    def test_successful_failed_gate_still_consumes_repair_quota(self) -> None:
+        with TemporaryDirectory() as temp:
+            project = Path(temp)
+            (project / "chapters").mkdir()
+            (project / "drafts").mkdir()
+            state_path = project / "chapter_state.json"
+            state_path.write_text(
+                json.dumps({"last_completed_chapter": 6, "next_chapter_number": 7}),
+                encoding="utf-8",
+            )
+            (project / "chapters" / "0007-test.md").write_text(
+                "# 第 7 章 test", encoding="utf-8"
+            )
+            book = {"id": "cosmic-404", "mode": "write_only", "reader_gate_from_chapter": 1}
+
+            def fake_codex(*_args, **_kwargs):
+                fake_codex.calls += 1
+                if fake_codex.calls == 2:
+                    worker.manager.write_json(
+                        state_path, {"last_completed_chapter": 7, "next_chapter_number": 8}
+                    )
+                return subprocess.CompletedProcess([], 0)
+
+            fake_codex.calls = 0
+            with (
+                patch.object(worker, "resolve_codex", return_value="codex"),
+                patch.object(worker, "project_for", return_value=project),
+                patch.object(worker.manager, "JOB_DIR", project),
+                patch.object(worker.manager, "config", return_value={}),
+                patch.object(worker.manager, "find_book", return_value=book),
+                patch.object(
+                    worker,
+                    "enforce_local_archive_gates",
+                    side_effect=[
+                        worker.ArchiveGateFailure(["第 7 章正文哈希不一致"]),
+                        None,
+                    ],
+                ),
+                patch.object(worker.subprocess, "run", side_effect=fake_codex) as run_codex,
+            ):
+                worker.write_one("cosmic-404", {"id": "job-12345678"})
+            self.assertEqual(run_codex.call_count, 2)
+
     def test_start_job_uses_repair_claim_for_recoverable_draft(self) -> None:
         job = {
             "id": "job-12345678",
