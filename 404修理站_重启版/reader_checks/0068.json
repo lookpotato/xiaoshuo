@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 68,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T10:23:17+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "3785a0e6dbb32809ce672d430f62c8f03502f4bac2459ba0fcb7faa43a7de704",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章确认404炉底还有第四班最后一人，因此本章从炉底敲击开始下查。",
+      "evidence": ["“第四班的最后一个人，在炉底。”"]
+    },
+    "immediate_problem": {
+      "answer": "炉底活人需要救出，而临时热管正在回压，继续撬动可能让热水灌下并失去伤员所在的热屋。",
+      "evidence": ["回压上来了！钢管别再压，管要炸！"]
+    },
+    "decision_basis": {
+      "answer": "米沙与炉底以节拍互相回应，证明下面是真人；苏青禾又看见检修盖有近期开启留下的平行划痕。",
+      "evidence": ["不是录音。录音不会慢半拍，也不会在最后多撞一下铁壁。", "热胀不会留下三道平行划痕。"]
+    },
+    "action_logic": {
+      "answer": "白露限制只下一个能拖人的人，阿图尔用断驾驶环和麻绳把拖力转到炉柱上，段野和老崔再从检修缝撬拖。",
+      "evidence": ["我拉三次。你每次只接一半。"]
+    },
+    "result_and_cost": {
+      "answer": "炉底活人被拖进热屋，确认只是回报盒看守者；代价是阿图尔腿伤、段野肩伤继续恶化，临时热管的薄钢片脱落。",
+      "evidence": ["三个人同时发力。铁板下先伸出一只冻黑的手，手背刻着一个磨平的“4”。", "卷黑的薄钢片掉进积水里。"]
+    },
+    "reader_hook": {
+      "answer": "救出的老四说真正的接班者不是自己，旧回水管里却传出更像林秋的声音，并要求段野不要补齐第四班。",
+      "evidence": ["接班的……不是我。", "段野，别把第四班补齐。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

@@ -11,6 +11,41 @@ import xiaoshuo_on_demand as worker
 
 
 class AutomaticRepairTests(unittest.TestCase):
+    def test_normalize_chapter_heading_removes_patch_marker(self) -> None:
+        with TemporaryDirectory() as temp:
+            chapter = Path(temp) / "0068-test.md"
+            chapter.write_text(
+                "+# 第68章 先把炉底的人拖上来\n\n正文不应改变。\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(worker.normalize_chapter_heading(chapter, 68))
+            self.assertEqual(
+                chapter.read_text(encoding="utf-8"),
+                "# 第 68 章 先把炉底的人拖上来\n\n正文不应改变。\n",
+            )
+            self.assertFalse(worker.normalize_chapter_heading(chapter, 68))
+
+    def test_resolve_codex_prefers_newest_logged_in_candidate(self) -> None:
+        def fake_run(command, **_kwargs):
+            if command[1:] == ["--version"]:
+                version = "0.152.1" if command[0] == "desktop-codex" else "0.146.0"
+                return subprocess.CompletedProcess(command, 0, f"codex-cli {version}\n", "")
+            return subprocess.CompletedProcess(command, 0, "Logged in using ChatGPT\n", "")
+
+        with (
+            patch.object(
+                worker,
+                "_codex_candidates",
+                return_value=["path-codex", "desktop-codex"],
+            ),
+            patch.object(worker.subprocess, "run", side_effect=fake_run) as run,
+        ):
+            self.assertEqual(worker.resolve_codex(), "desktop-codex")
+        self.assertEqual(
+            run.call_args_list[-1].args[0],
+            ["desktop-codex", "login", "status"],
+        )
+
     def test_repair_prompt_contains_machine_errors_and_safety_boundary(self) -> None:
         prompt = worker.local_repair_prompt(
             "cosmic-404",

@@ -165,21 +165,63 @@ def claim_repair_job(data: dict, book_id: str) -> int:
     return 0
 
 
+def _codex_version(path: str) -> tuple[int, ...]:
+    """Return a sortable CLI version, or an empty tuple for an unusable binary."""
+    try:
+        result = subprocess.run(
+            [path, "--version"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ()
+    if result.returncode:
+        return ()
+    match = re.search(r"\b(\d+(?:\.\d+)+)\b", result.stdout + result.stderr)
+    return tuple(int(part) for part in match.group(1).split(".")) if match else ()
+
+
+def _codex_candidates() -> list[str]:
+    candidates: list[Path] = []
+    path_codex = shutil.which("codex")
+    if path_codex:
+        candidates.append(Path(path_codex))
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        candidates.extend(
+            Path(local_app_data).glob("OpenAI/Codex/bin/*/codex.exe")
+        )
+    unique: dict[str, str] = {}
+    for candidate in candidates:
+        resolved = str(candidate.resolve())
+        unique.setdefault(resolved.casefold(), resolved)
+    return list(unique.values())
+
+
 def resolve_codex() -> str:
-    codex = shutil.which("codex")
-    if not codex:
+    versioned = [
+        (version, path)
+        for path in _codex_candidates()
+        if (version := _codex_version(path))
+    ]
+    if not versioned:
         raise RuntimeError("找不到 codex CLI；请先安装并运行 `codex login`")
-    status = subprocess.run(
-        [codex, "login", "status"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if status.returncode:
-        raise RuntimeError("Codex 尚未登录；请先运行 `codex login`")
-    return codex
+    for _, codex in sorted(versioned, key=lambda item: item[0], reverse=True):
+        status = subprocess.run(
+            [codex, "login", "status"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if not status.returncode:
+            return codex
+    raise RuntimeError("检测到 codex CLI，但均未登录；请先运行 `codex login`")
 
 
 def local_write_prompt(book_id: str, job: dict) -> str:
@@ -198,6 +240,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
 - 续跑失败批次时，先检查 next_chapter_number 对应的既有草稿和本书 images/ 中尚未登记的同章成图；正文与图片通过现行门禁后必须直接复用，不得仅因上次流程中断而重写正文、重复生图或覆盖文件；
 - 本书章节标题必须唯一；定稿前扫描 chapters/，禁止只差空格或标点的重复标题；
+- 章节第一行必须严格写成 `# 第 N 章 标题`，行首不得带 `+`、`-` 等补丁标记；
 - 列出本章首次出现、会持续影响读者理解的重要人物、道具、地点、异兽或组织形象作为候选；同名同设定实体沿用目录，不重复生图；
 - 每章总计最多 1 张，只选择最需要视觉解释的新实体；同章其他新实体必须用正文白话解释。首次启用且本章没有更高优先级新实体时，可用唯一名额补齐主角参考图；
 - 生图前先确定目标画幅并写入提示词：人物默认 2:3，道具或徽记 1:1，宽场景或地点 16:9，横向异兽或动作画面 3:2，仅明确超长竖构图使用 9:16；catalog 的 generation_aspect_ratio 与 fanqie_crop_ratio 必须一致，并写清主体安全区；
@@ -234,7 +277,7 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
 
 新版《404修理站》从旧稿素材中重建，书名不变但旧世界观不继承。文风优先热血和现场感；对白必须按 voice_packs 写，每个人有自己的地域、年龄、职业、关系和情绪声音。允许省略、抢话、重复、损人、适量脏话和不完整句子，不能让人物说成统一的清晰书面语。
 
-正文写入 drafts/ 和 chapters/，正文目标 2000—2600 字；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
+正文写入 drafts/ 和 chapters/，正文目标 2000—2600 字；章节第一行必须严格写成 `# 第 N 章 标题`，行首不得带 `+`、`-` 等补丁标记；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
 
 只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。"""
 
@@ -260,6 +303,7 @@ def local_repair_prompt(
 3. 修正人物线时，00-cast.md 只列真实人物；每个出场人物都有独立私线；interaction_map.md 写清人物相互影响、行动与结果；state_update.md 回写全部出场人物状态。
 4. 修复完成后运行实际项目校验。只有全部门禁通过，才把 chapter_state.json 推进到第 {chapter_number} 章完成；仍有错误就继续修，不得伪造 passed。
 5. 本轮不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git，也不改 `.manager_jobs` 或 `.manager_runtime.json`。
+6. 章节第一行必须严格写成 `# 第 {chapter_number} 章 标题`，不得残留 `+`、`-` 等补丁标记。
 
 结束时只报告修复项和校验结果，不得粘贴正文。"""
 
@@ -288,6 +332,33 @@ def normalize_character_thread_dir(project: Path, chapter_number: int) -> None:
         candidates[0].rename(target)
 
 
+def normalize_chapter_heading(path: Path, expected_number: int) -> bool:
+    """Canonicalize a recognizable chapter heading without touching the body."""
+    text = path.read_text(encoding="utf-8-sig")
+    lines = text.splitlines(keepends=True)
+    if not lines:
+        raise ValueError(f"章节文件为空：{path}")
+    first = lines[0].rstrip("\r\n")
+    match = re.fullmatch(
+        r"\s*[+-]?\s*#\s*第\s*(\d+)\s*章\s+(.+?)\s*", first
+    )
+    if not match:
+        raise ValueError(f"章节标题格式错误：{path}")
+    number = int(match.group(1))
+    if number != int(expected_number):
+        raise ValueError(
+            f"章节标题编号错误：{path} 写成第 {number} 章，"
+            f"应为第 {expected_number} 章"
+        )
+    canonical = f"# 第 {number} 章 {match.group(2).strip()}"
+    if first == canonical:
+        return False
+    newline = "\r\n" if lines[0].endswith("\r\n") else "\n"
+    path.write_text(canonical + newline + "".join(lines[1:]), encoding="utf-8")
+    print(f"已自动标准化第 {number} 章标题格式。", flush=True)
+    return True
+
+
 def collect_local_archive_errors(
     project: Path,
     chapter_number: int,
@@ -295,7 +366,18 @@ def collect_local_archive_errors(
     book: dict | None = None,
 ) -> list[str]:
     normalize_character_thread_dir(project, chapter_number)
-    errors = list(manager.validate_parallel_character_threads(project, chapter_number))
+    errors: list[str] = []
+    chapter_paths = list(
+        (project / "chapters").glob(f"{chapter_number:04d}-*.md")
+    )
+    if len(chapter_paths) == 1:
+        try:
+            normalize_chapter_heading(chapter_paths[0], chapter_number)
+        except (OSError, ValueError) as exc:
+            errors.append(str(exc))
+    elif len(chapter_paths) > 1:
+        errors.append(f"第 {chapter_number} 章存在多个归档文件")
+    errors.extend(manager.validate_parallel_character_threads(project, chapter_number))
     errors.extend(manager.validate_reader_checks(project, reader_gate_from))
     if book is not None:
         errors.extend(manager.validate_book(book, require_publish_complete=False))
@@ -989,6 +1071,7 @@ def run(
                 chapter_path = next(
                     project.joinpath("chapters").glob(f"{after:04d}-*.md")
                 )
+                normalize_chapter_heading(chapter_path, after)
                 ensure_unique_chapter_title(project, parse_chapter(chapter_path))
                 archive_errors = manager.validate_book(
                     book, require_publish_complete=False
@@ -1051,6 +1134,7 @@ def run(
                 if pending is None:
                     raise RuntimeError("新章节未进入待上传排期")
             schedule_path, entry, chapter_path = pending
+            normalize_chapter_heading(chapter_path, int(entry["chapter"]))
             chapter = parse_chapter(chapter_path)
             ensure_unique_chapter_title(project, chapter)
             current_time = manager.now_for(data)
