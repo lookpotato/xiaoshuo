@@ -50,6 +50,36 @@ function BookGeneral({ value, onChange }) {
   </div>;
 }
 
+function CreativeModules({ draft, onChange }) {
+  const document = draft.documents.find((item) => item.id === "creative_modules.json");
+  if (!document || !draft.creative_catalog) return null;
+  let config;
+  try {
+    config = document.content.trim() ? JSON.parse(document.content) : { schema_version: 1, modules: {} };
+    if (!config || typeof config.modules !== "object" || !config.modules || Array.isArray(config.modules)) throw new Error();
+  } catch {
+    return <div className="settings-error">创作能力配置格式错误，请在下方“创作能力装配”文件中修正 JSON。</div>;
+  }
+  const update = (id, patch) => {
+    const current = config.modules[id] || { mode: "off", from_chapter: draft.creative_next_chapter || 1, review_interval: 5, focus: "" };
+    onChange(document.id, JSON.stringify({ ...config, modules: { ...config.modules, [id]: { ...current, ...patch } } }, null, 2) + "\n");
+  };
+  return <article className="panel settings-section">
+    <div className="panel-head"><div><h2>创作能力装配</h2><p>每本书独立配置。观察模式记录问题，强制模式要求修复后才能继续；关闭后不参与生成。</p></div></div>
+    <div className="settings-form-grid">{Object.entries(draft.creative_catalog.modules).map(([id, module]) => {
+      const value = config.modules[id] || { mode: "off", from_chapter: draft.creative_next_chapter || 1, review_interval: 5, focus: "" };
+      return <section className="module-card" key={id}><div>
+        <strong>{module.title}</strong><p>{module.purpose}</p>
+        <Field label={`${module.title}模式`}><select value={value.mode} onChange={(event) => update(id, { mode: event.target.value })} disabled={!!draft.locked}><option value="off">关闭</option><option value="review">观察：记录问题</option><option value="enforce">强制：问题必须修复</option></select></Field>
+        <Field label="从第几章启用"><input type="number" min="1" value={value.from_chapter} disabled={!!draft.locked} onChange={(event) => update(id, { from_chapter: Number(event.target.value) })} /></Field>
+        {id === "world_presentation" && <Field label="跨章复盘间隔"><input type="number" min="1" value={value.review_interval || 5} disabled={!!draft.locked} onChange={(event) => update(id, { review_interval: Number(event.target.value) })} /></Field>}
+        <Field label="本书重点与边界"><textarea className="short-textarea" value={value.focus || ""} disabled={!!draft.locked} onChange={(event) => update(id, { focus: event.target.value })} /></Field>
+        <details><summary>查看能力规则</summary><p>输入：{module.input}</p><p>规划：{module.plan}</p><p>验收：{module.review}</p><p>边界：{module.limits}</p></details>
+      </div></section>;
+    })}</div>
+  </article>;
+}
+
 export default function SettingsWorkspace({ scope, books, bookId, onBookChange, onNotice, onSaved }) {
   const [settings, setSettings] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -127,6 +157,7 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
       {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} onChange={(registry) => setDraft({ ...draft, registry })} />}
     </article>
     {scope === "book" && <CharacterStorylines bookId={bookId} onNotice={onNotice} />}
+    {scope === "book" && <CreativeModules draft={draft} onChange={updateDocument} />}
     {scope === "system" && <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">MODULE REGISTRY</p><h2>底层能力模块</h2></div><span className="count-label">{draft.modules.length} 个模块</span></div>
       <div className="module-grid">{draft.modules.map((module) => <div className="module-card" key={module.id}><span className={module.enabled ? "module-dot enabled" : "module-dot"} /><div><strong>{module.id}</strong><small>{module.rules.length ? module.rules.join(" · ") : `${module.field_count} 个内联规则`}</small></div></div>)}</div>

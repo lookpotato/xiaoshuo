@@ -53,10 +53,11 @@ def _valid_evidence(body: str, evidence: object) -> bool:
 
 def validate_reader_checks(project: Path, from_chapter: int) -> list[str]:
     """Validate every archived chapter at or above the configured rollout point."""
-    errors: list[str] = []
+    from creative_modules import validate_reports
+    errors: list[str] = validate_reports(project)
     checks_dir = project / "reader_checks"
     if not checks_dir.is_dir():
-        return ["缺少目录 reader_checks/"]
+        return errors + ["缺少目录 reader_checks/"]
 
     chapter_files: dict[int, Path] = {}
     for path in (project / "chapters").glob("*.md"):

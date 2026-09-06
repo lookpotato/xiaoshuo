@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import fanqie_novel_manager as manager
+import creative_modules
 from fanqie_browser_worker import (
     FanqieBlocked,
     FanqieRetryable,
@@ -261,7 +262,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
 7. 本写作子任务不上传番茄、不运行 Git；外层任务会严格按照本次 API 运行配置决定是否更新番茄正式环境以及是否同步 Git。
 
-完成一章后立即结束，不得生成第二章。"""
+完成一章后立即结束，不得生成第二章。""" + creative_modules.prompt(manager.project_path(book))
 
 
 def local_write_only_prompt(book_id: str, job: dict) -> str:
@@ -279,7 +280,7 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
 
 正文写入 drafts/ 和 chapters/，正文目标 2000—2600 字；章节第一行必须严格写成 `# 第 N 章 标题`，行首不得带 `+`、`-` 等补丁标记；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
 
-只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。"""
+只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。""" + creative_modules.prompt(project_for(manager.config(), book_id))
 
 
 def local_repair_prompt(
@@ -305,7 +306,7 @@ def local_repair_prompt(
 5. 本轮不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git，也不改 `.manager_jobs` 或 `.manager_runtime.json`。
 6. 章节第一行必须严格写成 `# 第 {chapter_number} 章 标题`，不得残留 `+`、`-` 等补丁标记。
 
-结束时只报告修复项和校验结果，不得粘贴正文。"""
+结束时只报告修复项和校验结果，不得粘贴正文。""" + creative_modules.prompt(project_for(manager.config(), book_id), chapter_number)
 
 
 def _codex_result_detail(result_file: Path) -> str:

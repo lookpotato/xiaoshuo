@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "modules": {
+    "world_presentation": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": "原创小说，读者无预备设定知识。优先补足空间、社会秩序、普通人生活及主角位置；保留深层谜底。"
+    },
+    "scene_grounding": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "character_agency": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "dialogue_subtext": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "causal_choices": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "emotional_payoff": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "pacing_variation": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "promise_payoff": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "stakes_resources": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "relationship_change": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "serial_reentry": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    },
+    "reader_feedback": {
+      "mode": "off",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": ""
+    }
+  }
+}

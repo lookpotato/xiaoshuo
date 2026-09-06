@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 import fanqie_novel_manager as manager
+import creative_modules
 
 
 ROOT = Path(__file__).resolve().parent
@@ -23,6 +24,8 @@ SYSTEM_GENERAL_FIELDS = (
     "default_book_id",
 )
 BOOK_DOCUMENTS = {
+    "creative_modules.json": ("创作能力装配", "每个模块独立关闭、观察或强制验收；可设置启用章和创作重点"),
+    "reader_feedback.md": ("真实读者反馈", "记录原话、章节范围、处理方案与回访结果"),
     "automation_prompt.md": ("系统给本书的提示词", "每次生成前必须遵守的单书总指令"),
     "novel_config.md": ("小说基础配置", "题材、目标读者、篇幅与创作边界"),
     "style_guide.md": ("基础文风", "句式、节奏、叙事视角和禁用写法"),
@@ -33,6 +36,8 @@ BOOK_DOCUMENTS = {
     "world.md": ("世界观", "世界规则、地点和力量边界"),
 }
 SYSTEM_BASE_DOCUMENTS = {
+    "shared/creative_modules.json": ("创作能力模块库", "可复用模块的职责、输入、规划、验收与边界"),
+    "shared/creative_modules_workflow.md": ("创作模块运行协议", "装配、协调、逐章状态与证据验收"),
     "shared/narrative_prose_foundation.md": ("中国网文叙事底座", "旁白、视角、出场和信息落地的共享规则"),
     "shared/chinese_dialogue_foundation.md": ("中国人物对白底座", "称呼、关系、口语、省略和地域表达的共享规则"),
     "shared/character_engine.md": ("独立人物引擎", "人物欲望、状态、误解、行动与支线运行规则"),
@@ -179,6 +184,8 @@ def get_book_settings(book_id: str) -> dict:
     return {
         "scope": "book",
         "book_id": book_id,
+        "creative_catalog": creative_modules.catalog(),
+        "creative_next_chapter": manager.read_json(project / "chapter_state.json", {}).get("next_chapter_number", 1),
         "config_revision": _revision(CONFIG_PATH),
         "locked": settings_lock(),
         "registry": {
@@ -223,6 +230,12 @@ def _validate_document_updates(
             raise ValueError(f"{path.name} 内容无效或超过 {MAX_DOCUMENT_CHARS} 字")
         if item.get("revision") != _revision(path):
             raise SettingsConflict(f"{path.name} 已被其他进程修改，请刷新后再保存")
+        if path.name == creative_modules.CONFIG:
+            parsed = json.loads(content)
+            if path.parent == (ROOT / "shared").resolve():
+                creative_modules.validate_catalog(parsed)
+            else:
+                creative_modules.validate_config(parsed)
         writes[path] = content.replace("\r\n", "\n")
     return writes
 
@@ -340,6 +353,13 @@ def save_settings(payload: dict) -> dict:
         )
     else:
         raise ValueError("settings scope 必须是 system 或 book")
+    catalog_path = (ROOT / "shared" / creative_modules.CONFIG).resolve()
+    if catalog_path in writes:
+        prospective_catalog = creative_modules.validate_catalog(json.loads(writes[catalog_path]))
+        for book in data["books"]:
+            book_config = _project_path(book) / creative_modules.CONFIG
+            if book_config.is_file():
+                creative_modules.validate_config(creative_modules.read_json(book_config), prospective_catalog)
     writes[CONFIG_PATH] = json.dumps(updated, ensure_ascii=False, indent=2) + "\n"
     _atomic_write_many(writes)
     result = get_settings(str(scope), str(payload.get("book_id", "")))

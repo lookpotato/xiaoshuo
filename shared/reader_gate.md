@@ -1,5 +1,13 @@
 # 无大纲读者反向验收
 
+## 按书装配的创作能力
+
+每次写作开始时，检查目标书目录是否存在 `creative_modules.json`。存在时执行
+`python creative_modules.py prompt <目标书目录> --chapter <本次章节号>`，完整执行输出中的已启用能力及
+`shared/creative_modules_workflow.md`。这同样适用于手动写作、旧批次和断点恢复。
+写前建立本章 module_plans，写后保存 module_reports；`validate_reader_checks` 已接入创作能力证据门禁。
+修正文后重新验收报告与读者认知。关闭的能力不注入，不要求生成其报告。
+
 ## 为什么需要这一关
 
 大纲中的一句关键事件不能直接膨胀成一串动作。作者知道前因、规则和人物计划，读者只看得到正文；如果中间桥梁没有落在纸面上，章节即使符合大纲也不算完成。

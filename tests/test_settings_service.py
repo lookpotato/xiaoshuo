@@ -123,3 +123,19 @@ class SettingsServiceTest(TestCase):
                     "documents": [],
                 }
             )
+
+    def test_creative_modules_can_be_saved_per_book(self):
+        current = settings_service.get_book_settings("book-one")
+        self.assertIn("world_presentation", current["creative_catalog"]["modules"])
+        config = {"schema_version": 1, "modules": {"world_presentation": {"mode": "review", "from_chapter": 8}}}
+        payload = {"scope": "book", "book_id": "book-one", "config_revision": current["config_revision"], "registry": current["registry"], "documents": [{"id": "creative_modules.json", "revision": "missing", "content": json.dumps(config)}]}
+        settings_service.save_settings(payload)
+        self.assertEqual(json.loads((self.book_path / "creative_modules.json").read_text()), config)
+
+    def test_invalid_creative_config_does_not_write_anything(self):
+        current = settings_service.get_book_settings("book-one")
+        before = self.config_path.read_bytes()
+        with self.assertRaises(ValueError):
+            settings_service.save_settings({"scope": "book", "book_id": "book-one", "config_revision": current["config_revision"], "registry": current["registry"], "documents": [{"id": "creative_modules.json", "revision": "missing", "content": '{"schema_version":1,"modules":{"unknown":{"mode":"on"}}}'}]})
+        self.assertEqual(self.config_path.read_bytes(), before)
+        self.assertFalse((self.book_path / "creative_modules.json").exists())
