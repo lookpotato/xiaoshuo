@@ -29,6 +29,18 @@ def validate_catalog(data):
         for field in ("title", "purpose", "input", "plan", "review", "limits"):
             if not isinstance(value.get(field), str) or not value[field].strip():
                 raise ValueError(f"{key} 缺少 {field}")
+        guide = value.get("guide")
+        if guide is not None:
+            if not isinstance(guide, dict) or not isinstance(guide.get("steps"), list) or not all(_text(step) for step in guide["steps"]):
+                raise ValueError(f"{key} 操作步骤无效")
+            checks = guide.get("checks")
+            if not isinstance(checks, list) or not checks:
+                raise ValueError(f"{key} 缺少具体检查题")
+            seen = set()
+            for check in checks:
+                if not isinstance(check, dict) or not isinstance(check.get("id"), str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", check["id"]) or not _text(check.get("question")) or check["id"] in seen:
+                    raise ValueError(f"{key} 检查题 ID 或内容无效")
+                seen.add(check["id"])
     return data
 
 
@@ -36,6 +48,8 @@ def validate_config(data, library=None):
     library = library or catalog()
     if not isinstance(data, dict) or data.get("schema_version") != 1 or not isinstance(data.get("modules"), dict):
         raise ValueError("单书创作模块配置格式错误")
+    if type(data.get("report_contract", 1)) is not int or data.get("report_contract", 1) not in (1, 2):
+        raise ValueError("report_contract 必须为 1 或 2")
     for key, value in data["modules"].items():
         if key not in library["modules"] or not isinstance(value, dict):
             raise ValueError(f"未知创作模块：{key}")
@@ -85,6 +99,7 @@ def prompt(project, number=None):
     definitions = catalog()["modules"]
     selected = {key: {**definitions[key], **value} for key, value in active.items()}
     return (f"\n创作能力装配：目标目录 {project}，第 {number} 章。\n"
+            f"报告协议 report_contract={config.get('report_contract', 1)}；协议2须逐项回答所选模块 guide.checks，不能用一句总评代替。\n"
             "完整读取 shared/creative_modules_workflow.md，并执行其中的规划、写作、证据验收和跨章状态流程。\n"
             "允许更新本书 module_plans/、module_reports/ 配套文件；不得将报告或计划上传为小说。\n"
             "模块与现有规范共同生效：事实连续性、视角和读者理解优先，再协调悬念、情绪与节奏；冲突写入计划。\n"
@@ -93,6 +108,25 @@ def prompt(project, number=None):
 
 def _text(value):
     return isinstance(value, str) and bool(value.strip())
+
+
+def activity(project):
+    """Read bounded report metadata, never equate self-reported passes with quality."""
+    result = {}
+    candidates = sorted(Path(project).glob("module_reports/[0-9][0-9][0-9][0-9].json"), reverse=True)[:50]
+    for path in candidates:
+        try:
+            report = read_json(path)
+            if not isinstance(report, dict) or not isinstance(report.get("modules"), dict):
+                continue
+            for key, item in report["modules"].items():
+                if key not in result and isinstance(item, dict):
+                    result[key] = {"chapter": int(path.stem), "status": str(item.get("status", "unknown")),
+                                   "assessment": str(item.get("assessment", ""))[:600],
+                                   "review_method": str(report.get("review_method", "unknown"))}
+        except (OSError, ValueError, TypeError):
+            continue
+    return result
 
 
 def validate_reports(project, only_number=None):
@@ -105,6 +139,7 @@ def validate_reports(project, only_number=None):
         if not any(v["mode"] != "off" for v in config["modules"].values()):
             return []
         files = chapter_files(project)
+        definitions = catalog()["modules"]
         bodies = {}
 
         def evidence_valid(ref, current):
@@ -158,6 +193,21 @@ def validate_reports(project, only_number=None):
                         raise ValueError(f"{key} 证据不存在、越界或已过期")
                     if item["status"] != "not_applicable" and not refs:
                         raise ValueError(f"{key} 必须提供正文证据")
+                    if config.get("report_contract", 1) == 2:
+                        checks = item.get("checks")
+                        if not isinstance(checks, dict):
+                            raise ValueError(f"{key} 缺少逐项 checks")
+                        for definition in definitions[key].get("guide", {}).get("checks", []):
+                            answer = checks.get(definition["id"])
+                            if not isinstance(answer, dict) or answer.get("verdict") not in ("met", "gap", "not_applicable") or not _text(answer.get("answer")):
+                                raise ValueError(f"{key}/{definition['id']} 缺少具体回答")
+                            evidence = answer.get("evidence")
+                            if not isinstance(evidence, list) or not all(evidence_valid(ref, number) for ref in evidence):
+                                raise ValueError(f"{key}/{definition['id']} 证据无效")
+                            if answer["verdict"] == "met" and (not evidence or not _text(answer.get("support"))):
+                                raise ValueError(f"{key}/{definition['id']} 须解释原句怎样支持回答")
+                            if answer["verdict"] == "gap" and (not _text(answer.get("fix")) or item["status"] != "needs_revision"):
+                                raise ValueError(f"{key}/{definition['id']} 有缺口须给出修订位置与动作并标记 needs_revision")
                     if key == "world_presentation":
                         if item["status"] == "not_applicable":
                             raise ValueError("世界观呈现需逐章维护认知，不可跳过")
@@ -176,6 +226,15 @@ def validate_reports(project, only_number=None):
                                 raise ValueError("累计认知证据错误或正文已修订")
                             if fact["status"] != "unknown" and not evidence:
                                 raise ValueError("已知或线索必须有正文证据")
+                            if config.get("report_contract", 1) == 2:
+                                if fact.get("support_kind") not in ("explicit", "inferred", "missing"):
+                                    raise ValueError("认知须区分明示、推断与缺失")
+                                if fact["status"] == "known" and fact["support_kind"] != "explicit":
+                                    raise ValueError("推断不能登记为读者已知")
+                                if type(fact.get("required_now")) is not bool:
+                                    raise ValueError("认知须说明是否为本章必需信息")
+                                if fact["status"] != "known" and fact["required_now"] and item["status"] != "needs_revision":
+                                    raise ValueError("本章必需认知尚未明确，须标记 needs_revision")
                             if fact["status"] == "unknown":
                                 due = fact.get("resolve_by")
                                 if not _text(fact.get("next_action")) or type(due) is not int or due < number:

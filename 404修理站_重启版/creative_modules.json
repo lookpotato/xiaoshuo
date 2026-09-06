@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "report_contract": 2,
   "modules": {
     "world_presentation": {
       "mode": "enforce",

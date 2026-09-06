@@ -40,6 +40,63 @@ class CreativeModulesTest(TestCase):
         self.assertIn("world_presentation", prompt)
         self.assertNotIn("emotional_payoff", prompt)
 
+    def enable_contract_two(self):
+        self.config["report_contract"] = 2
+        self.write(cm.CONFIG, self.config)
+        self.item["checks"] = {item["id"]: {"verdict": "met", "answer": "人物在城门外靠修机器换粮票", "support": "原句明说地点和谋生交易", "evidence": [self.ref]} for item in cm.catalog()["modules"]["world_presentation"]["guide"]["checks"]}
+        for fact in self.item["state"]["reader_knowledge"]:
+            fact.update(support_kind="missing", required_now=False)
+        self.save_report()
+
+    def test_contract_two_rejects_generic_summary(self):
+        self.config["report_contract"] = 2
+        self.write(cm.CONFIG, self.config)
+        self.assertIn("逐项 checks", str(cm.validate_reports(self.root)))
+
+    def test_contract_two_requires_support_explanation(self):
+        self.enable_contract_two()
+        self.assertEqual(cm.validate_reports(self.root), [])
+        self.item["checks"]["orientation"].pop("support")
+        self.save_report()
+        self.assertIn("怎样支持", str(cm.validate_reports(self.root)))
+
+    def test_contract_two_cannot_label_inference_as_known(self):
+        self.enable_contract_two()
+        self.item["state"]["reader_knowledge"][0].update(status="known", support_kind="inferred", evidence=[self.ref])
+        self.save_report()
+        self.assertIn("推断不能", str(cm.validate_reports(self.root)))
+
+    def test_current_knowledge_gap_cannot_pass(self):
+        self.enable_contract_two()
+        self.item["state"]["reader_knowledge"][0]["required_now"] = True
+        self.save_report()
+        self.assertIn("必需认知", str(cm.validate_reports(self.root)))
+
+    def test_gap_requires_action_and_revision_status(self):
+        self.enable_contract_two()
+        self.item["checks"]["orientation"].update(verdict="gap")
+        self.save_report()
+        self.assertIn("修订位置", str(cm.validate_reports(self.root)))
+        self.item["checks"]["orientation"]["fix"] = "在进城前补写交易规则"
+        self.item["status"] = "needs_revision"
+        self.save_report()
+        self.assertTrue(cm.validate_reports(self.root))
+        self.config["modules"]["world_presentation"]["mode"] = "review"
+        self.write(cm.CONFIG, self.config)
+        self.assertEqual(cm.validate_reports(self.root), [])
+
+    def test_activity_is_self_reported_and_book_scoped(self):
+        result = cm.activity(self.root)
+        self.assertEqual(result["world_presentation"]["chapter"], 2)
+        self.assertEqual(cm.activity(self.root / "other"), {})
+
+    def test_all_builtin_modules_have_actionable_guides(self):
+        for module in cm.catalog()["modules"].values():
+            guide = module["guide"]
+            self.assertGreaterEqual(len(guide["steps"]), 3)
+            self.assertEqual(len(guide["checks"]), 2)
+            self.assertTrue(guide["example"]["note"])
+
     def test_disabled_and_future_rollout_need_no_report(self):
         (self.root / "module_reports/0002.json").unlink()
         self.config["modules"]["world_presentation"]["from_chapter"] = 3

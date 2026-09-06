@@ -185,6 +185,7 @@ def get_book_settings(book_id: str) -> dict:
         "scope": "book",
         "book_id": book_id,
         "creative_catalog": creative_modules.catalog(),
+        "creative_activity": creative_modules.activity(project),
         "creative_next_chapter": manager.read_json(project / "chapter_state.json", {}).get("next_chapter_number", 1),
         "config_revision": _revision(CONFIG_PATH),
         "locked": settings_lock(),
