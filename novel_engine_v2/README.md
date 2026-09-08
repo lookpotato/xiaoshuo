@@ -29,4 +29,4 @@ python novel_v2.py run --book cosmic-404 --signal new_object --signal dialogue
 
 `run` 会用互相隔离的 Codex 临时上下文依次执行导演、作者和陌生读者阶段。读者只把理解断裂列为阻塞问题；最多返修两次，通过后由程序复制候选稿、保存 `continuity_v2/NNNN.json` 并推进章节状态。V2 暂不自动发布和配图，这两项留给独立适配器，不能重新混入创作提示。
 
-作者配置位于 `novel_engine_v2/authors/owner.json`。只有用户明确认可的偏好才能进入作者配置；暂未校准的部分保留为未知，不能由系统猜测。
+作者配置位于 `novel_engine_v2/authors/`，每本小说必须在 `system.json` 中单独绑定一名作者。参考作品只能用于提炼结构方法，不得复制其正文、人物、专名、桥段或标志性措辞；尚待用户确认的偏好继续保留为未知，不能由系统猜测。
