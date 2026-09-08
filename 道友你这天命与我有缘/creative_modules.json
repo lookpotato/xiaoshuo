@@ -72,6 +72,12 @@
       "from_chapter": 57,
       "review_interval": 5,
       "focus": ""
+    },
+    "de_ai_writing": {
+      "mode": "enforce",
+      "from_chapter": 57,
+      "review_interval": 5,
+      "focus": "优先清除解释腔、固定隐喻和重复套话；保留符合人物职业、生活经验和当前冲突的自然表达。"
     }
   }
 }
