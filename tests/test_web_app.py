@@ -20,6 +20,7 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("cosmic-404", ids)
         self.assertIn("free-sky", ids)
         self.assertNotIn("content", payload["books"][0])
+        self.assertEqual(payload["books"][0]["author"]["id"], "owner")
 
     def test_chapter_document_is_explicit_and_excludes_metadata(self) -> None:
         document = web_app.chapter_document("cosmic-404", 1)
@@ -40,6 +41,14 @@ class WebAppDataTests(unittest.TestCase):
     def test_generation_rejects_unsafe_count(self) -> None:
         with self.assertRaisesRegex(ValueError, "1—20"):
             web_app.launch_generation({"book_id": "cosmic-404", "count": 21})
+
+    def test_generation_rejects_book_without_author(self) -> None:
+        fake_book = {"id": "unbound", "title": "未绑定", "path": "missing"}
+        with (
+            patch.object(web_app, "registered_book", return_value=fake_book),
+            self.assertRaisesRegex(ValueError, "作者门禁未通过"),
+        ):
+            web_app.launch_generation({"book_id": "unbound", "count": 1})
 
     def test_generation_passes_delivery_options_to_worker(self) -> None:
         fake = {"id": "run-id", "status": "running"}

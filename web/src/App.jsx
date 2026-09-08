@@ -11,7 +11,7 @@ function Sidebar({ books, selected, onSelect, view, onView }) {
   return <aside className="sidebar">
     <div className="brand"><div className="brand-mark">番</div><div><strong>小说工作台</strong><span>REACT STUDIO</span></div></div>
     <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>创作工作台</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
-    <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : "道友"}</strong><small>完成 {book.last_completed_chapter} 章</small></button>)}</nav>
+    <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : "道友"}</strong><small>{book.author ? `作者 ${book.author.name} · ` : "未配置作者 · "}完成 {book.last_completed_chapter} 章</small></button>)}</nav>
     <div className="sidebar-foot"><span className="live-dot" /><div><strong>本地服务</strong><small>React 前端 · Python 后端</small></div></div>
   </aside>;
 }

@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 import fanqie_novel_manager as manager
 import character_story_service
 import settings_service
+import author_registry
 
 
 ROOT = Path(__file__).resolve().parent
@@ -33,7 +34,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 3
+API_VERSION = 4
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -161,6 +162,11 @@ def book_summary(book: dict, include_chapters: bool = True) -> dict:
     project = project_for(book)
     state = read_json(project / "chapter_state.json", {}) or {}
     errors = manager.validate_book(book, require_publish_complete=False)
+    try:
+        author = author_registry.book_author(ROOT, book["id"])
+    except author_registry.AuthorConfigError as exc:
+        author = None
+        errors.append(str(exc))
     chapters = chapter_rows(project, 60) if include_chapters else []
     publish_text = ""
     try:
@@ -180,6 +186,7 @@ def book_summary(book: dict, include_chapters: bool = True) -> dict:
     return {
         "id": book["id"],
         "title": book.get("title", book["id"]),
+        "author": author,
         "mode": book.get("mode", "unknown"),
         "enabled": bool(book.get("enabled", True)),
         "daily_target": int(book.get("daily_chapter_target", 1)),
@@ -434,6 +441,9 @@ def launch_generation(payload: dict) -> dict:
         ]
     else:
         selected_books = [registered_book(scope)]
+    author_errors = author_registry.binding_errors(ROOT, selected_books)
+    if author_errors:
+        raise ValueError("作者门禁未通过：" + "；".join(author_errors))
     if publish_fanqie:
         unbound = [
             book.get("title", book["id"])

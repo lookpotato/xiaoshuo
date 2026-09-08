@@ -11,6 +11,7 @@ from pathlib import Path
 
 import fanqie_novel_manager as manager
 import creative_modules
+import author_registry
 
 
 ROOT = Path(__file__).resolve().parent
@@ -84,6 +85,10 @@ def _project_path(book: dict) -> Path:
 
 
 def _system_document_path(document_id: str) -> Path:
+    if re.fullmatch(
+        r"novel_engine_v2/authors/[a-z][a-z0-9_-]{1,63}\.json", document_id
+    ):
+        return (ROOT / document_id).resolve()
     if not re.fullmatch(r"shared/[0-9A-Za-z_.-]+\.(?:md|json|jsonl)", document_id):
         raise ValueError("共享模块路径不在白名单中")
     path = (ROOT / document_id).resolve()
@@ -130,14 +135,22 @@ def settings_lock() -> dict | None:
 
 def get_system_settings() -> dict:
     data = _read_config()
+    authors = author_registry.list_authors(ROOT)
     policy = data.get("writing_policy", {})
     documents = []
     document_ids = set(SYSTEM_BASE_DOCUMENTS)
+    document_ids.update(author["document_id"] for author in authors)
     document_ids.update(_referenced_system_documents(policy))
     for document_id in sorted(document_ids):
+        author = next((item for item in authors if item["document_id"] == document_id), None)
         title, description = SYSTEM_BASE_DOCUMENTS.get(
             document_id,
-            (Path(document_id).stem.replace("_", " "), "由所有小说共享、按模块装配进生成提示词"),
+            (
+                f"作者档案 · {author['name']}" if author else Path(document_id).stem.replace("_", " "),
+                "定义该作者的创作身份、读者契约、语言原则与尚待校准项"
+                if author
+                else "由所有小说共享、按模块装配进生成提示词",
+            ),
         )
         documents.append(
             _document(
@@ -169,6 +182,7 @@ def get_system_settings() -> dict:
         "general": {key: data.get(key) for key in SYSTEM_GENERAL_FIELDS},
         "writing_policy": policy,
         "modules": modules,
+        "authors": authors,
         "documents": documents,
     }
 
@@ -181,6 +195,13 @@ def get_book_settings(book_id: str) -> dict:
         _document(project / name, name, title, description)
         for name, (title, description) in BOOK_DOCUMENTS.items()
     ]
+    authors = author_registry.list_authors(ROOT)
+    try:
+        bound_author_id = author_registry.book_author(ROOT, book_id)["id"]
+        author_binding_error = ""
+    except author_registry.AuthorConfigError as exc:
+        bound_author_id = ""
+        author_binding_error = str(exc)
     return {
         "scope": "book",
         "book_id": book_id,
@@ -188,11 +209,15 @@ def get_book_settings(book_id: str) -> dict:
         "creative_activity": creative_modules.activity(project),
         "creative_next_chapter": manager.read_json(project / "chapter_state.json", {}).get("next_chapter_number", 1),
         "config_revision": _revision(CONFIG_PATH),
+        "author_config_revision": _revision(author_registry.system_path(ROOT)),
+        "authors": authors,
+        "author_binding_error": author_binding_error,
         "locked": settings_lock(),
         "registry": {
             "id": book["id"],
             "path": book["path"],
             "title": book.get("title", book_id),
+            "author": bound_author_id,
             "enabled": bool(book.get("enabled", True)),
             "mode": book.get("mode", "write_only"),
             "priority": int(book.get("priority", 0)),
@@ -237,6 +262,8 @@ def _validate_document_updates(
                 creative_modules.validate_catalog(parsed)
             else:
                 creative_modules.validate_config(parsed)
+        if path.parent == author_registry.authors_path(ROOT):
+            author_registry.validate_author_profile(json.loads(content), path.stem)
         writes[path] = content.replace("\r\n", "\n")
     return writes
 
@@ -290,10 +317,15 @@ def _validated_book_registry(value: object, current: dict) -> dict:
     updated = dict(current)
     title = value.get("title", current.get("title"))
     mode = value.get("mode", current.get("mode"))
+    author_id = value.get("author")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("书名不能为空")
     if mode not in ALLOWED_MODES:
         raise ValueError("mode 无效")
+    if not isinstance(author_id, str) or not author_id:
+        raise ValueError("每本小说必须选择作者")
+    if author_id not in {author["id"] for author in author_registry.list_authors(ROOT)}:
+        raise ValueError(f"作者不存在：{author_id}")
     for key, low, high in (
         ("priority", 0, 10000),
         ("daily_chapter_target", 1, 20),
@@ -346,11 +378,19 @@ def save_settings(payload: dict) -> dict:
         book_id = str(payload.get("book_id", ""))
         current_book = manager.find_book(data, book_id)
         updated_book = _validated_book_registry(payload.get("registry"), current_book)
+        if payload.get("author_config_revision") != _revision(author_registry.system_path(ROOT)):
+            raise SettingsConflict("作者绑定已被其他进程修改，请刷新后再保存")
         updated = dict(data)
         updated["books"] = [updated_book if book.get("id") == book_id else book for book in data["books"]]
         writes = _validate_document_updates(
             payload.get("documents", []),
             lambda document_id: _book_document_path(current_book, document_id),
+        )
+        author_system = author_registry.updated_book_binding(
+            ROOT, updated_book, str(payload["registry"]["author"])
+        )
+        writes[author_registry.system_path(ROOT)] = (
+            json.dumps(author_system, ensure_ascii=False, indent=2) + "\n"
         )
     else:
         raise ValueError("settings scope 必须是 system 或 book")

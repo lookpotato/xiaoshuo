@@ -36,10 +36,11 @@ function SystemGeneral({ value, books, onChange }) {
   </div>;
 }
 
-function BookGeneral({ value, onChange }) {
+function BookGeneral({ value, authors, onChange }) {
   const update = (key, next) => onChange({ ...value, [key]: next });
   return <div className="settings-form-grid">
     <Field label="书名"><input value={value.title || ""} onChange={(event) => update("title", event.target.value)} /></Field>
+    <Field label="作者（必选）" hint="作者决定创作取舍；未绑定作者的小说不能启动生成"><select required value={value.author || ""} onChange={(event) => update("author", event.target.value)}><option value="" disabled>请选择作者</option>{authors.map((author) => <option key={author.id} value={author.id}>{author.name} · {author.id}</option>)}</select></Field>
     <Field label="运行模式"><select value={value.mode} onChange={(event) => update("mode", event.target.value)}><option value="write_only">仅本地创作</option><option value="write_then_upload">创作并可上传</option></select></Field>
     <Field label="每日章节数"><input type="number" min="1" max="20" value={value.daily_chapter_target} onChange={(event) => update("daily_chapter_target", Number(event.target.value))} /></Field>
     <Field label="任务优先级"><input type="number" min="0" max="10000" value={value.priority} onChange={(event) => update("priority", Number(event.target.value))} /></Field>
@@ -101,6 +102,7 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
         scope,
         book_id: scope === "book" ? bookId : undefined,
         config_revision: draft.config_revision,
+        author_config_revision: draft.author_config_revision,
         general: draft.general,
         registry: draft.registry,
         writing_policy: writingPolicy,
@@ -122,14 +124,19 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
       <div className="settings-actions"><button className="button ghost" onClick={load} disabled={busy}>重新读取</button><button className="button save-settings" onClick={save} disabled={busy || !dirty || draft.locked}>{busy ? "处理中" : "保存设置"}</button></div>
     </article>
     {draft.locked && <div className="settings-lock"><strong>设置已锁定</strong><span>{draft.locked.message} · {draft.locked.book_id || "当前任务"}</span></div>}
+    {scope === "book" && draft.author_binding_error && <div className="settings-error"><strong>作者未绑定</strong><span>{draft.author_binding_error}。请选择作者并保存后才能启动生成。</span></div>}
     {error && <div className="settings-error">{error}</div>}
     {scope === "book" && <div className="book-settings-switch"><label>当前小说<select value={bookId} onChange={(event) => onBookChange(event.target.value)}>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select></label><code>{draft.registry.id} · {draft.registry.path}</code></div>}
     <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">BASICS</p><h2>{scope === "system" ? "运行底座" : "作品运行参数"}</h2></div></div>
-      {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} onChange={(registry) => setDraft({ ...draft, registry })} />}
+      {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} authors={draft.authors} onChange={(registry) => setDraft({ ...draft, registry })} />}
     </article>
     {scope === "book" && <CreativeModules draft={draft} onChange={updateDocument} />}
     {scope === "book" && <CharacterStorylines bookId={bookId} onNotice={onNotice} />}
+    {scope === "system" && <article className="panel settings-section">
+      <div className="panel-head"><div><p className="eyebrow">AUTHOR REGISTRY</p><h2>作者模块</h2><p className="section-description">作者不是通用文风标签，而是作品取舍的负责人。每本小说必须绑定这里的一名作者。</p></div><span className="count-label">{draft.authors.length} 名作者</span></div>
+      <div className="module-grid">{draft.authors.map((author) => <div className="module-card" key={author.id}><span className="module-dot enabled" /><div><strong>{author.name}</strong><small>{author.id} · {author.calibration_status} · {author.unknown_count} 项待校准</small></div></div>)}</div>
+    </article>}
     {scope === "system" && <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">MODULE REGISTRY</p><h2>底层能力模块</h2></div><span className="count-label">{draft.modules.length} 个模块</span></div>
       <div className="module-grid">{draft.modules.map((module) => <div className="module-card" key={module.id}><span className={module.enabled ? "module-dot enabled" : "module-dot"} /><div><strong>{module.id}</strong><small>{module.rules.length ? module.rules.join(" · ") : `${module.field_count} 个内联规则`}</small></div></div>)}</div>
