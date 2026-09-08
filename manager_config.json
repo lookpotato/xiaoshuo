@@ -7,6 +7,12 @@
   "default_failure_policy": "retry_same_day",
   "default_book_id": "cosmic-404",
   "writing_policy": {
+    "de_ai_writing": {
+      "enabled": true,
+      "shared_rules": "shared/de_ai_writing.md",
+      "required_before_draft": true,
+      "scope": "所有分析、规划、对白和正文；以具体语义替代固定隐喻和模型套话，除真实财务语境外避免反复使用‘账’及其延伸表达。"
+    },
     "character_engine": {
       "enabled": true,
       "shared_rules": "shared/character_engine.md",
