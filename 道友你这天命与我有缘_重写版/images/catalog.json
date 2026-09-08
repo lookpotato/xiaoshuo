@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "book_id": "free-sky-rewrite",
+  "max_images_per_chapter": 1,
+  "style_bible": {
+    "visual_style": "清朗东方仙侠，山村木作与风的运动感，人物表情自然克制"
+  },
+  "entities": {},
+  "chapter_images": {}
+}

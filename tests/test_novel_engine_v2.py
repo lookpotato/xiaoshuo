@@ -139,13 +139,18 @@ class NovelEngineV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "第 2 章"):
             engine.validate_candidate(run, 2)
 
-    def test_repository_free_sky_uses_its_dedicated_author(self) -> None:
+    def test_repository_free_sky_rewrite_is_a_separate_authored_book(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
         engine = NovelEngine(project_root)
-        book = engine.book("free-sky")
+        legacy = engine.book("free-sky")
+        book = engine.book("free-sky-rewrite")
+        self.assertNotEqual(legacy.project, book.project)
+        self.assertEqual(legacy.project.name, "道友你这天命与我有缘")
+        self.assertEqual(book.project.name, "道友你这天命与我有缘_重写版")
+        self.assertEqual(engine.next_chapter(book), 1)
         self.assertEqual(book.author, "free-sky-rulebreaker")
         author = engine.author(book.author)
-        self.assertEqual(author["scope"], ["free-sky"])
+        self.assertEqual(author["scope"], ["free-sky", "free-sky-rewrite"])
         self.assertIn("人物关系", author["decision_order"][0])
         self.assertTrue(author["author_method"])
         self.assertTrue(author["book_application"])

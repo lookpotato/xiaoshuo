@@ -1,6 +1,10 @@
 {
+  "last_completed_chapter": 0,
   "next_chapter_number": 1,
-  "last_archived_chapter": 0,
+  "last_uploaded_chapter": 0,
+  "last_uploaded_status": "not_uploaded",
+  "last_uploaded_at": null,
+  "notes_for_next_chapter": "按 opening_contract.md 从祭风日、旧木鸢与小满坠落开始。",
   "status": "rewrite_ready",
   "source_policy": "旧版56章只作养料，不承接其剧情状态"
 }

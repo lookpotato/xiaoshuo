@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "free-sky-rulebreaker",
   "name": "《道友》人物驱动轻喜剧冒险作者 v2",
-  "scope": ["free-sky"],
+  "scope": ["free-sky", "free-sky-rewrite"],
   "author_thesis": "写一个把自由当成选择权、又必须学习承担后果的少年；让他的聪明在人与人的冲突中兑现，而不是在规则说明书里兑现。",
   "decision_order": [
     "人物关系与眼前欲望优先于世界设定和机制展示。",

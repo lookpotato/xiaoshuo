@@ -34,6 +34,11 @@
     },
     "free-sky": {
       "title": "道友你这天命与我有缘",
+      "project": "道友你这天命与我有缘",
+      "author": "free-sky-rulebreaker"
+    },
+    "free-sky-rewrite": {
+      "title": "道友你这天命与我有缘（重写版）",
       "project": "道友你这天命与我有缘_重写版",
       "author": "free-sky-rulebreaker",
       "planning_sources": [

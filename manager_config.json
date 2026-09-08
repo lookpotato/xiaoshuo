@@ -102,6 +102,23 @@
       "manual_extra_chapters_supported": false,
       "default_publish_times": ["18:30", "20:30"],
       "note": "玄幻新书；已绑定独立番茄书号 7669807761814735897。常规排期为18:30、20:30；自动提交保持关闭，只有用户明确授权时才提交。"
+    },
+    {
+      "id": "free-sky-rewrite",
+      "title": "道友你这天命与我有缘（重写版）",
+      "path": "道友你这天命与我有缘_重写版",
+      "enabled": true,
+      "schedule": {
+        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "time": "21:30"
+      },
+      "priority": 80,
+      "mode": "write_only",
+      "daily_chapter_target": 1,
+      "reader_gate_from_chapter": 1,
+      "manual_extra_chapters_supported": true,
+      "default_publish_times": [],
+      "note": "独立重写校准项目；绑定专属作者，从第1章开始，只在本地写作，不连接或复用旧书番茄书号。"
     }
   ]
 }
