@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "principle": "作者决定取舍，作品兑现承诺，章节只完成一个主任务，审稿不能进入写稿上下文。",
+  "limits": {
+    "max_writer_modules": 2,
+    "max_reader_modules": 3,
+    "recent_chapters": 2
+  },
+  "legacy_adapter": {
+    "book_sources": [
+      "novel_config.md",
+      "story_bible.md",
+      "outline.md",
+      "characters.md",
+      "world.md",
+      "chapter_state.json"
+    ],
+    "excluded_from_writer": [
+      "automation_prompt.md",
+      "style_guide.md",
+      "continuity_ledger.md",
+      "reader_checks",
+      "module_reports",
+      "shared/learning_log.md"
+    ]
+  },
+  "books": {
+    "cosmic-404": {
+      "title": "404修理站",
+      "project": "404修理站_重启版",
+      "author": "owner"
+    },
+    "free-sky": {
+      "title": "道友你这天命与我有缘",
+      "project": "道友你这天命与我有缘",
+      "author": "owner"
+    }
+  }
+}

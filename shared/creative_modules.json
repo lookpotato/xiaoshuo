@@ -395,10 +395,6 @@
           {
             "id": "lexical_repetition",
             "question": "是否存在高频词或固定隐喻；它们是否都承担了不同且必要的语义？"
-          },
-          {
-            "id": "reader_experiment",
-            "question": "本章准备验证哪一个表达改动；依据是什么，下一步如何根据真实反馈调整？"
           }
         ],
         "example": {

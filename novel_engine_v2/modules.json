@@ -1,0 +1,59 @@
+{
+  "schema_version": 2,
+  "modules": {
+    "chapter_causality": {
+      "title": "章节因果",
+      "stage": "writer",
+      "mandatory": true,
+      "priority": 1000,
+      "triggers": [],
+      "purpose": "保证本章通过人物选择改变局面。",
+      "instruction": "围绕合同中的唯一主任务写。必须出现诉求、阻力、选择和可见结果；背景信息只能帮助当前行动，不能取代事件。"
+    },
+    "chinese_dialogue": {
+      "title": "中国人物对白",
+      "stage": "writer",
+      "mandatory": false,
+      "priority": 90,
+      "triggers": ["dialogue", "relationship", "regional_voice"],
+      "purpose": "让对白受年龄、地区、职业、关系和场合共同决定。",
+      "instruction": "先判断双方关系、权力位置、共同经历和各自想隐瞒什么，再决定称呼、省略和句长。方言体现生活经历与句法节奏，不靠几个标签词。人物不必说完整，也不替作者解释情绪。"
+    },
+    "object_entry": {
+      "title": "陌生读者识物",
+      "stage": "writer",
+      "mandatory": false,
+      "priority": 80,
+      "triggers": ["new_character", "new_object", "new_place", "new_rule"],
+      "purpose": "让无预备知识的读者一眼知道新事物是什么。",
+      "instruction": "新事物首次起作用前，用类别、外形、当前用途或直接后果完成识别。只解释眼前所需信息，来源与深层秘密可以保留。"
+    },
+    "reader_clarity": {
+      "title": "陌生读者可读性",
+      "stage": "reader",
+      "mandatory": true,
+      "priority": 1000,
+      "triggers": [],
+      "purpose": "验证正文能否独立成立。",
+      "instruction": "不使用设定文件替正文补充信息。指出人物、对象、空间、依据、选择或结果中无法仅凭正文确认的部分，并引用造成问题的原句。"
+    },
+    "de_ai_specificity": {
+      "title": "文本唯一性",
+      "stage": "reader",
+      "mandatory": true,
+      "priority": 900,
+      "triggers": [],
+      "purpose": "识别可套用到任何作品的平均化表达。",
+      "instruction": "检查删去专名后仍可套用到任何小说的句子、替人物总结意义的句子、人人都会说的完整结论和无生活来源的比喻。只标出具体句子及原因，不用禁用词数量代替判断。"
+    },
+    "dialogue_authenticity": {
+      "title": "对白社会真实性",
+      "stage": "reader",
+      "mandatory": false,
+      "priority": 100,
+      "triggers": ["dialogue", "relationship", "regional_voice"],
+      "purpose": "检验人物说话是否属于具体中国社会关系。",
+      "instruction": "检查年龄、地区经历、教育、职业、亲疏、权力和情绪是否改变说法；避免把标准普通话、完整背景说明或表面方言词误判为自然对白。"
+    }
+  }
+}
