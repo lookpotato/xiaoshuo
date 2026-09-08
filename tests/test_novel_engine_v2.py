@@ -25,7 +25,7 @@ class NovelEngineV2Tests(unittest.TestCase):
             (project / name).write_text(name, encoding="utf-8")
         (home / "system.json").write_text(json.dumps({
             "schema_version": 2,
-            "limits": {"max_writer_modules": 2, "max_reader_modules": 2, "recent_chapters": 1},
+            "limits": {"max_writer_modules": 2, "max_reader_modules": 2, "recent_chapters": 1, "max_author_context_chars": 8000},
             "legacy_adapter": {"book_sources": ["novel_config.md", "chapter_state.json"]},
             "books": {"demo": {"title": "测试", "project": "book", "author": "owner"}},
         }, ensure_ascii=False), encoding="utf-8")
@@ -61,6 +61,24 @@ class NovelEngineV2Tests(unittest.TestCase):
         self.assertIn("对白", writer)
         self.assertNotIn("unused", writer)
         self.assertNotIn("automation_prompt.md", writer)
+
+    def test_author_method_and_book_application_are_separate_and_bounded(self) -> None:
+        author_path = self.root / "novel_engine_v2" / "authors" / "owner.json"
+        author = json.loads(author_path.read_text(encoding="utf-8"))
+        author["author_method"] = ["先让关系推动场景"]
+        author["book_application"] = ["本书先写一扇打不开的门"]
+        author_path.write_text(json.dumps(author, ensure_ascii=False), encoding="utf-8")
+        engine = NovelEngine(self.root)
+        run = engine.prepare("demo", set())
+        writer = (run / "writer.md").read_text(encoding="utf-8")
+        self.assertIn("### 创作方法", writer)
+        self.assertIn("### 本书应用", writer)
+        self.assertLessEqual(len(engine._compile_author_context(author)), 8000)
+
+        author["book_application"] = ["字" * 8001]
+        author_path.write_text(json.dumps(author, ensure_ascii=False), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "不得继续堆提示词"):
+            NovelEngine(self.root).author("owner")
 
     def test_reader_isolated_from_world_and_outline(self) -> None:
         engine = NovelEngine(self.root)
@@ -104,6 +122,16 @@ class NovelEngineV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "6000"):
             engine.validate_contract(run)
 
+    def test_new_book_with_opening_contract_does_not_require_old_chapter(self) -> None:
+        project = self.root / "book"
+        (project / "chapters" / "0001-开门.md").unlink()
+        (project / "chapter_state.json").write_text(
+            json.dumps({"next_chapter_number": 1}), encoding="utf-8"
+        )
+        (project / "opening_contract.md").write_text("先写一个人开门。", encoding="utf-8")
+        engine = NovelEngine(self.root)
+        self.assertEqual(engine.validate_project("demo"), [])
+
     def test_candidate_requires_matching_chapter_heading(self) -> None:
         engine = NovelEngine(self.root)
         run = engine.prepare("demo", set())
@@ -118,7 +146,15 @@ class NovelEngineV2Tests(unittest.TestCase):
         self.assertEqual(book.author, "free-sky-rulebreaker")
         author = engine.author(book.author)
         self.assertEqual(author["scope"], ["free-sky"])
+        self.assertIn("人物关系", author["decision_order"][0])
+        self.assertTrue(author["author_method"])
+        self.assertTrue(author["book_application"])
         self.assertIn("机制解释重复", author["calibration_evidence"]["finding"])
+        manifest = engine.context_manifest(book, engine.next_chapter(book))
+        self.assertTrue(any(
+            path.endswith("free-sky-rewrite-blueprint.md")
+            for path in manifest["book_sources"]
+        ))
 
 
 if __name__ == "__main__":

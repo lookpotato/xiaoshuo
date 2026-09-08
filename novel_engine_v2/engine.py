@@ -58,7 +58,10 @@ class NovelEngine:
         if not isinstance(self.config.get("books"), dict):
             raise ValidationError("system.json 缺少 books")
         limits = self.config.get("limits", {})
-        for key in ("max_writer_modules", "max_reader_modules", "recent_chapters"):
+        for key in (
+            "max_writer_modules", "max_reader_modules", "recent_chapters",
+            "max_author_context_chars",
+        ):
             if type(limits.get(key)) is not int or limits[key] < 1:
                 raise ValidationError(f"limits.{key} 必须为正整数")
         modules = self.catalog.get("modules")
@@ -96,7 +99,35 @@ class NovelEngine:
                 isinstance(item, str) and item.strip() for item in data[key]
             ):
                 raise ValidationError(f"作者配置 {key} 必须为非空文本数组")
+        for key in ("author_method", "book_application"):
+            if key in data and (
+                not isinstance(data[key], list)
+                or not data[key]
+                or not all(isinstance(item, str) and item.strip() for item in data[key])
+            ):
+                raise ValidationError(f"作者配置 {key} 必须为非空文本数组")
+        self._compile_author_context(data)
         return data
+
+    def _compile_author_context(self, author: dict) -> str:
+        """Render one bounded author hierarchy instead of a flat prompt pile."""
+        sections = (
+            ("作者身份与最高取舍", author["creative_identity"]),
+            ("创作方法", author.get("author_method", [])),
+            ("本书应用", author.get("book_application", [])),
+            ("读者承诺", author["reader_contract"]),
+            ("语言边界", author["language_principles"]),
+        )
+        rendered = "\n\n".join(
+            f"### {title}\n" + "\n".join(f"- {item}" for item in items)
+            for title, items in sections if items
+        )
+        limit = self.config["limits"]["max_author_context_chars"]
+        if len(rendered) > limit:
+            raise ValidationError(
+                f"作者上下文超过 {limit} 字；请合并取舍，不得继续堆提示词"
+            )
+        return rendered
 
     def next_chapter(self, book: Book) -> int:
         state = read_json(book.project / "chapter_state.json")
@@ -136,6 +167,18 @@ class NovelEngine:
             path = (book.project / name).resolve()
             if path.is_file():
                 existing.append(str(path))
+        planning_sources = self.config["books"][book.id].get("planning_sources", [])
+        if not isinstance(planning_sources, list) or not all(
+            isinstance(name, str) and name.strip() for name in planning_sources
+        ):
+            raise ValidationError(f"{book.id}.planning_sources 必须为文本数组")
+        for name in planning_sources:
+            path = (self.root / name).resolve()
+            if self.root != path and self.root not in path.parents:
+                raise ValidationError(f"规划资料越界：{path}")
+            if not path.is_file():
+                raise ValidationError(f"缺少规划资料：{path}")
+            existing.append(str(path))
         return {
             "book": book.id,
             "chapter": number,
@@ -175,11 +218,7 @@ class NovelEngine:
 
     def _compile_prompts(self, book: Book, author: dict, manifest: dict) -> dict[str, str]:
         run = Path(manifest["run_dir"])
-        author_text = "\n".join(f"- {x}" for x in (
-            author["creative_identity"]
-            + author["reader_contract"]
-            + author["language_principles"]
-        ))
+        author_text = self._compile_author_context(author)
         sources = "\n".join(f"- `{path}`" for path in manifest["book_sources"])
         recent = "\n".join(f"- `{path}`" for path in manifest["recent_chapters"])
         writer_modules = "\n".join(
@@ -245,7 +284,10 @@ class NovelEngine:
             for name in ("chapters", "drafts", "logs"):
                 if not (book.project / name).is_dir():
                     errors.append(f"缺少目录：{book.project / name}")
-            if not self.recent_chapters(book, self.next_chapter(book)):
+            if (
+                not self.recent_chapters(book, self.next_chapter(book))
+                and not (book.project / "opening_contract.md").is_file()
+            ):
                 errors.append("没有可供承接的历史章节；新书需先提供开篇合同")
         except ValidationError as exc:
             errors.append(str(exc))

@@ -4,11 +4,13 @@
   "limits": {
     "max_writer_modules": 2,
     "max_reader_modules": 3,
-    "recent_chapters": 2
+    "recent_chapters": 2,
+    "max_author_context_chars": 8000
   },
   "legacy_adapter": {
     "book_sources": [
       "novel_config.md",
+      "opening_contract.md",
       "story_bible.md",
       "outline.md",
       "characters.md",
@@ -32,8 +34,11 @@
     },
     "free-sky": {
       "title": "道友你这天命与我有缘",
-      "project": "道友你这天命与我有缘",
-      "author": "free-sky-rulebreaker"
+      "project": "道友你这天命与我有缘_重写版",
+      "author": "free-sky-rulebreaker",
+      "planning_sources": [
+        "novel_engine_v2/rewrite/free-sky-rewrite-blueprint.md"
+      ]
     }
   }
 }
