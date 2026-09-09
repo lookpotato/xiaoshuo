@@ -8,7 +8,8 @@ const statusLabel = {
 };
 
 export default function ReaderFeedbackWorkspace({ book, onNotice }) {
-  const [chapterNumber, setChapterNumber] = useState(book.chapters[0]?.number || 0);
+  const readableChapters = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
+  const [chapterNumber, setChapterNumber] = useState(readableChapters[0]?.number || 0);
   const [chapter, setChapter] = useState(null);
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState({});
@@ -19,9 +20,10 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const readerRef = useRef(null);
 
   useEffect(() => {
-    setChapterNumber(book.chapters[0]?.number || 0);
+    const available = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
+    setChapterNumber(available[0]?.number || 0);
     setChapter(null); setItems([]); setQuote(""); setComment("");
-  }, [book.id]);
+  }, [book.id, book.last_completed_chapter]);
 
   const load = useCallback(async () => {
     if (!chapterNumber) return;
@@ -81,12 +83,12 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   }
 
   const lines = chapter?.content.split(/\r?\n/) || [];
-  if (!book.chapters.length) return <section className="panel feedback-empty"><p className="eyebrow">REAL READER</p><h2>真实读者反馈</h2><p>这本小说还没有归档章节。生成并归档章节后，就可以在这里圈选原文留言。</p></section>;
+  if (!readableChapters.length) return <section className="panel feedback-empty"><p className="eyebrow">REAL READER</p><h2>真实读者反馈</h2><p>这本小说还没有归档章节。生成并归档章节后，就可以在这里圈选原文留言。</p></section>;
 
   return <section className="reader-feedback-page">
     <article className="panel feedback-intro">
       <div><p className="eyebrow">REAL READER</p><h2>真实读者反馈</h2><p>你的不舒服是真实证据，但你猜的原因不一定正确。系统先让绑定作者核对正文、人物和作品承诺，再决定采纳、部分采纳或不采纳。</p></div>
-      <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setQuote(""); }}>{book.chapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
+      <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setQuote(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
     </article>
 
     <div className="feedback-workspace">
