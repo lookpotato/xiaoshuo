@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import SettingsWorkspace from "./components/SettingsWorkspace";
+import ReaderFeedbackWorkspace from "./components/ReaderFeedbackWorkspace";
 
 const statusLabel = (status, result) => ({
   running: "运行中", queued: "排队中", finished: result === "success" ? "已完成" : "已结束",
@@ -10,7 +11,7 @@ const statusLabel = (status, result) => ({
 function Sidebar({ books, selected, onSelect, view, onView }) {
   return <aside className="sidebar">
     <div className="brand"><div className="brand-mark">番</div><div><strong>小说工作台</strong><span>REACT STUDIO</span></div></div>
-    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>创作工作台</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
+    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>创作工作台</button><button className={view === "reader-feedback" ? "active" : ""} onClick={() => onView("reader-feedback")}>读者反馈</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
     <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : "道友"}</strong><small>{book.author ? `作者 ${book.author.name} · ` : "未配置作者 · "}完成 {book.last_completed_chapter} 章</small></button>)}</nav>
     <div className="sidebar-foot"><span className="live-dot" /><div><strong>本地服务</strong><small>React 前端 · Python 后端</small></div></div>
   </aside>;
@@ -169,7 +170,7 @@ export default function App() {
     <div className="noise" />
     <div className="shell"><Sidebar books={data.books} selected={book.id} onSelect={setSelectedBookId} view={view} onView={setView} /><main className="main">
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{view === "system-settings" ? "番茄系统" : book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
-      {view !== "workbench" ? <SettingsWorkspace scope={view === "system-settings" ? "system" : "book"} books={data.books} bookId={book.id} onBookChange={setSelectedBookId} onNotice={setNotice} onSaved={() => loadOverview()} /> : <>
+      {view === "reader-feedback" ? <ReaderFeedbackWorkspace book={book} onNotice={setNotice} /> : view !== "workbench" ? <SettingsWorkspace scope={view === "system-settings" ? "system" : "book"} books={data.books} bookId={book.id} onBookChange={setSelectedBookId} onNotice={setNotice} onSaved={() => loadOverview()} /> : <>
       <Metrics book={book} />
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
       <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />

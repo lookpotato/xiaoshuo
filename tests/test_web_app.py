@@ -109,6 +109,26 @@ class WebAppDataTests(unittest.TestCase):
         self.assertEqual(command[-2:], ["--book", "free-sky"])
         self.assertIn("--resume", command)
 
+    def test_reader_feedback_launches_author_judgment_worker(self) -> None:
+        item = {
+            "id": "feedback-12345678",
+            "book_id": "free-sky-rewrite",
+            "book_title": "道友重写版",
+            "chapter": 1,
+        }
+        run = {"id": "run-12345678", "status": "running"}
+        with (
+            patch.object(web_app.reader_feedback_service, "create_feedback", return_value=item),
+            patch.object(web_app.reader_feedback_service, "update_status"),
+            patch.object(web_app.reader_feedback_service, "feedback_item", return_value=item),
+            patch.object(web_app, "launch_command", return_value=run) as launch,
+        ):
+            result = web_app.launch_reader_feedback({"book_id": "free-sky-rewrite"})
+        command = launch.call_args.args[0]
+        self.assertTrue(command[1].endswith("reader_feedback_worker.py"))
+        self.assertIn("free-sky-rewrite", command)
+        self.assertEqual(result["run"], run)
+
     def test_run_log_returns_tail_and_redacts_credentials(self) -> None:
         with TemporaryDirectory() as temp, patch.object(
             web_app, "RUNS_ROOT", Path(temp)

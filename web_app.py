@@ -23,6 +23,7 @@ import fanqie_novel_manager as manager
 import character_story_service
 import settings_service
 import author_registry
+import reader_feedback_service
 
 
 ROOT = Path(__file__).resolve().parent
@@ -34,7 +35,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 4
+API_VERSION = 5
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -493,6 +494,47 @@ def launch_resume(payload: dict) -> dict:
     return launch_command(command, "resume", f"续跑任务 {job_id}")
 
 
+def launch_reader_feedback(payload: dict) -> dict:
+    item = reader_feedback_service.create_feedback(ROOT, payload)
+    command = [
+        sys.executable,
+        str(ROOT / "reader_feedback_worker.py"),
+        "--book",
+        item["book_id"],
+        "--feedback-id",
+        item["id"],
+    ]
+    try:
+        run = launch_command(
+            command,
+            "reader_feedback",
+            f"《{item['book_title']}》第 {item['chapter']} 章读者反馈分析",
+        )
+    except Exception as exc:
+        reader_feedback_service.update_status(
+            ROOT,
+            item["book_id"],
+            item["id"],
+            status="failed",
+            message=f"无法启动作者分析：{exc}",
+        )
+        raise
+    reader_feedback_service.update_status(
+        ROOT,
+        item["book_id"],
+        item["id"],
+        status="queued",
+        message="反馈已保存，作者分析任务已启动",
+        run_id=run["id"],
+    )
+    return {
+        "feedback": reader_feedback_service.feedback_item(
+            ROOT, item["book_id"], item["id"]
+        ),
+        "run": run,
+    }
+
+
 class AppHandler(BaseHTTPRequestHandler):
     server_version = "FanqieWorkbench/1.0"
 
@@ -548,6 +590,18 @@ class AppHandler(BaseHTTPRequestHandler):
                 number = int(query.get("number", ["0"])[0])
                 self.send_json(chapter_document(book_id, number))
                 return
+            if parsed.path == "/api/reader-feedback":
+                query = parse_qs(parsed.query)
+                book_id = query.get("book_id", [""])[0]
+                chapter_text = query.get("chapter", [""])[0]
+                chapter = int(chapter_text) if chapter_text else None
+                self.send_json({
+                    "items": reader_feedback_service.list_feedback(
+                        ROOT, book_id, chapter
+                    ),
+                    "categories": reader_feedback_service.CATEGORIES,
+                })
+                return
             self.serve_static(parsed.path)
         except (ValueError, KeyError) as exc:
             self.send_error_json(str(exc), HTTPStatus.BAD_REQUEST)
@@ -565,7 +619,12 @@ class AppHandler(BaseHTTPRequestHandler):
             return
         try:
             declared_length = int(self.headers.get("Content-Length", "0"))
-            body_limits = {"/api/settings": 1024 * 1024, "/api/character-story": 256 * 1024}
+            body_limits = {
+                "/api/settings": 1024 * 1024,
+                "/api/character-story": 256 * 1024,
+                "/api/reader-feedback": 64 * 1024,
+                "/api/reader-feedback/apply": 16 * 1024,
+            }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
                 self.send_error_json("Content-Length 无效", HTTPStatus.BAD_REQUEST)
@@ -586,6 +645,22 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/character-story":
                 self.send_json({"ok": True, "stories": character_story_service.save_character_story(payload)})
+                return
+            if parsed.path == "/api/reader-feedback":
+                self.send_json(
+                    {"ok": True, **launch_reader_feedback(payload)},
+                    HTTPStatus.ACCEPTED,
+                )
+                return
+            if parsed.path == "/api/reader-feedback/apply":
+                book_id = str(payload.get("book_id", ""))
+                feedback_id = str(payload.get("feedback_id", ""))
+                self.send_json({
+                    "ok": True,
+                    **reader_feedback_service.apply_revision(
+                        ROOT, book_id, feedback_id
+                    ),
+                })
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

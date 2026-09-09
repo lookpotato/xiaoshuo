@@ -239,7 +239,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
   .brand { justify-content: flex-start; padding: 0 0 13px; }
   .brand > div:last-child { display: block; }
   .book-nav { display: flex; margin-top: 12px; overflow-x: auto; }
-  .section-nav { grid-template-columns: repeat(3, 1fr); margin-top: 10px; padding-bottom: 10px; }
+  .section-nav { grid-template-columns: repeat(4, 1fr); margin-top: 10px; padding-bottom: 10px; }
   .book-link { min-width: 145px; padding: 10px; text-align: left; }
   .book-full-title { display: block !important; }
   .book-abbr { display: none !important; }
@@ -266,6 +266,57 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
   .character-story-layout { grid-template-columns: 1fr; }
   .character-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
   .storyline-head { align-items: stretch; flex-direction: column; }
+}
+.reader-feedback-page { display: grid; gap: 14px; }
+.feedback-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; background: linear-gradient(120deg, rgba(255,253,248,.96), rgba(238,246,241,.82)); }
+.feedback-intro > div { max-width: 780px; }
+.feedback-intro p:last-child, .feedback-empty p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
+.feedback-intro label { flex: 0 0 min(360px, 38%); color: var(--muted); font-size: 11px; font-weight: 800; }
+.feedback-intro select, .feedback-form select, .feedback-form textarea { width: 100%; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: white; }
+.feedback-intro select, .feedback-form select { height: 43px; }
+.feedback-workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(330px, .65fr); gap: 14px; align-items: start; }
+.feedback-reader { max-height: 76vh; overflow: auto; padding: 30px clamp(26px, 5vw, 72px) 70px; font-family: "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 2.05; user-select: text; }
+.feedback-reader::selection, .feedback-reader *::selection { color: #20140e; background: #ffd09d; }
+.feedback-reader-head { display: flex; justify-content: space-between; gap: 16px; margin: -8px 0 28px; padding-bottom: 13px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.feedback-reader-head span { color: var(--red); font-weight: 800; letter-spacing: .08em; }
+.feedback-reader h2 { margin-bottom: 30px; font-size: 28px; }
+.feedback-reader p { margin-bottom: 1.1em; }
+.feedback-side { position: sticky; top: 20px; }
+.feedback-form { display: grid; gap: 15px; }
+.feedback-form .panel-head { margin-bottom: 0; }
+.feedback-form label { color: var(--muted); font-size: 11px; font-weight: 800; }
+.feedback-form textarea { resize: vertical; font: 13px/1.75 "Microsoft YaHei UI", sans-serif; }
+.author-boundary { display: grid; gap: 5px; padding: 12px 14px; border: 1px solid rgba(31,128,101,.2); border-radius: 9px; color: #386553; background: rgba(31,128,101,.06); font-size: 10px; line-height: 1.6; }
+.feedback-form .button.primary { margin-top: 0; }
+.feedback-cards { display: grid; gap: 12px; }
+.feedback-card { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.48); }
+.feedback-card.accept, .feedback-card.partial, .feedback-card.applied { box-shadow: inset 4px 0 var(--green); }
+.feedback-card.reject { box-shadow: inset 4px 0 var(--amber); }
+.feedback-card.failed { box-shadow: inset 4px 0 var(--red); }
+.feedback-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.feedback-card > header strong, .feedback-card > header small { display: block; }
+.feedback-card > header strong { font-size: 13px; }
+.feedback-card > header small { margin-top: 5px; color: var(--muted); font-size: 9px; }
+.feedback-card > header > span { padding: 5px 8px; border-radius: 20px; color: var(--green); background: rgba(31,128,101,.1); font-size: 10px; font-weight: 800; }
+.feedback-card blockquote { margin: 16px 0 10px; padding: 10px 13px; border-left: 3px solid #d7a26a; color: #655c52; background: #f3ede3; font-size: 12px; line-height: 1.7; }
+.reader-comment { margin: 12px 0 0; font-size: 13px; line-height: 1.75; }
+.author-review { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.author-review h3 { margin: 0 0 8px; font-size: 15px; }
+.author-review h4 { margin: 15px 0 6px; color: var(--muted); font-size: 11px; }
+.author-review p, .author-review li { font-size: 12px; line-height: 1.75; }
+.author-review ul { margin: 0; padding-left: 20px; }
+.apply-revision { margin-top: 16px; color: white; background: var(--green); }
+.applied-note { margin-top: 15px; padding: 10px 12px; border-radius: 8px; color: var(--green); background: rgba(31,128,101,.08); font-size: 11px; }
+.feedback-error { margin: 14px 0 0; color: var(--red); font-size: 11px; }
+@media (max-width: 1050px) {
+  .feedback-workspace { grid-template-columns: 1fr; }
+  .feedback-side { position: static; }
+}
+@media (max-width: 700px) {
+  .feedback-intro { align-items: stretch; flex-direction: column; }
+  .feedback-intro label { flex-basis: auto; }
+  .feedback-reader { max-height: none; padding: 23px 18px 48px; font-size: 15px; }
+  .feedback-reader-head { flex-direction: column; }
 }
 .creative-workspace { padding: 26px; }
 .creative-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
