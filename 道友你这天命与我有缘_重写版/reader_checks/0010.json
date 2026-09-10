@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "chapter_number": 10,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-10T06:10:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "3f142c04bffe7176f9f631d0b36c0714b988bef41a9c304f2af168ccff3f0b3a",
+  "questions": {
+    "previous_context": {
+      "answer": "本章开场清楚承接上一章留下的具体局面，并立即说明人物所在位置。",
+      "evidence": [
+        "韩百川的命令只有两句。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "读者能在开篇阶段确认本章最急迫的危险、阻碍或现实压力。",
+      "evidence": [
+        "商青梧脸色一变：“井风快了。”"
+      ]
+    },
+    "decision_basis": {
+      "answer": "人物根据眼前可见的风向、损坏、伤势或责任作出选择，并非凭空猜测。",
+      "evidence": [
+        "风口不是七个，是八个。"
+      ]
+    },
+    "action_logic": {
+      "answer": "关键行动具有可追踪的操作过程，人物分工和方法能够从正文直接看懂。",
+      "evidence": [
+        "第一股回风从刘婶家出来时，残鸢被托离地面。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "行动改变了现场局面，同时留下伤势、损坏、责任或资源方面的实际代价。",
+      "evidence": [
+        "七处风口的铜铃先后停了。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "章末给出下一步必须处理的具体行动、危险或新选择。",
+      "evidence": [
+        "却是向村外吹的。"
+      ]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

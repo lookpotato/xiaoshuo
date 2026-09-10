@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "chapter_number": 2,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-10T06:10:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "0c281561eae07b8dc33c2d172a2c26ad45a114028a89ee4b4122e60c26a3b738",
+  "questions": {
+    "previous_context": {
+      "answer": "本章开场清楚承接上一章留下的具体局面，并立即说明人物所在位置。",
+      "evidence": [
+        "木作铺打烊后，陆宁把前门上了两道闩。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "读者能在开篇阶段确认本章最急迫的危险、阻碍或现实压力。",
+      "evidence": [
+        "封存木棚外只亮着一盏风灯。"
+      ]
+    },
+    "decision_basis": {
+      "answer": "人物根据眼前可见的风向、损坏、伤势或责任作出选择，并非凭空猜测。",
+      "evidence": [
+        "木棚年久，顶梁被镇天碑压下来的风吹得向东歪。"
+      ]
+    },
+    "action_logic": {
+      "answer": "关键行动具有可追踪的操作过程，人物分工和方法能够从正文直接看懂。",
+      "evidence": [
+        "他把麻绳从横木上解开，重新套住木鸢翅骨：“断就断。人出来再修。”"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "行动改变了现场局面，同时留下伤势、损坏、责任或资源方面的实际代价。",
+      "evidence": [
+        "老巡丁拖着伤腿爬向门口。韩照夜撕开封条，把人拽出来；顶梁随即坠下，砸碎木架。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "章末给出下一步必须处理的具体行动、危险或新选择。",
+      "evidence": [
+        "天亮以后，他不仅要解释为什么夜闯木棚，还得去看看那根埋了五年的旧桩。"
+      ]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

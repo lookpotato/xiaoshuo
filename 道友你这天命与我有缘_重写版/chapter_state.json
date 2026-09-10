@@ -1,10 +1,10 @@
 {
-  "last_completed_chapter": 0,
-  "next_chapter_number": 1,
+  "last_completed_chapter": 10,
+  "next_chapter_number": 11,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "按 opening_contract.md 从祭风日、旧木鸢与小满坠落开始。",
-  "status": "rewrite_ready",
+  "notes_for_next_chapter": "七户已各自决定开放或封住风口，地下回风暂时停止；木作铺东梁断一根，残鸢只剩腹板与小满夹板，陆遥左臂旧伤未愈，韩照夜剑鞘裂损。韩百川仍在镇天碑北坡石缝下，陆沉舟木片留下北坡外山道，并要求先让栖霞村自己选一次路。第11章应从天亮后的七户议事开始，决定是否进入石缝；陆遥与韩照夜都不得单独行动。",
+  "status": "chapter_10_rewritten_archived",
   "source_policy": "旧版56章只作养料，不承接其剧情状态"
 }
