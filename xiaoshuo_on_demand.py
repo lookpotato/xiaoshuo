@@ -15,6 +15,7 @@ from pathlib import Path
 
 import fanqie_novel_manager as manager
 import creative_modules
+import author_registry
 from fanqie_browser_worker import (
     FanqieBlocked,
     FanqieRetryable,
@@ -225,15 +226,50 @@ def resolve_codex() -> str:
     raise RuntimeError("检测到 codex CLI，但均未登录；请先运行 `codex login`")
 
 
+def author_prompt_context(book_id: str, project: Path) -> str:
+    """Return the canonical author sources used by every production write path."""
+    root = ROOT.resolve()
+    resolved_project = project.resolve()
+    if root != resolved_project and root not in resolved_project.parents:
+        return """统一主作者上下文：
+- 当前是仓库外的隔离测试项目，不读取或更新正式作者档案与长期反馈。
+- 这是一条统一生产流程，不得调用 `novel_v2.py` 或另行启动第二套章节生成器。
+"""
+    author = author_registry.book_author(ROOT, book_id)
+    author_path = (ROOT / author["document_id"]).resolve()
+    if root != author_path and root not in author_path.parents:
+        raise ValueError("绑定作者档案路径越界")
+    profile = author_registry.validate_author_profile(
+        author_registry.read_object(author_path), author["id"]
+    )
+    learning_path = (project / "feedback_learning.json").resolve()
+    learning_line = (
+        f"- 本书副作者确认经验：`{learning_path}`，必须读取并执行。"
+        if learning_path.is_file()
+        else "- 本书尚无副作者确认的结构化经验；不得自行虚构长期偏好。"
+    )
+    return f"""统一主作者上下文：
+- 当前绑定主作者：{profile['name']}（{profile['id']}）。
+- 主作者档案：`{author_path}`，必须在规划和动笔前完整读取；其中创作身份、创作方法、读者承诺、语言原则和已确认反馈高于通用模型习惯。
+{learning_line}
+- 本书 `style_guide.md` 继续承载书籍独有文风和已同步的长期反馈。作者档案、本书经验和文风指南冲突时，不得猜测；保留现有正文并在结果中报告冲突。
+- 这是一条统一生产流程，不得调用 `novel_v2.py` 或另行启动第二套章节生成器。
+"""
+
+
 def local_write_prompt(book_id: str, job: dict) -> str:
-    book = manager.find_book(manager.config(), book_id)
+    data = manager.config()
+    book = manager.find_book(data, book_id)
+    project = project_for(data, book_id)
     if book.get("mode") == "write_only" and not job.get("run_options", {}).get(
         "publish_fanqie", False
     ):
         return local_write_only_prompt(book_id, job)
+    author_context = author_prompt_context(book_id, project)
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
 这是由小说工作台 API 启动的一次性串行批次，job id 为 `{job["id"]}`。
+{author_context}
 完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
 必须读取 shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md 与 shared/chinese_dialogue_feedback.jsonl；若目标项目存在 narrative_style_pack.md，也必须读取。每场固定一个认知中心，新人物必须有来路、先行动和关系锚，新道具必须先交代眼下用途与使用代价。对白先按人物关系、共同经历、场合和情绪确定称呼与省略，不得用固定方言词替换冒充真人口语，完稿前抽查至少十句执行口语逆翻译。
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
@@ -266,9 +302,13 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 
 
 def local_write_only_prompt(book_id: str, job: dict) -> str:
+    project = project_for(manager.config(), book_id)
+    author_context = author_prompt_context(book_id, project)
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
 这是工作台 API 的本地创作子任务，job id 为 `{job["id"]}`。只处理下一章；本子任务不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git。外层任务会按照本次运行配置决定是否同步 Git。
+
+{author_context}
 
 读取 AGENTS.md、目标项目 automation_prompt.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及目标项目的 novel_config.md、story_bible.md、resource_ledger.md、characters.md、world.md、style_guide.md、存在时的 narrative_style_pack.md、character_voice_bible.md、voice_packs/、continuity_ledger.md、chapter_state.json 和最近三章正文。不要读取其他书。
 
@@ -291,9 +331,13 @@ def local_repair_prompt(
     repair_number: int,
 ) -> str:
     error_payload = json.dumps(errors, ensure_ascii=False, indent=2)
+    project = project_for(manager.config(), book_id)
+    author_context = author_prompt_context(book_id, project)
     return f"""使用 fanqie-auto-novel 技能，修复书籍 `{book_id}` 第 {chapter_number} 章现有本地稿件。
 
 这是工作台 API 自动发起的第 {repair_number}/{MAX_AUTOMATIC_REPAIRS} 次门禁修复，job id 为 `{job['id']}`。不要另写下一章，不要删除有效情节，不要输出小说正文；只检查并定点修复现有第 {chapter_number} 章及其配套状态文件。
+
+{author_context}
 
 本轮机器校验错误如下：
 {error_payload}
