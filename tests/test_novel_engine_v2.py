@@ -80,6 +80,23 @@ class NovelEngineV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "不得继续堆提示词"):
             NovelEngine(self.root).author("owner")
 
+    def test_book_feedback_learning_is_added_to_future_context(self) -> None:
+        learning = self.root / "book" / "feedback_learning.json"
+        learning.write_text(json.dumps({
+            "schema_version": 1,
+            "rules": [{
+                "principle": "人物先回应现场，再补背景。",
+                "applies_when": "人物正在共同处理一件事时",
+                "avoid": "不能删掉理解行动所需的信息",
+            }],
+        }, ensure_ascii=False), encoding="utf-8")
+        engine = NovelEngine(self.root)
+        manifest = engine.context_manifest(engine.book("demo"), 2)
+        self.assertIn(str(learning.resolve()), manifest["book_sources"])
+        run = engine.prepare("demo", set())
+        writer = (run / "writer.md").read_text(encoding="utf-8")
+        self.assertIn("人物先回应现场，再补背景", writer)
+
     def test_reader_isolated_from_world_and_outline(self) -> None:
         engine = NovelEngine(self.root)
         run = engine.prepare("demo", set())

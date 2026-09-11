@@ -40,6 +40,17 @@ def parse_result(text: str) -> dict:
     if not isinstance(value.get("author_judgment"), str) or not value["author_judgment"].strip():
         raise ValueError("作者分析缺少 author_judgment")
     revision = value.pop("proposed_revision", None)
+    learning = value.get("learning_candidate")
+    if learning is not None:
+        if not isinstance(learning, dict):
+            raise ValueError("作者分析 learning_candidate 必须为对象或null")
+        for key in ("principle", "applies_when", "avoid", "rationale"):
+            if not isinstance(learning.get(key), str) or not learning[key].strip():
+                raise ValueError(f"作者分析 learning_candidate.{key} 缺少文本")
+        if learning.get("recommended_scope") not in {"book", "author"}:
+            raise ValueError("作者分析 learning_candidate.recommended_scope 无效")
+        if learning.get("confidence") not in {"medium", "high"}:
+            raise ValueError("作者分析 learning_candidate.confidence 必须为 medium 或 high")
     if value["decision"] in {"accept", "partial"}:
         if not isinstance(revision, str) or not revision.strip():
             raise ValueError("采纳反馈时必须提供完整候选修订")
@@ -86,8 +97,9 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 1. 先定位读者产生不适的正文证据，不否认真实感受。
 2. 区分“症状”和“读者猜测的病因”。
 3. 用作者档案、人物当下目的、相邻章节、连续性台账和作品读者承诺判断是否采纳。
-4. 不得因为一条意见永久新增作者规则，不得把人物棱角磨平，不得迎合到破坏伏笔、人物性格或作品辨识度。
+4. 不得自行永久新增规则；但若有效意见能跨句、跨场景复用，必须提炼一条等待副作者确认的长期经验候选。一次性措辞、仅服务当前情节的修补或不采纳意见不提炼。
 5. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
+6. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
 
 最终只输出一个JSON对象，不要代码围栏，不要修改任何文件：
 {{
@@ -96,6 +108,14 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
   "valid_observations": ["读者确实指出的问题"],
   "misdiagnoses": ["读者意见中不准确或不应照做的部分"],
   "revision_strategy": ["若需修改，具体改什么以及保留什么"],
+  "learning_candidate": null或{{
+    "principle": "以后写作时可直接执行的一条正向原则",
+    "applies_when": "适用的场景、人物关系或文本条件",
+    "avoid": "不得机械推广到哪些情况",
+    "recommended_scope": "book|author",
+    "confidence": "medium|high",
+    "rationale": "为什么值得长期保留"
+  }},
   "proposed_revision": "采纳或部分采纳时返回含原章节标题与元数据的完整修订稿；不采纳时为null"
 }}
 """,

@@ -624,6 +624,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/character-story": 256 * 1024,
                 "/api/reader-feedback": 64 * 1024,
                 "/api/reader-feedback/apply": 16 * 1024,
+                "/api/reader-feedback/promote": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -659,6 +660,17 @@ class AppHandler(BaseHTTPRequestHandler):
                     "ok": True,
                     **reader_feedback_service.apply_revision(
                         ROOT, book_id, feedback_id
+                    ),
+                })
+                return
+            if parsed.path == "/api/reader-feedback/promote":
+                book_id = str(payload.get("book_id", ""))
+                feedback_id = str(payload.get("feedback_id", ""))
+                scope = str(payload.get("scope", ""))
+                self.send_json({
+                    "ok": True,
+                    **reader_feedback_service.promote_learning(
+                        ROOT, book_id, feedback_id, scope
                     ),
                 })
                 return

@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,8 @@ CATEGORIES = {
 SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
+PROMOTION_SCOPES = {"book": "本书", "author": "作者"}
+PROMOTION_LOCK = threading.RLock()
 
 
 def read_json(path: Path, default=None):
@@ -147,12 +150,14 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         raise ValueError("找不到反馈记录")
     status = read_json(folder / "status.json", {}) or {}
     analysis = read_json(folder / "analysis.json")
+    promotion = read_json(folder / "promotion.json")
     return {
         **feedback,
         "status": status.get("status", "queued"),
         "status_message": status.get("message", ""),
         "run_id": status.get("run_id"),
         "analysis": analysis if isinstance(analysis, dict) else None,
+        "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
     }
@@ -176,6 +181,189 @@ def list_feedback(root: Path, book_id: str, chapter: int | None = None) -> list[
         if len(rows) >= 100:
             break
     return rows
+
+
+def _learning_candidate(analysis: dict) -> dict:
+    candidate = analysis.get("learning_candidate")
+    if not isinstance(candidate, dict):
+        raise ValueError("作者没有为这条反馈提出可沉淀的长期经验")
+    cleaned = {}
+    for key in ("principle", "applies_when", "avoid", "rationale"):
+        value = re.sub(r"\s+", " ", str(candidate.get(key, ""))).strip()
+        if not value or len(value) > 1000:
+            raise ValueError(f"长期经验 {key} 无效")
+        cleaned[key] = value
+    scope = str(candidate.get("recommended_scope", ""))
+    confidence = str(candidate.get("confidence", ""))
+    if scope not in PROMOTION_SCOPES or confidence not in {"medium", "high"}:
+        raise ValueError("长期经验候选的范围或置信度无效")
+    return {**cleaned, "recommended_scope": scope, "confidence": confidence}
+
+
+def _rule_id(category: str, principle: str) -> str:
+    normalized = re.sub(r"[\W_]+", "", principle, flags=re.UNICODE).casefold()
+    if not normalized:
+        raise ValueError("长期经验原则不能只包含标点")
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
+    return f"{category}-{digest}"
+
+
+def _render_rule(record: dict) -> str:
+    return (
+        f"{record['principle']} 适用：{record['applies_when']} "
+        f"避免误用：{record['avoid']}"
+    )
+
+
+def _append_markdown_rule(path: Path, marker: str, record: dict) -> None:
+    if not path.is_file():
+        raise ValueError(f"缺少长期规则载体：{path}")
+    current = path.read_text(encoding="utf-8")
+    if marker in current:
+        return
+    heading = "## 副作者确认的长期反馈规则"
+    addition = (
+        f"\n\n{heading}\n" if heading not in current else "\n"
+    ) + f"\n<!-- {marker} -->\n- {_render_rule(record)}\n"
+    atomic_text(path, current.rstrip() + addition)
+
+
+def _book_learning_registry(project: Path) -> tuple[Path, dict]:
+    path = project / "feedback_learning.json"
+    data = read_json(path, {"schema_version": 1, "rules": []})
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        raise ValueError(f"长期反馈知识库格式无效：{path}")
+    if not isinstance(data.get("rules"), list):
+        raise ValueError(f"长期反馈知识库 rules 无效：{path}")
+    return path, data
+
+
+def _upsert_learning(records: list, record: dict, feedback_id: str) -> dict:
+    existing = next(
+        (item for item in records if isinstance(item, dict) and item.get("id") == record["id"]),
+        None,
+    )
+    if existing is None:
+        records.append(record)
+        return record
+    evidence = existing.setdefault("evidence_feedback_ids", [])
+    if feedback_id not in evidence:
+        evidence.append(feedback_id)
+        existing["evidence_count"] = len(evidence)
+        existing["updated_at"] = datetime.now().astimezone().isoformat()
+    return existing
+
+
+def _author_projects(root: Path, author_id: str) -> list[Path]:
+    import author_registry
+
+    system = author_registry.load_system(root)
+    book_ids = {
+        book_id for book_id, value in system["books"].items()
+        if isinstance(value, dict) and value.get("author") == author_id
+    }
+    config = read_json(root / "manager_config.json", {}) or {}
+    projects = []
+    root_resolved = root.resolve()
+    for book in config.get("books", []):
+        if not isinstance(book, dict) or book.get("id") not in book_ids:
+            continue
+        project = (root / str(book.get("path", ""))).resolve()
+        if root_resolved != project and root_resolved not in project.parents:
+            raise ValueError("作者绑定的书籍路径越界")
+        if project not in projects:
+            projects.append(project)
+    return projects
+
+
+def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> dict:
+    """Promote one author-proposed lesson after explicit co-author confirmation."""
+    scope = str(scope).strip()
+    if scope not in PROMOTION_SCOPES:
+        raise ValueError("长期经验范围必须是本书或作者")
+    folder = _feedback_dir(root, book_id, feedback_id)
+    feedback = read_json(folder / "feedback.json")
+    analysis = read_json(folder / "analysis.json")
+    if not isinstance(feedback, dict) or not isinstance(analysis, dict):
+        raise ValueError("作者分析尚未完成")
+    if analysis.get("decision") not in {"accept", "partial"}:
+        raise ValueError("未采纳的反馈不能升级为长期规则")
+    candidate = _learning_candidate(analysis)
+    _, project = _book(root, book_id)
+    now = datetime.now().astimezone().isoformat()
+    rule_id = _rule_id(str(feedback.get("category", "other")), candidate["principle"])
+    record = {
+        "id": rule_id,
+        "scope": scope,
+        "book_id": book_id if scope == "book" else None,
+        "category": feedback.get("category", "other"),
+        **candidate,
+        "evidence_feedback_ids": [feedback_id],
+        "evidence_count": 1,
+        "confirmed_at": now,
+        "updated_at": now,
+    }
+
+    with PROMOTION_LOCK:
+        existing_promotion = read_json(folder / "promotion.json")
+        if isinstance(existing_promotion, dict):
+            if existing_promotion.get("scope") != scope:
+                raise ValueError("这条经验已经按其他范围沉淀，不能重复改换范围")
+            return {
+                "item": feedback_item(root, book_id, feedback_id),
+                "promotion": existing_promotion,
+            }
+        if scope == "book":
+            registry_path, registry = _book_learning_registry(project)
+            promoted = _upsert_learning(registry["rules"], record, feedback_id)
+            _append_markdown_rule(
+                project / "style_guide.md", f"feedback-learning:{rule_id}", promoted
+            )
+            atomic_json(registry_path, registry)
+            destinations = [str(registry_path), str(project / "style_guide.md")]
+        else:
+            import author_registry
+            from novel_engine_v2.engine import NovelEngine
+
+            author = author_registry.book_author(root, book_id)
+            author_path = (root / author["document_id"]).resolve()
+            profile = author_registry.read_object(author_path)
+            records = profile.setdefault("feedback_learning", [])
+            if not isinstance(records, list):
+                raise ValueError("作者档案 feedback_learning 必须为数组")
+            promoted = _upsert_learning(records, record, feedback_id)
+            field = {
+                "confusing": "reader_contract",
+                "character_voice": "language_principles",
+                "ai_flavor": "language_principles",
+            }.get(str(feedback.get("category")), "author_method")
+            principles = profile.setdefault(field, [])
+            rendered = _render_rule(promoted)
+            if rendered not in principles:
+                principles.append(rendered)
+            author_registry.validate_author_profile(profile, author["id"])
+            NovelEngine(root)._compile_author_context(profile)
+            bound_projects = _author_projects(root, author["id"])
+            for bound_project in bound_projects:
+                if not (bound_project / "style_guide.md").is_file():
+                    raise ValueError(f"缺少长期规则载体：{bound_project / 'style_guide.md'}")
+            atomic_json(author_path, profile)
+            destinations = [str(author_path)]
+            for bound_project in bound_projects:
+                style_path = bound_project / "style_guide.md"
+                _append_markdown_rule(style_path, f"author-feedback-learning:{rule_id}", promoted)
+                destinations.append(str(style_path))
+
+        promotion = {
+            "rule_id": rule_id,
+            "scope": scope,
+            "scope_label": PROMOTION_SCOPES[scope],
+            "promoted_at": now,
+            "destinations": destinations,
+            "evidence_count": promoted["evidence_count"],
+        }
+        atomic_json(folder / "promotion.json", promotion)
+    return {"item": feedback_item(root, book_id, feedback_id), "promotion": promotion}
 
 
 def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:

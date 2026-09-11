@@ -41,7 +41,8 @@ def revision_prompt(run_dir: Path, attempt: int) -> Path:
         "# 作者返修阶段\n\n"
         f"读取 `{run_dir / 'manifest.json'}`、`{run_dir / 'chapter_contract.json'}`、"
         f"`{run_dir / 'candidate.md'}`、`{run_dir / 'reader_review.json'}`，"
-        "再读取 manifest 中明确列出的 author_profile。\n"
+        "再读取 manifest 中明确列出的 author_profile，以及 book_sources 中的 "
+        "feedback_learning.json（如有）。\n"
         "只处理 blocking_issues。保留已经成立的情节、人物选择和语言特点；"
         "nonblocking_notes 不得触发重写。修改 candidate.md 后同步修正 state_delta.json。"
         "不要读取旧版共享提示、设定大全或跨书经验，不归档、不发布。\n",

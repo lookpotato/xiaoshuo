@@ -129,6 +129,29 @@ class NovelEngine:
             )
         return rendered
 
+    def _compile_book_learning(self, book: Book) -> str:
+        path = book.project / "feedback_learning.json"
+        if not path.is_file():
+            return "本书暂无副作者确认的长期经验。"
+        data = read_json(path)
+        if data.get("schema_version") != 1 or not isinstance(data.get("rules"), list):
+            raise ValidationError(f"本书长期反馈知识库无效：{path}")
+        lines = []
+        for index, rule in enumerate(data["rules"], 1):
+            if not isinstance(rule, dict):
+                raise ValidationError(f"本书长期反馈规则 {index} 必须为对象")
+            values = []
+            for key in ("principle", "applies_when", "avoid"):
+                value = rule.get(key)
+                if not isinstance(value, str) or not value.strip():
+                    raise ValidationError(f"本书长期反馈规则 {index}.{key} 缺少文本")
+                values.append(value.strip())
+            lines.append(f"- {values[0]} 适用：{values[1]} 避免误用：{values[2]}")
+        rendered = "\n".join(lines) or "本书暂无副作者确认的长期经验。"
+        if len(rendered) > 6000:
+            raise ValidationError("本书长期反馈知识库超过 6000 字；请合并重复经验")
+        return rendered
+
     def next_chapter(self, book: Book) -> int:
         state = read_json(book.project / "chapter_state.json")
         number = state.get("next_chapter_number")
@@ -167,6 +190,9 @@ class NovelEngine:
             path = (book.project / name).resolve()
             if path.is_file():
                 existing.append(str(path))
+        learned_feedback = (book.project / "feedback_learning.json").resolve()
+        if learned_feedback.is_file():
+            existing.append(str(learned_feedback))
         planning_sources = self.config["books"][book.id].get("planning_sources", [])
         if not isinstance(planning_sources, list) or not all(
             isinstance(name, str) and name.strip() for name in planning_sources
@@ -219,6 +245,7 @@ class NovelEngine:
     def _compile_prompts(self, book: Book, author: dict, manifest: dict) -> dict[str, str]:
         run = Path(manifest["run_dir"])
         author_text = self._compile_author_context(author)
+        book_learning = self._compile_book_learning(book)
         sources = "\n".join(f"- `{path}`" for path in manifest["book_sources"])
         recent = "\n".join(f"- `{path}`" for path in manifest["recent_chapters"])
         writer_modules = "\n".join(
@@ -251,6 +278,9 @@ class NovelEngine:
 
 你不是通用写作助手。你必须按作者长期取舍写作：
 {author_text}
+
+本书经副作者确认的长期经验：
+{book_learning}
 
 只读取 `{run / 'chapter_contract.json'}`、`{run / 'writer_context.md'}`，以及以下最近正文：
 {recent}

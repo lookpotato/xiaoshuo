@@ -308,6 +308,18 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .apply-revision { margin-top: 16px; color: white; background: var(--green); }
 .applied-note { margin-top: 15px; padding: 10px 12px; border-radius: 8px; color: var(--green); background: rgba(31,128,101,.08); font-size: 11px; }
 .feedback-error { margin: 14px 0 0; color: var(--red); font-size: 11px; }
+.learning-candidate { margin-top: 16px; padding: 15px; border: 1px solid rgba(31,128,101,.24); border-radius: 10px; background: rgba(31,128,101,.055); }
+.learning-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.learning-head small { color: var(--green); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.learning-head h4 { margin: 3px 0 0; color: var(--ink); font-size: 13px; }
+.learning-head > span { padding: 4px 7px; border-radius: 20px; color: var(--green); background: rgba(31,128,101,.1); font-size: 9px; font-weight: 800; }
+.learning-candidate > strong { display: block; margin-bottom: 9px; font-size: 13px; line-height: 1.75; }
+.learning-candidate p { margin: 5px 0; }
+.learning-reason { color: var(--muted); }
+.learning-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.learning-actions .button { padding: 8px 11px; border: 1px solid var(--line); color: var(--ink); background: white; }
+.learning-actions .button.recommended { border-color: var(--green); color: white; background: var(--green); }
+.promoted-note { margin-top: 13px; padding: 9px 11px; border-radius: 8px; color: var(--green); background: rgba(31,128,101,.1); font-size: 10px; font-weight: 700; }
 @media (max-width: 1050px) {
   .feedback-workspace { grid-template-columns: 1fr; }
   .feedback-side { position: static; }
