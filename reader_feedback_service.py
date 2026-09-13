@@ -80,6 +80,59 @@ def _compact(value: str) -> str:
     return re.sub(r"\s+", "", value)
 
 
+def _body_text(value: str) -> str:
+    narrative = _narrative(value)
+    return re.sub(r"^\s*#\s*第\s*\d+\s*章\s+.*?(?:\r?\n|$)", "", narrative, count=1).strip()
+
+
+def _chapter_length_range(project: Path) -> tuple[int, int] | None:
+    config_path = project / "novel_config.md"
+    if not config_path.is_file():
+        return None
+    config = config_path.read_text(encoding="utf-8")
+    match = re.search(
+        r"常规章[^\d]{0,12}(\d{3,5})\s*[—–~～-]\s*(\d{3,5})\s*字", config
+    )
+    if not match:
+        return None
+    minimum, maximum = (int(match.group(1)), int(match.group(2)))
+    return (minimum, maximum) if 0 < minimum <= maximum else None
+
+
+def _validate_revision_scope(current: str, revision: str, quote: str) -> None:
+    """Keep a selected-passage revision close to the passage the reader marked."""
+    marked = _compact(quote)
+    if not marked:
+        return
+    before = _compact(_narrative(current))
+    after = _compact(_narrative(revision))
+    quote_start = before.find(marked)
+    if quote_start < 0:
+        raise ValueError("反馈选中原文已经不属于当前章节")
+    prefix = 0
+    prefix_limit = min(len(before), len(after))
+    while prefix < prefix_limit and before[prefix] == after[prefix]:
+        prefix += 1
+    suffix = 0
+    suffix_limit = min(len(before) - prefix, len(after) - prefix)
+    while suffix < suffix_limit and before[-1 - suffix] == after[-1 - suffix]:
+        suffix += 1
+    changed_end = len(before) - suffix
+    quote_end = quote_start + len(marked)
+    margin = 300
+    if prefix < max(0, quote_start - margin) or changed_end > min(
+        len(before), quote_end + margin
+    ):
+        raise ValueError("局部反馈的候选稿改动超出选中段落附近，请改用整章重写")
+
+
+def _refresh_word_count(revision: str, count: int) -> str:
+    pattern = r"(?m)^(\s*-\s*word_count\s*:\s*).*$"
+    if not re.search(pattern, revision):
+        raise ValueError("候选修订缺少 Metadata word_count")
+    return re.sub(pattern, rf"\g<1>{count}", revision, count=1)
+
+
 def _feedback_dir(root: Path, book_id: str, feedback_id: str) -> Path:
     if not SAFE_ID.fullmatch(feedback_id):
         raise ValueError("feedback id 格式不正确")
@@ -390,18 +443,36 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
     first = revision.splitlines()[0] if revision else ""
     if not re.fullmatch(rf"#\s*第\s*{number}\s*章\s+.+", first):
         raise ValueError("候选修订的章节标题不匹配")
-    if len(_compact(_narrative(revision))) < 500:
+    current_count = len(_compact(_body_text(current)))
+    revision_count = len(_compact(_body_text(revision)))
+    if revision_count < 500:
         raise ValueError("候选修订正文过短")
+    length_range = _chapter_length_range(project)
+    if length_range and not length_range[0] <= revision_count <= length_range[1]:
+        raise ValueError(
+            f"候选修订正文为 {revision_count} 字，不符合本书 "
+            f"{length_range[0]}—{length_range[1]} 字要求"
+        )
+    if not length_range and revision_count < int(current_count * 0.85):
+        raise ValueError("候选修订删减超过原正文 15%，请改用整章重写")
+    _validate_revision_scope(current, revision, str(feedback.get("quote", "")))
+    revision = _refresh_word_count(revision, revision_count)
     backup = folder / "original_before_apply.md"
     if not backup.exists():
         atomic_text(backup, current)
     atomic_text(chapter_path, revision)
+    reader_check = project / "reader_checks" / f"{number:04d}.json"
+    if reader_check.is_file():
+        check_backup = folder / "reader_check_before_apply.json"
+        if not check_backup.exists():
+            atomic_text(check_backup, reader_check.read_text(encoding="utf-8"))
+        reader_check.unlink()
     status = update_status(
         root,
         book_id,
         feedback_id,
         status="applied",
-        message="候选修订已应用到本地章节；原文已备份，未触发发布",
+        message="候选修订已应用并重算字数；旧读者验收已撤销，重新验收前不得发布",
         applied_at=datetime.now().astimezone().isoformat(),
     )
     return {"item": feedback_item(root, book_id, feedback_id), "status": status}

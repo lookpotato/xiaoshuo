@@ -82,7 +82,9 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "valid_observations": ["动作缺反应"], "misdiagnoses": [],
             "revision_strategy": ["补一个人物反应"],
         })
-        revised = "# 第 1 章 试读\n\n" + "甲停了一下，再把门推开。" * 80
+        revised = self.chapter.read_text(encoding="utf-8").replace(
+            "甲把门推开。", "甲停了一下，再把门推开。"
+        ) + "\n---\n\n## Metadata\n\n- word_count: 9999\n"
         service.atomic_text(folder / "proposed_revision.md", revised)
         result = service.apply_revision(self.root, "demo", item["id"])
         self.assertEqual(result["item"]["status"], "applied")
@@ -97,6 +99,72 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "revision_strategy": [], "proposed_revision": None,
         }, ensure_ascii=False))
         self.assertIsNone(parsed["revision"])
+
+    def test_revision_rejects_underlength_configured_chapter(self) -> None:
+        (self.project / "novel_config.md").write_text(
+            "# 配置\n\n- 常规章：1900—2200字。\n", encoding="utf-8"
+        )
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "局部太快。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "author_judgment": "问题成立。",
+            "valid_observations": ["动作太快"], "misdiagnoses": [],
+            "revision_strategy": ["局部补反应"],
+        })
+        service.atomic_text(
+            folder / "proposed_revision.md",
+            "# 第 1 章 试读\n\n" + "正文。" * 300
+            + "\n\n---\n\n## Metadata\n\n- word_count: 2000\n",
+        )
+        with self.assertRaisesRegex(ValueError, "不符合本书"):
+            service.apply_revision(self.root, "demo", item["id"])
+
+    def test_revision_rejects_changes_far_outside_selected_quote(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "只修改这里。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "author_judgment": "问题成立。",
+            "valid_observations": ["动作太快"], "misdiagnoses": [],
+            "revision_strategy": ["局部补反应"],
+        })
+        service.atomic_text(
+            folder / "proposed_revision.md",
+            "# 第 1 章 试读\n\n甲停了一下，再把门推开。" + "完全改写。" * 180
+            + "\n\n---\n\n## Metadata\n\n- word_count: 900\n",
+        )
+        with self.assertRaisesRegex(ValueError, "超出选中段落"):
+            service.apply_revision(self.root, "demo", item["id"])
+
+    def test_revision_refreshes_word_count_and_invalidates_reader_check(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "这里太快。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "author_judgment": "问题成立。",
+            "valid_observations": ["动作缺反应"], "misdiagnoses": [],
+            "revision_strategy": ["补一个反应"],
+        })
+        original = self.chapter.read_text(encoding="utf-8")
+        revised = original.replace("甲把门推开。", "甲停了一下，再把门推开。")
+        revised += "\n---\n\n## Metadata\n\n- word_count: 9999\n"
+        service.atomic_text(folder / "proposed_revision.md", revised)
+        check = self.project / "reader_checks" / "0001.json"
+        service.atomic_json(check, {"narrative_sha256": "old"})
+        service.apply_revision(self.root, "demo", item["id"])
+        expected = len(service._compact(service._body_text(revised)))
+        self.assertIn(
+            f"- word_count: {expected}", self.chapter.read_text(encoding="utf-8")
+        )
+        self.assertFalse(check.exists())
+        self.assertTrue((folder / "reader_check_before_apply.json").is_file())
 
     def _feedback_with_learning(self, category: str = "character_voice") -> dict:
         item = service.create_feedback(self.root, {
