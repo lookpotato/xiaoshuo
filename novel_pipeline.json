@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "recent_chapters_for_director": 5,
+  "recent_chapters_for_reviewer": 2,
+  "max_new_questions_per_chapter": 1,
+  "plan_directory": "chapter_plans",
+  "review_directory": "literary_reviews"
+}

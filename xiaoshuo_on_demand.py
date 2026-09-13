@@ -16,6 +16,7 @@ from pathlib import Path
 import fanqie_novel_manager as manager
 import creative_modules
 import author_registry
+import novel_stage_pipeline as stage_pipeline
 from fanqie_browser_worker import (
     FanqieBlocked,
     FanqieRetryable,
@@ -266,12 +267,22 @@ def local_write_prompt(book_id: str, job: dict) -> str:
     ):
         return local_write_only_prompt(book_id, job)
     author_context = author_prompt_context(book_id, project)
+    number = int(manager.read_json(project / "chapter_state.json")["next_chapter_number"])
+    writer_contract = (
+        stage_pipeline.writer_contract(ROOT, project, number)
+        if stage_pipeline.enabled_for(ROOT, project)
+        else ""
+    )
+    book_sources = "\n".join(
+        f"- `{path}`" for path in stage_pipeline.available_book_sources(project)
+    )
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
 这是由小说工作台 API 启动的一次性串行批次，job id 为 `{job["id"]}`。
 {author_context}
-完整读取 AGENTS.md、目标作品 automation_prompt.md、技能及其要求的引用文件；
-必须读取 shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md 与 shared/chinese_dialogue_feedback.jsonl；若目标项目存在 narrative_style_pack.md，也必须读取。每场固定一个认知中心，新人物必须有来路、先行动和关系锚，新道具必须先交代眼下用途与使用代价。对白先按人物关系、共同经历、场合和情绪确定称呼与省略，不得用固定方言词替换冒充真人口语，完稿前抽查至少十句执行口语逆翻译。
+完整读取 AGENTS.md、技能要求的共享规范，以及下列实际存在的当前作品资料；不要猜测不存在的资料，也不要读取其他小说：
+{book_sources}
+必须读取 shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md 与 shared/chinese_dialogue_feedback.jsonl。每场固定一个认知中心，新人物必须有来路、先行动和关系锚，新道具必须先交代眼下用途与使用代价。对白先按人物关系、共同经历、场合和情绪确定称呼与省略，不得用固定方言词替换冒充真人口语，完稿前抽查至少十句执行口语逆翻译。
 运行项目校验，读取设定、连续性账本、状态、最近三章和批量排期。
 同时读取 manager session 输出的 writing_policy；新道具首次出现时先直说用途并尽快触发效果，跨章再次使用前先用一句情境化短句回顾，悬念只留来源、上限或隐藏代价。
 必须读取 shared/image_workflow.md、本书 images/catalog.json 与 image_browser_config.json，并通过 browser_image_worker.py 调用已登录的图片专用 Chrome 执行本章图片工作流；禁止调用 Codex imagegen，也禁止失败后自动降级到 Codex 生图：
@@ -298,29 +309,43 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 6. 不改动 `.manager_jobs` 或 `.manager_runtime.json`；
 7. 本写作子任务不上传番茄、不运行 Git；外层任务会严格按照本次 API 运行配置决定是否更新番茄正式环境以及是否同步 Git。
 
-完成一章后立即结束，不得生成第二章。""" + creative_modules.prompt(manager.project_path(book))
+完成一章后立即结束，不得生成第二章。""" + creative_modules.prompt(
+        manager.project_path(book)
+    ) + writer_contract
 
 
 def local_write_only_prompt(book_id: str, job: dict) -> str:
     project = project_for(manager.config(), book_id)
     author_context = author_prompt_context(book_id, project)
+    number = int(manager.read_json(project / "chapter_state.json")["next_chapter_number"])
+    writer_contract = (
+        stage_pipeline.writer_contract(ROOT, project, number)
+        if stage_pipeline.enabled_for(ROOT, project)
+        else ""
+    )
+    book_sources = "\n".join(
+        f"- `{path}`" for path in stage_pipeline.available_book_sources(project)
+    )
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
 这是工作台 API 的本地创作子任务，job id 为 `{job["id"]}`。只处理下一章；本子任务不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git。外层任务会按照本次运行配置决定是否同步 Git。
 
 {author_context}
 
-读取 AGENTS.md、目标项目 automation_prompt.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及目标项目的 novel_config.md、story_bible.md、resource_ledger.md、characters.md、world.md、style_guide.md、存在时的 narrative_style_pack.md、character_voice_bible.md、voice_packs/、continuity_ledger.md、chapter_state.json 和最近三章正文。不要读取其他书。
+读取 AGENTS.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及下列实际存在的本书资料和最近三章正文。不要读取其他书，也不要猜测不存在的资料：
+{book_sources}
 
 对白开写前先确定每对人物的关系、共同经历、当下场合、谁更有权力以及各自此刻想藏什么；称呼可以是哥、姐、老哥、大哥、兄弟、姐们、姓名、外号或直接省略，必须由关系决定，不能全书固定替换。完稿前抽查至少十句执行口语逆翻译：删掉现场不会主动交代的完整背景、书面连接词和过分清楚的步骤说明，让人物按中国人的共享语境说话，同时保留读者理解眼前行动所需的因果。
 
-严格按人物线流程：先为每个出场人物记录独立目标、误解、底线、行动、代价和下一步，再写 interaction_map.md 和 state_update.md。interaction_map.md 可以使用 Markdown 表格，也可以使用至少 2 条带人物相互影响、行动与结果的编号交织记录。00-cast.md 只列真实人物，必须使用“## 角色名单”及逐人一行的“- 人物名：...”格式；不要把“主要视角/出场人物/当章目标/当章小胜负/主要钩子”写成角色列表项。正文必须让至少三名人物独立行动，资源必须有消耗或获得，完成一个当章小胜负并留下钩子。
+严格按人物线流程：先为每个实际出场人物记录独立目标、误解、底线、行动、代价和下一步，再写 interaction_map.md 和 state_update.md。interaction_map.md 可以使用 Markdown 表格，也可以使用带人物相互影响、行动与结果的编号交织记录。00-cast.md 只列真实人物，必须使用“## 角色名单”及逐人一行的“- 人物名：...”格式；不要把“主要视角/出场人物/当章目标/当章小胜负/主要钩子”写成角色列表项。人物数量、资源变化和冲突形式服从本章实际内容，不为满足固定数量强塞人物、损耗或钩子。
 
-新版《404修理站》从旧稿素材中重建，书名不变但旧世界观不继承。文风优先热血和现场感；对白必须按 voice_packs 写，每个人有自己的地域、年龄、职业、关系和情绪声音。允许省略、抢话、重复、损人、适量脏话和不完整句子，不能让人物说成统一的清晰书面语。
+题材、节奏、幽默、对白和叙述方式只服从当前作品的资料与绑定作者，不得套用其他小说的专属规则。允许人物按关系和现场省略、抢话、沉默或说半句，但不能把“口语化”机械理解为所有作品都使用损人、方言或脏话。
 
-正文写入 drafts/ 和 chapters/，正文目标 2000—2600 字；章节第一行必须严格写成 `# 第 N 章 标题`，行首不得带 `+`、`-` 等补丁标记；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
+正文写入 drafts/ 和 chapters/，字数服从本书 novel_config.md；章节第一行必须严格写成 `# 第 N 章 标题`，行首不得带 `+`、`-` 等补丁标记；补齐 reader_checks/NNNN.json。完成后停止读取设定，只凭正文回答六个读者问题，每项引用正文原句，校验正文哈希、证据和 unexplained_terms。失败就修正，不得伪造 passed。
 
-只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。""" + creative_modules.prompt(project_for(manager.config(), book_id))
+只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。""" + creative_modules.prompt(
+        project, number
+    ) + writer_contract
 
 
 def local_repair_prompt(
@@ -344,7 +369,7 @@ def local_repair_prompt(
 
 修复要求：
 1. 先读取报错涉及的正文、reader_checks/{chapter_number:04d}.json、character_threads/{chapter_number:04d}/、chapter_state.json、continuity_ledger.md 和本书写作规范；只修改解决错误所需的文件。
-2. 正文若有改动，必须最后重新生成 reader_checks/{chapter_number:04d}.json：正文哈希与最终正文完全一致，所有 evidence 必须逐字存在，因果证据必须按依据→行动原理→结果代价排列，新名词按规定及时用白话解释。
+2. 正文若有改动，必须最后重新生成 reader_checks/{chapter_number:04d}.json：正文哈希与最终正文完全一致，所有 evidence 必须逐字存在，因果证据必须按依据→行动原理→结果代价排列，新名词按规定及时用白话解释。读取本章 literary_reviews 中的独立审稿结论，只处理其中的 blocking_issues 并保留 strengths_to_preserve；作者阶段不得自行填写或改写 literary_reviews。若 repair_scope=chapter_plan，先修正本章 chapter_plans 合同，再按新合同重做现有章节。
 3. 修正人物线时，00-cast.md 只列真实人物；每个出场人物都有独立私线；interaction_map.md 写清人物相互影响、行动与结果；state_update.md 回写全部出场人物状态。
 4. 修复完成后运行实际项目校验。只有全部门禁通过，才把 chapter_state.json 推进到第 {chapter_number} 章完成；仍有错误就继续修，不得伪造 passed。
 5. 本轮不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git，也不改 `.manager_jobs` 或 `.manager_runtime.json`。
@@ -424,6 +449,11 @@ def collect_local_archive_errors(
         errors.append(f"第 {chapter_number} 章存在多个归档文件")
     errors.extend(manager.validate_parallel_character_threads(project, chapter_number))
     errors.extend(manager.validate_reader_checks(project, reader_gate_from))
+    if stage_pipeline.enabled_for(ROOT, project):
+        errors.extend(stage_pipeline.chapter_plan_errors(ROOT, project, chapter_number))
+        errors.extend(
+            stage_pipeline.literary_review_errors(ROOT, project, chapter_number)
+        )
     if book is not None:
         errors.extend(manager.validate_book(book, require_publish_complete=False))
     state = manager.read_json(project / "chapter_state.json", {})
@@ -478,22 +508,13 @@ def recoverable_draft_errors(project: Path, errors: list[str]) -> bool:
         "00-cast.md",
         "人物线",
         "并行人物线",
+        "文学终审",
     )
     return bool(errors) and all(error.startswith(allowed_prefixes) for error in errors)
 
 
-def write_one(book_id: str, job: dict) -> None:
-    codex = resolve_codex()
-    data = manager.config()
-    book = manager.find_book(data, book_id)
-    project = project_for(data, book_id)
-    reader_gate_from = int(book["reader_gate_from_chapter"])
-    expected_chapter = int(
-        manager.read_json(project / "chapter_state.json")["next_chapter_number"]
-    )
-    original_state = manager.read_json(project / "chapter_state.json", {})
-    result_file = manager.JOB_DIR / f"{job['id']}-write-{datetime.now():%H%M%S}.md"
-    command = [
+def _stage_command(codex: str, result_file: Path) -> list[str]:
+    return [
         codex,
         "exec",
         "--ephemeral",
@@ -507,6 +528,86 @@ def write_one(book_id: str, job: dict) -> None:
         str(result_file),
         "-",
     ]
+
+
+def ensure_chapter_plan(
+    codex: str,
+    book_id: str,
+    project: Path,
+    chapter_number: int,
+    job: dict,
+) -> None:
+    """Create and mechanically validate a book-agnostic chapter contract."""
+    try:
+        stage_pipeline.validate_plan(ROOT, project, chapter_number)
+        return
+    except stage_pipeline.PipelineValidationError:
+        pass
+    prompt = stage_pipeline.director_prompt(
+        ROOT,
+        project,
+        chapter_number,
+        author_prompt_context(book_id, project),
+    )
+    result_file = manager.JOB_DIR / f"{job['id']}-director-{chapter_number:04d}.md"
+    print(f"正在独立规划第 {chapter_number} 章的情节与情绪任务……", flush=True)
+    process = subprocess.run(
+        _stage_command(codex, result_file),
+        cwd=ROOT,
+        input=prompt,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if process.returncode:
+        raise RuntimeError(f"第 {chapter_number} 章导演阶段执行失败，未开始写作")
+    try:
+        stage_pipeline.validate_plan(ROOT, project, chapter_number)
+    except stage_pipeline.PipelineValidationError as exc:
+        raise RuntimeError(f"第 {chapter_number} 章章节合同无效：{exc}") from exc
+
+
+def run_independent_literary_review(
+    codex: str,
+    project: Path,
+    chapter_number: int,
+    job: dict,
+) -> None:
+    """Review prose in a fresh context that cannot see plans or book bibles."""
+    prompt = stage_pipeline.reviewer_prompt(ROOT, project, chapter_number)
+    result_file = manager.JOB_DIR / f"{job['id']}-literary-{chapter_number:04d}.md"
+    print(f"正在由独立读者终审第 {chapter_number} 章……", flush=True)
+    last_code = 1
+    for _ in range(MAX_CODEX_PROCESS_RETRIES + 1):
+        process = subprocess.run(
+            _stage_command(codex, result_file),
+            cwd=ROOT,
+            input=prompt,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        last_code = process.returncode
+        if not last_code:
+            return
+    raise RuntimeError(f"第 {chapter_number} 章独立文学终审连接连续失败")
+
+
+def write_one(book_id: str, job: dict) -> None:
+    codex = resolve_codex()
+    data = manager.config()
+    book = manager.find_book(data, book_id)
+    project = project_for(data, book_id)
+    reader_gate_from = int(book["reader_gate_from_chapter"])
+    expected_chapter = int(
+        manager.read_json(project / "chapter_state.json")["next_chapter_number"]
+    )
+    original_state = manager.read_json(project / "chapter_state.json", {})
+    result_file = manager.JOB_DIR / f"{job['id']}-write-{datetime.now():%H%M%S}.md"
+    command = _stage_command(codex, result_file)
+    staged = stage_pipeline.enabled_for(ROOT, project)
+    if staged:
+        ensure_chapter_plan(codex, book_id, project, expected_chapter, job)
     prompt = local_write_prompt(book_id, job)
     repair_count = 0
     connection_retry_count = 0
@@ -531,6 +632,17 @@ def write_one(book_id: str, job: dict) -> None:
             )
         )
         if chapter_advanced or candidate_exists:
+            archived = list(
+                (project / "chapters").glob(f"{expected_chapter:04d}-*.md")
+            )
+            if staged and len(archived) == 1:
+                try:
+                    run_independent_literary_review(
+                        codex, project, expected_chapter, job
+                    )
+                except RuntimeError:
+                    manager.write_json(project / "chapter_state.json", original_state)
+                    raise
             try:
                 enforce_local_archive_gates(
                     project,
