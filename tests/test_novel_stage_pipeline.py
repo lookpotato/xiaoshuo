@@ -137,6 +137,7 @@ class NovelStagePipelineTests(unittest.TestCase):
         self.assertNotIn("resource_ledger.md", prompt)
         self.assertNotIn("404修理站", prompt)
         self.assertNotIn("道友你这天命与我有缘", prompt)
+        self.assertIn("不得运行 git add、commit 或 push", prompt)
         self.assertIn("新增悬念超过", str(self._new_question_error()))
 
     def _new_question_error(self) -> Exception:
@@ -161,6 +162,25 @@ class NovelStagePipelineTests(unittest.TestCase):
         ):
             pipeline.validate_plan(self.root, self.project, 2)
 
+    def test_plan_survives_expected_archive_state_updates(self) -> None:
+        self.write_plan()
+        (self.project / "chapter_state.json").write_text(
+            '{"last_completed_chapter": 2, "next_chapter_number": 3}',
+            encoding="utf-8",
+        )
+        (self.project / "continuity_ledger.md").write_text(
+            "第 2 章新增的连续性记录", encoding="utf-8"
+        )
+        (self.project / "resource_ledger.md").write_text(
+            "第 2 章新增的资源变化", encoding="utf-8"
+        )
+        (self.project / "feedback_learning.json").write_text(
+            '{"chapter": 2}', encoding="utf-8"
+        )
+        self.assertEqual(
+            pipeline.validate_plan(self.root, self.project, 2)["chapter_number"], 2
+        )
+
     def test_single_character_single_scene_chapter_is_supported(self) -> None:
         plan = self.valid_plan()
         plan["character_drives"] = plan["character_drives"][:1]
@@ -177,6 +197,8 @@ class NovelStagePipelineTests(unittest.TestCase):
         self.assertNotIn("chapter_plans", prompt)
         self.assertNotIn("style_guide.md", prompt)
         self.assertNotIn("outline.md", prompt)
+        self.assertIn("不得运行", prompt)
+        self.assertIn("git add、commit 或 push", prompt)
 
     def test_valid_independent_review_passes(self) -> None:
         self.write_review(self.valid_review())

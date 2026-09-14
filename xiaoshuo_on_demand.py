@@ -30,6 +30,7 @@ from fanqie_browser_worker import (
 ROOT = Path(__file__).resolve().parent
 MAX_AUTOMATIC_REPAIRS = 2
 MAX_CODEX_PROCESS_RETRIES = 2
+MAX_LITERARY_REVIEW_ATTEMPTS = 3
 
 
 class ArchiveGateFailure(RuntimeError):
@@ -298,7 +299,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 - 网页 GPT 成图下载后直接采用，禁止调用 view_image 或其他 Codex 视觉能力回看内容，也不得因主观画面判断要求重生或 verified；只做文件头、SHA-256、像素画幅、分类目录、正文引用和上传回显等机械校验；
 - 图片浏览器未登录、出现验证码/风控/政策提示、控件变化或连续失败时，只保留章节草稿，不得归档正文、推进状态、伪造图片或改用 Codex imagegen；
 - 只有网页未产出、下载失败、文件损坏或像素画幅错误时才重试；不对网页 GPT 已完成的图片做内容复审；
-- 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest` 和管理器 validate。
+- 图片文件、images/catalog.json 与章节文件属于同一批原子改动，并在结束前运行 `python -m unittest discover -s tests -p test_novel_reader_gate.py` 和管理器 validate。
 必须读取 shared/reader_gate.md 并执行无大纲读者反向验收：大纲关键句只能规划方向，正文必须实际写出“承接→问题→依据→判断→行动→结果”；草稿完成后停止查看大纲、设定、连续性账本和写作提示，只读正文回答六个规定问题，每题引用逐字存在的正文证据，清零 unexplained_terms，并保存 reader_checks/NNNN.json。若必须靠作者解释才能答题，先补写正文再重新验收；缺少验收文件、正文哈希不符或未通过时，不得归档、推进状态或上传。
 每次新章完成后必须建立 character_threads/NNNN/：先写 00-cast.md，再为名单中的每个人物写独立私线，写 interaction_map.md 汇总交织，最后用 state_update.md 回写所有人物的下一状态；不得只围绕主角编写。00-cast.md 必须用“## 角色名单”分节，且每名真实人物单独一行“- 人物名：...”；“主要视角、出场人物、当章目标、当章小胜负、主要钩子”等是元数据，不能写成会被解析为人物的列表项；车、锅、机甲等行动性物件放在“## 行动物件”下，不建立人物私线。人物线门禁通过前不得进入归档、推进状态或上传。
 
@@ -582,23 +583,59 @@ def run_independent_literary_review(
     job: dict,
 ) -> None:
     """Review prose in a fresh context that cannot see plans or book bibles."""
-    prompt = stage_pipeline.reviewer_prompt(ROOT, project, chapter_number)
+    base_prompt = stage_pipeline.reviewer_prompt(ROOT, project, chapter_number)
     result_file = manager.JOB_DIR / f"{job['id']}-literary-{chapter_number:04d}.md"
+    review_path = stage_pipeline.review_path(ROOT, project, chapter_number)
+    previous_review = review_path.read_bytes() if review_path.is_file() else None
     print(f"正在由独立读者终审第 {chapter_number} 章……", flush=True)
-    last_code = 1
-    for _ in range(MAX_CODEX_PROCESS_RETRIES + 1):
-        process = subprocess.run(
-            _stage_command(codex, result_file),
-            cwd=ROOT,
-            input=prompt,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        last_code = process.returncode
-        if not last_code:
+    last_error = "尚未生成有效审稿结果"
+    valid_review = False
+    try:
+        for attempt in range(MAX_LITERARY_REVIEW_ATTEMPTS):
+            review_path.unlink(missing_ok=True)
+            prompt = base_prompt
+            if attempt:
+                prompt += (
+                    "\n\n## 上一份审稿结果未通过机械校验\n"
+                    f"{last_error}\n"
+                    "请只重写审稿 JSON，不要修改章节正文。重新读取指定的当前正文；"
+                    "所有 evidence 和 quote 都必须从正文逐字复制，不得转述、补写或沿用旧审稿中的句子。"
+                )
+            print(
+                f"独立文学终审校验重试（{attempt + 1}/{MAX_LITERARY_REVIEW_ATTEMPTS}）……",
+                flush=True,
+            )
+            process = subprocess.run(
+                _stage_command(codex, result_file),
+                cwd=ROOT,
+                input=prompt,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            try:
+                stage_pipeline.validate_literary_review(
+                    ROOT, project, chapter_number
+                )
+            except stage_pipeline.PipelineValidationError as exc:
+                last_error = str(exc)
+                if process.returncode:
+                    last_error = (
+                        f"Codex 退出码 {process.returncode}；{last_error}"
+                    )
+                continue
+            valid_review = True
             return
-    raise RuntimeError(f"第 {chapter_number} 章独立文学终审连接连续失败")
+    finally:
+        if not valid_review:
+            if previous_review is None:
+                review_path.unlink(missing_ok=True)
+            else:
+                review_path.parent.mkdir(parents=True, exist_ok=True)
+                review_path.write_bytes(previous_review)
+    raise RuntimeError(
+        f"第 {chapter_number} 章独立文学终审连续 {MAX_LITERARY_REVIEW_ATTEMPTS} 次未通过校验：{last_error}"
+    )
 
 
 def write_one(book_id: str, job: dict) -> None:

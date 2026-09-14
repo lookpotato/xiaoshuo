@@ -31,6 +31,15 @@ BOOK_SOURCE_NAMES = (
     "narrative_style_pack.md",
     "character_voice_bible.md",
 )
+# These files are useful context for the director, but the writer is expected
+# to update them while archiving the chapter. They cannot invalidate the plan
+# after the prose has been generated.
+MUTABLE_PLAN_CONTEXT_NAMES = {
+    "continuity_ledger.md",
+    "resource_ledger.md",
+    "chapter_state.json",
+    "feedback_learning.json",
+}
 
 REVIEW_DIMENSIONS = (
     "character_motivation",
@@ -139,7 +148,11 @@ def planning_context_sha256(root: Path, project: Path, number: int) -> str:
     """Invalidate a saved plan when its book facts or recent prose changed."""
     config = load_config(root)
     recent = chapter_files(project, number)[-config["recent_chapters_for_director"] :]
-    paths = [*available_book_sources(project), *(path for _, path in recent)]
+    paths = [
+        path for path in available_book_sources(project)
+        if path.name not in MUTABLE_PLAN_CONTEXT_NAMES
+    ]
+    paths.extend(path for _, path in recent)
     digest = hashlib.sha256()
     for path in paths:
         digest.update(path.name.encode("utf-8"))
@@ -162,6 +175,7 @@ def director_prompt(
     return f"""# 通用长篇小说章节导演
 
 只规划目标作品的第 {number} 章，不写正文、不归档、不发布。
+本次只写章节合同；不得运行 git add、commit 或 push。文件同步由外层任务根据 sync_git 设置处理。
 
 主作者约束：
 {author_context}
@@ -283,6 +297,8 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
 
 你是第一次接触生产过程的读者。只读取下列已发表正文和当前候选正文；不得读取大纲、
 设定、章节合同、作者档案、状态账本、其他审稿结果或提示词，不能用作者意图替正文辩护。
+本次只写 literary_reviews/NNNN.json；不得修改小说正文或其他项目文件，也不得运行
+git add、commit 或 push。文件同步由外层任务根据 sync_git 设置处理。
 
 前文：
 {_path_list([path for _, path in recent])}
