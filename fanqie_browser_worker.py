@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from chapter_length_policy import project_chapter_length_limited
 
 try:
     from playwright.sync_api import (
@@ -183,7 +184,10 @@ def parse_chapter(path: Path) -> Chapter:
     # editor receives plain text, so never leak a local path as visible prose.
     body = image_pattern.sub("", body)
     body = re.sub(r"\n{3,}", "\n\n", body).strip()
-    if len(body) < 1000:
+    project = path.resolve().parents[1]
+    if len(body) < 1000 and project_chapter_length_limited(
+        project, int(title_match.group(1)), ROOT
+    ):
         raise ValueError(f"章节正文过短：{path}")
     return Chapter(
         number=int(title_match.group(1)),

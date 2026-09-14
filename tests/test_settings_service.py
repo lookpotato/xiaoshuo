@@ -97,6 +97,9 @@ class SettingsServiceTest(TestCase):
         self.assertEqual(prompt["content"], "旧提示词\n")
         self.assertTrue(prompt["exists"])
         self.assertEqual(result["registry"]["author"], "owner")
+        self.assertTrue(result["registry"]["word_count_limit_enabled"])
+        self.assertEqual(result["registry"]["word_count_exempt_chapters"], [])
+        self.assertEqual(result["registry"]["next_chapter_number"], 1)
         self.assertEqual(result["authors"][0]["name"], "当前作者")
         self.assertEqual(result["authors"][0]["introduction"], "专注原创故事与现实产品的连接。")
         self.assertEqual(result["authors"][0]["specialties"], ["故事物件产品化", "群像经营题材"])
@@ -113,7 +116,12 @@ class SettingsServiceTest(TestCase):
     def test_save_book_updates_registry_and_document_without_losing_unknown_fields(self):
         current = settings_service.get_book_settings("book-one")
         registry = dict(current["registry"])
-        registry.update({"title": "新书名", "daily_chapter_target": 3})
+        registry.update({
+            "title": "新书名",
+            "daily_chapter_target": 3,
+            "word_count_limit_enabled": False,
+            "word_count_exempt_chapters": [2, 5],
+        })
         prompt = next(item for item in current["documents"] if item["id"] == "automation_prompt.md")
         saved = settings_service.save_settings(
             {
@@ -130,6 +138,8 @@ class SettingsServiceTest(TestCase):
         written = json.loads(self.config_path.read_text(encoding="utf-8"))
         self.assertEqual(written["books"][0]["title"], "新书名")
         self.assertEqual(written["books"][0]["daily_chapter_target"], 3)
+        self.assertFalse(written["books"][0]["word_count_limit_enabled"])
+        self.assertEqual(written["books"][0]["word_count_exempt_chapters"], [2, 5])
         self.assertEqual(written["books"][0]["keep_me"], "untouched")
         self.assertEqual((self.book_path / "automation_prompt.md").read_text(encoding="utf-8"), "新提示词\n")
         self.assertTrue(saved["saved"])

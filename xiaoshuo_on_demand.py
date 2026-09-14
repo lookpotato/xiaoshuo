@@ -17,6 +17,7 @@ import fanqie_novel_manager as manager
 import creative_modules
 import author_registry
 import novel_stage_pipeline as stage_pipeline
+from chapter_length_policy import chapter_length_instruction
 from fanqie_browser_worker import (
     FanqieBlocked,
     FanqieRetryable,
@@ -268,6 +269,7 @@ def local_write_prompt(book_id: str, job: dict) -> str:
         return local_write_only_prompt(book_id, job)
     author_context = author_prompt_context(book_id, project)
     number = int(manager.read_json(project / "chapter_state.json")["next_chapter_number"])
+    length_instruction = chapter_length_instruction(book, number)
     writer_contract = (
         stage_pipeline.writer_contract(ROOT, project, number)
         if stage_pipeline.enabled_for(ROOT, project)
@@ -311,13 +313,16 @@ def local_write_prompt(book_id: str, job: dict) -> str:
 
 完成一章后立即结束，不得生成第二章。""" + creative_modules.prompt(
         manager.project_path(book)
-    ) + writer_contract
+    ) + writer_contract + "\n\n" + length_instruction
 
 
 def local_write_only_prompt(book_id: str, job: dict) -> str:
-    project = project_for(manager.config(), book_id)
+    data = manager.config()
+    book = manager.find_book(data, book_id)
+    project = project_for(data, book_id)
     author_context = author_prompt_context(book_id, project)
     number = int(manager.read_json(project / "chapter_state.json")["next_chapter_number"])
+    length_instruction = chapter_length_instruction(book, number)
     writer_contract = (
         stage_pipeline.writer_contract(ROOT, project, number)
         if stage_pipeline.enabled_for(ROOT, project)
@@ -345,7 +350,7 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
 
 只更新本地必要的章节、reader_checks、character_threads、continuity_ledger、chapter_state 和日志文件；Metadata 的 upload_status 写为 not_uploaded。完成一章后立即结束，不得生成第二章。最后只报告文件、字数和校验结果，不要输出正文。""" + creative_modules.prompt(
         project, number
-    ) + writer_contract
+    ) + writer_contract + "\n\n" + length_instruction
 
 
 def local_repair_prompt(
@@ -356,7 +361,10 @@ def local_repair_prompt(
     repair_number: int,
 ) -> str:
     error_payload = json.dumps(errors, ensure_ascii=False, indent=2)
-    project = project_for(manager.config(), book_id)
+    data = manager.config()
+    book = manager.find_book(data, book_id)
+    project = project_for(data, book_id)
+    length_instruction = chapter_length_instruction(book, chapter_number)
     author_context = author_prompt_context(book_id, project)
     return f"""使用 fanqie-auto-novel 技能，修复书籍 `{book_id}` 第 {chapter_number} 章现有本地稿件。
 
@@ -375,7 +383,7 @@ def local_repair_prompt(
 5. 本轮不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git，也不改 `.manager_jobs` 或 `.manager_runtime.json`。
 6. 章节第一行必须严格写成 `# 第 {chapter_number} 章 标题`，不得残留 `+`、`-` 等补丁标记。
 
-结束时只报告修复项和校验结果，不得粘贴正文。""" + creative_modules.prompt(project_for(manager.config(), book_id), chapter_number)
+结束时只报告修复项和校验结果，不得粘贴正文。""" + creative_modules.prompt(project, chapter_number) + "\n\n" + length_instruction
 
 
 def _codex_result_detail(result_file: Path) -> str:

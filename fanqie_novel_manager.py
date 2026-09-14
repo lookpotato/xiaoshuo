@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 from novel_image_system import validate_image_catalog
 from novel_reader_gate import validate_reader_checks
+from chapter_length_policy import chapter_length_instruction
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "manager_config.json"
@@ -147,6 +148,11 @@ def build_batch_prompt(job: dict) -> str:
     job_file = job_path(job["id"])
     completed = len(job.get("completed_chapters", []))
     remaining = int(job["target_chapters"]) - completed
+    data = config()
+    book = find_book(data, job["book_id"])
+    project = project_path(book)
+    chapter_number = int(read_json(project / "chapter_state.json", {}).get("next_chapter_number", 1))
+    length_instruction = chapter_length_instruction(book, chapter_number)
     return f"""使用 fanqie-auto-novel 技能执行番茄小说批次任务。
 
 这是从命令行启动的独立任务，不得依赖任何旧聊天。唯一任务状态来源是项目文件、
@@ -184,7 +190,7 @@ def build_batch_prompt(job: dict) -> str:
 - `submit_publish: true` 时，番茄草稿箱不算成功。
 - 使用已经登录的浏览器会话；不得读取或保存 Cookie、Token、密码、验证码。
 - 严格执行 session 输出的 writing_policy：新道具先直说用途，同章尽快触发；跨章再次使用先短句回顾，悬念只留来源、上限或隐藏代价。
-- 严格执行短章策略：正文以约 2000 字为中心，常规不超过 2400 字；预计超长就在阶段胜负处拆章，延长剧情但不删打斗、因果和人物反应。
+- {length_instruction}
 - 严格执行图片工作流：通过已登录网页 GPT 为本章最需要视觉解释的新人物、道具、地点、异兽或组织形象建立图片；每章最多 1 张。网页成图下载后直接采用，不调用 Codex 回看图片内容；只做文件与上传链路的机械校验。
 - 草稿完成后严格执行无大纲读者反向验收：停止读取大纲和设定，只凭正文回答六个因果问题并引用正文证据；任何问题需要作者补充说明时先修文，验收文件缺失或未通过不得归档、上传或推进章节状态。
 - 浏览器不可用时安全停止并记录 blocked，不得改用其他书号或伪造成功。
@@ -574,6 +580,8 @@ def cmd_session(data, args):
     book = find_book(data, args.book)
     project = project_path(book)
     state = read_json(project / "chapter_state.json", {})
+    chapter_number = int(state.get("next_chapter_number", 1))
+    length_instruction = chapter_length_instruction(book, chapter_number)
     runtime = read_json(RUNTIME, {"books": {}})
     payload = {
         "manager": {
@@ -591,6 +599,8 @@ def cmd_session(data, args):
             "default_publish_times": book.get("default_publish_times", []),
             "submit_publish": publish_requires_submission(project),
             "reader_gate_from_chapter": book.get("reader_gate_from_chapter"),
+            "word_count_limit_enabled": book.get("word_count_limit_enabled", True),
+            "word_count_exempt_chapters": book.get("word_count_exempt_chapters", []),
         },
         "state": state,
         "runtime": runtime.get("books", {}).get(book["id"], {}),
@@ -634,7 +644,7 @@ def cmd_session(data, args):
             "写作前必须读取 shared\\character_engine.md；更新核心人物与持续配角的人物运行卡，模拟主角未介入时各自会采取的行动，再让独立行动线在本章碰撞。",
             "每个有戏份的人物都要有自己的目标、误解、底线、隐瞒和下一步；主角只是主要镜头，不是其他人物的行动发动机。支线必须由人物独立目标推动。",
             "完稿后执行人物独立性检查与反解释编辑：删除替人物总结情绪和意义的句子，保留答非所问、停顿、误解、无关动作、失误和不完整表达；不得删掉眼前行动所需的因果。",
-            "正文目标1900—2200字、以约2000字为中心，常规不超过2400字；超长内容在阶段胜负处拆成连续短章，每章仍须有目标、交锋、兑现和钩子。",
+            length_instruction,
             "推理与规则只服务于行动，低潮最多连续2章且必须取得反攻筹码；按本书规范安排战斗、小高潮、中高潮与大高潮。",
             "新道具首次出现时先直说用途并尽快触发效果；跨章再用时先做一句情境化回顾，悬念只留来源、上限或代价。",
             "写作前读取本书 images/catalog.json；同名同设定实体沿用既有图片，不重复生成。",

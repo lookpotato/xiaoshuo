@@ -38,6 +38,14 @@ function SystemGeneral({ value, books, onChange }) {
 
 function BookGeneral({ value, authors, onChange }) {
   const update = (key, next) => onChange({ ...value, [key]: next });
+  const exemptionChapter = Number(value.word_count_exemption_chapter || value.next_chapter_number || 1);
+  const exemptChapters = value.word_count_exempt_chapters || [];
+  const setChapterExempt = (checked) => {
+    const next = new Set(exemptChapters);
+    if (checked) next.add(exemptionChapter);
+    else next.delete(exemptionChapter);
+    update("word_count_exempt_chapters", [...next].sort((a, b) => a - b));
+  };
   return <div className="settings-form-grid">
     <Field label="书名"><input value={value.title || ""} onChange={(event) => update("title", event.target.value)} /></Field>
     <Field label="作者（必选）" hint="作者决定创作取舍；未绑定作者的小说不能启动生成"><select required value={value.author || ""} onChange={(event) => update("author", event.target.value)}><option value="" disabled>请选择作者</option>{authors.map((author) => <option key={author.id} value={author.id}>{author.name} · {author.id}</option>)}</select></Field>
@@ -48,6 +56,13 @@ function BookGeneral({ value, authors, onChange }) {
     <Field label="默认发布时间"><input value={value.schedule_time || ""} onChange={(event) => update("schedule_time", event.target.value)} /></Field>
     <Field label="每日发布时间" hint="多个时间用逗号分隔"><input value={(value.default_publish_times || []).join(", ")} onChange={(event) => update("default_publish_times", event.target.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean))} /></Field>
     <Field label="启用本书"><label className="switch-line"><input type="checkbox" checked={value.enabled} onChange={(event) => update("enabled", event.target.checked)} />参与批量任务</label></Field>
+    <Field label="本书字数限制" hint="关闭后，本书所有章节都不套用目标字数和硬上限；质量验收照常执行。"><label className="switch-line"><input type="checkbox" checked={value.word_count_limit_enabled !== false} onChange={(event) => update("word_count_limit_enabled", event.target.checked)} />启用本书字数限制</label></Field>
+    <Field label="单章字数豁免" hint={`当前已豁免：${exemptChapters.length ? exemptChapters.map((chapter) => `第${chapter}章`).join("、") : "无"}`}>
+      <div className="settings-form-grid">
+        <input aria-label="设置豁免的章节号" type="number" min="1" step="1" value={exemptionChapter} onChange={(event) => update("word_count_exemption_chapter", Math.max(1, Number(event.target.value) || 1))} />
+        <label className="switch-line"><input type="checkbox" checked={exemptChapters.includes(exemptionChapter)} onChange={(event) => setChapterExempt(event.target.checked)} />第 {exemptionChapter} 章不限制字数</label>
+      </div>
+    </Field>
     <Field label="备注"><textarea className="short-textarea" value={value.note || ""} onChange={(event) => update("note", event.target.value)} /></Field>
   </div>;
 }

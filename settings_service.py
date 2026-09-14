@@ -195,6 +195,7 @@ def get_book_settings(book_id: str) -> dict:
         _document(project / name, name, title, description)
         for name, (title, description) in BOOK_DOCUMENTS.items()
     ]
+    chapter_state = manager.read_json(project / "chapter_state.json", {})
     authors = author_registry.list_authors(ROOT)
     try:
         bound_author_id = author_registry.book_author(ROOT, book_id)["id"]
@@ -225,6 +226,12 @@ def get_book_settings(book_id: str) -> dict:
             "reader_gate_from_chapter": int(book.get("reader_gate_from_chapter", 1)),
             "schedule_time": str(book.get("schedule", {}).get("time", "12:00")),
             "default_publish_times": list(book.get("default_publish_times", [])),
+            "word_count_limit_enabled": bool(book.get("word_count_limit_enabled", True)),
+            "word_count_exempt_chapters": sorted({
+                int(number) for number in book.get("word_count_exempt_chapters", [])
+                if isinstance(number, int) and not isinstance(number, bool) and number > 0
+            }),
+            "next_chapter_number": max(1, int(chapter_state.get("next_chapter_number", 1))),
             "note": str(book.get("note", "")),
         },
         "documents": documents,
@@ -335,6 +342,19 @@ def _validated_book_registry(value: object, current: dict) -> dict:
         if not isinstance(number, int) or not low <= number <= high:
             raise ValueError(f"{key} 必须在 {low}—{high} 之间")
         updated[key] = number
+    limit_enabled = value.get(
+        "word_count_limit_enabled", current.get("word_count_limit_enabled", True)
+    )
+    if not isinstance(limit_enabled, bool):
+        raise ValueError("word_count_limit_enabled 必须是布尔值")
+    exempt_chapters = value.get(
+        "word_count_exempt_chapters", current.get("word_count_exempt_chapters", [])
+    )
+    if not isinstance(exempt_chapters, list) or any(
+        not isinstance(number, int) or isinstance(number, bool) or number < 1
+        for number in exempt_chapters
+    ):
+        raise ValueError("word_count_exempt_chapters 必须是正整数数组")
     schedule_time = value.get("schedule_time", current.get("schedule", {}).get("time"))
     publish_times = value.get("default_publish_times", current.get("default_publish_times", []))
     time_pattern = r"(?:[01]\d|2[0-3]):[0-5]\d"
@@ -352,6 +372,8 @@ def _validated_book_registry(value: object, current: dict) -> dict:
             "mode": mode,
             "schedule": {**current.get("schedule", {}), "time": schedule_time},
             "default_publish_times": publish_times,
+            "word_count_limit_enabled": limit_enabled,
+            "word_count_exempt_chapters": sorted(set(exempt_chapters)),
             "note": str(value.get("note", current.get("note", ""))),
         }
     )
