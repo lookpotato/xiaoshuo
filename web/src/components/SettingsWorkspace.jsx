@@ -135,7 +135,7 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
     {scope === "book" && <CharacterStorylines bookId={bookId} onNotice={onNotice} />}
     {scope === "system" && <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">AUTHOR REGISTRY</p><h2>作者模块</h2><p className="section-description">作者不是通用文风标签，而是作品取舍的负责人。每本小说必须绑定这里的一名作者。</p></div><span className="count-label">{draft.authors.length} 名作者</span></div>
-      <div className="module-grid">{draft.authors.map((author) => <div className="module-card" key={author.id}><span className="module-dot enabled" /><div><strong>{author.name}</strong><small>{author.id} · {author.calibration_status} · {author.unknown_count} 项待校准</small></div></div>)}</div>
+      <div className="module-grid">{draft.authors.map((author) => <div className="module-card" key={author.id}><span className="module-dot enabled" /><div><strong>{author.name}</strong><small>{author.id} · {author.calibration_status} · {author.unknown_count} 项待校准</small>{author.introduction && <p>{author.introduction}</p>}{author.specialties?.length > 0 && <small>擅长：{author.specialties.join(" · ")}</small>}</div></div>)}</div>
     </article>}
     {scope === "system" && <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">MODULE REGISTRY</p><h2>底层能力模块</h2></div><span className="count-label">{draft.modules.length} 个模块</span></div>

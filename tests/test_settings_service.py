@@ -75,6 +75,8 @@ class SettingsServiceTest(TestCase):
                     "creative_identity": ["独特取舍"],
                     "reader_contract": ["正文可理解"],
                     "language_principles": ["符合人物身份"],
+                    "author_introduction": "专注原创故事与现实产品的连接。",
+                    "specialties": ["故事物件产品化", "群像经营题材"],
                     "unknowns": ["叙述距离"],
                 },
                 ensure_ascii=False,
@@ -96,6 +98,8 @@ class SettingsServiceTest(TestCase):
         self.assertTrue(prompt["exists"])
         self.assertEqual(result["registry"]["author"], "owner")
         self.assertEqual(result["authors"][0]["name"], "当前作者")
+        self.assertEqual(result["authors"][0]["introduction"], "专注原创故事与现实产品的连接。")
+        self.assertEqual(result["authors"][0]["specialties"], ["故事物件产品化", "群像经营题材"])
 
     def test_system_settings_expose_registry_and_shared_modules(self):
         result = settings_service.get_system_settings()

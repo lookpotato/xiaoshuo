@@ -80,6 +80,20 @@ class NovelEngineV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "不得继续堆提示词"):
             NovelEngine(self.root).author("owner")
 
+    def test_author_introduction_and_specialties_enter_writer_context(self) -> None:
+        author_path = self.root / "novel_engine_v2" / "authors" / "owner.json"
+        author = json.loads(author_path.read_text(encoding="utf-8"))
+        author["author_introduction"] = "专注把原创故事发展为可验证的 IP。"
+        author["specialties"] = ["故事物件产品化", "人物群像经营题材"]
+        author_path.write_text(json.dumps(author, ensure_ascii=False), encoding="utf-8")
+
+        engine = NovelEngine(self.root)
+        run = engine.prepare("demo", set())
+        writer = (run / "writer.md").read_text(encoding="utf-8")
+        self.assertIn("### 作者介绍", writer)
+        self.assertIn("### 擅长领域", writer)
+        self.assertIn("故事物件产品化", writer)
+
     def test_book_feedback_learning_is_added_to_future_context(self) -> None:
         learning = self.root / "book" / "feedback_learning.json"
         learning.write_text(json.dumps({

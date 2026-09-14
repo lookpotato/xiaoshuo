@@ -106,12 +106,25 @@ class NovelEngine:
                 or not all(isinstance(item, str) and item.strip() for item in data[key])
             ):
                 raise ValidationError(f"作者配置 {key} 必须为非空文本数组")
+        if "author_introduction" in data and (
+            not isinstance(data["author_introduction"], str)
+            or not data["author_introduction"].strip()
+        ):
+            raise ValidationError("作者配置 author_introduction 必须为非空文本")
+        if "specialties" in data and (
+            not isinstance(data["specialties"], list)
+            or not data["specialties"]
+            or not all(isinstance(item, str) and item.strip() for item in data["specialties"])
+        ):
+            raise ValidationError("作者配置 specialties 必须为非空文本数组")
         self._compile_author_context(data)
         return data
 
     def _compile_author_context(self, author: dict) -> str:
         """Render one bounded author hierarchy instead of a flat prompt pile."""
         sections = (
+            ("作者介绍", [author["author_introduction"]] if author.get("author_introduction") else []),
+            ("擅长领域", author.get("specialties", [])),
             ("作者身份与最高取舍", author["creative_identity"]),
             ("创作方法", author.get("author_method", [])),
             ("本书应用", author.get("book_application", [])),

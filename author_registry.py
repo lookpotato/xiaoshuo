@@ -41,6 +41,17 @@ def validate_author_profile(value: object, expected_id: str = "") -> dict:
         raise AuthorConfigError(f"作者 {author_id} 的 schema_version 必须为 1")
     if not isinstance(value.get("name"), str) or not value["name"].strip():
         raise AuthorConfigError(f"作者 {author_id} 缺少名称")
+    if "author_introduction" in value and (
+        not isinstance(value["author_introduction"], str)
+        or not value["author_introduction"].strip()
+    ):
+        raise AuthorConfigError(f"作者 {author_id} 的 author_introduction 必须为非空文本")
+    if "specialties" in value and (
+        not isinstance(value["specialties"], list)
+        or not value["specialties"]
+        or not all(isinstance(item, str) and item.strip() for item in value["specialties"])
+    ):
+        raise AuthorConfigError(f"作者 {author_id} 的 specialties 必须为非空文本数组")
     for key in ("creative_identity", "reader_contract", "language_principles"):
         items = value.get(key)
         if not isinstance(items, list) or not items or not all(
@@ -58,6 +69,8 @@ def list_authors(root: Path) -> list[dict]:
             {
                 "id": profile["id"],
                 "name": profile["name"].strip(),
+                "introduction": str(profile.get("author_introduction", "")).strip(),
+                "specialties": list(profile.get("specialties", [])),
                 "calibration_status": str(profile.get("calibration_status", "uncalibrated")),
                 "unknown_count": len(profile.get("unknowns", []))
                 if isinstance(profile.get("unknowns", []), list)
