@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "book_id": "h-ip-product-test",
+  "max_images_per_chapter": 1,
+  "style_bible": {
+    "visual_style": "旧港生活质感，海盐蓝与纸张暖白为主；图像优先服务识别人物、场景和物件。"
+  },
+  "entities": {},
+  "chapter_images": {}
+}

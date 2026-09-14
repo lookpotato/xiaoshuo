@@ -44,6 +44,11 @@
       "planning_sources": [
         "novel_engine_v2/rewrite/free-sky-rewrite-blueprint.md"
       ]
+    },
+    "h-ip-product-test": {
+      "title": "潮汐造物铺（暂定）",
+      "project": "H_IP产品化测试版",
+      "author": "h-v1"
     }
   }
 }

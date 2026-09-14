@@ -5,7 +5,7 @@
   "max_daily_attempts": 2,
   "retry_delay_minutes": 30,
   "default_failure_policy": "retry_same_day",
-  "default_book_id": "cosmic-404",
+  "default_book_id": "h-ip-product-test",
   "writing_policy": {
     "de_ai_writing": {
       "enabled": true,
@@ -76,7 +76,15 @@
       "enabled": false,
       "status": "completed",
       "schedule": {
-        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "days": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat",
+          "sun"
+        ],
         "time": "12:00"
       },
       "priority": 100,
@@ -84,7 +92,9 @@
       "daily_chapter_target": 2,
       "reader_gate_from_chapter": 54,
       "manual_extra_chapters_supported": true,
-      "default_publish_times": ["12:00"],
+      "default_publish_times": [
+        "12:00"
+      ],
       "note": "正式长篇；所有章节固定在中午12:00发布；用户可临时指定其他时间，未指定时不改变后续常规排期。"
     },
     {
@@ -94,7 +104,15 @@
       "enabled": false,
       "status": "completed",
       "schedule": {
-        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "days": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat",
+          "sun"
+        ],
         "time": "18:30"
       },
       "priority": 90,
@@ -102,7 +120,10 @@
       "daily_chapter_target": 2,
       "reader_gate_from_chapter": 17,
       "manual_extra_chapters_supported": false,
-      "default_publish_times": ["18:30", "20:30"],
+      "default_publish_times": [
+        "18:30",
+        "20:30"
+      ],
       "note": "玄幻新书；已绑定独立番茄书号 7669807761814735897。常规排期为18:30、20:30；自动提交保持关闭，只有用户明确授权时才提交。"
     },
     {
@@ -112,7 +133,15 @@
       "enabled": false,
       "status": "completed",
       "schedule": {
-        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "days": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat",
+          "sun"
+        ],
         "time": "21:30"
       },
       "priority": 80,
@@ -122,6 +151,24 @@
       "manual_extra_chapters_supported": true,
       "default_publish_times": [],
       "note": "独立重写校准项目；绑定专属作者，从第1章开始，只在本地写作，不连接或复用旧书番茄书号。"
+    },
+    {
+      "id": "h-ip-product-test",
+      "title": "潮汐造物铺（暂定）",
+      "path": "H_IP产品化测试版",
+      "enabled": true,
+      "status": "testing",
+      "schedule": {
+        "days": [],
+        "time": "12:00"
+      },
+      "priority": 110,
+      "mode": "write_only",
+      "daily_chapter_target": 1,
+      "reader_gate_from_chapter": 1,
+      "manual_extra_chapters_supported": true,
+      "default_publish_times": [],
+      "note": "H 正式第一版 IP+实体产品化路线测试；本地写作，不连接番茄，不自动排期。"
     }
   ]
 }
