@@ -72,6 +72,23 @@ class ReaderGateTests(unittest.TestCase):
         self.write_check()
         self.assertEqual(validate_reader_checks(self.project, 10), [])
 
+    def test_reader_check_accepts_utf8_bom_and_redundant_final_brace(self) -> None:
+        path = self.project / "reader_checks" / "0010.json"
+        path.write_text(
+            json.dumps(self.check, ensure_ascii=False, indent=2) + "}\n",
+            encoding="utf-8-sig",
+        )
+        self.assertEqual(validate_reader_checks(self.project, 10), [])
+
+    def test_reader_check_rejects_non_json_trailing_text(self) -> None:
+        path = self.project / "reader_checks" / "0010.json"
+        path.write_text(
+            json.dumps(self.check, ensure_ascii=False) + "\n附加说明",
+            encoding="utf-8",
+        )
+        errors = validate_reader_checks(self.project, 10)
+        self.assertTrue(any("无法解析" in error for error in errors))
+
     def test_missing_review_blocks_archived_chapter(self) -> None:
         errors = validate_reader_checks(self.project, 10)
         self.assertTrue(any("验收缺失" in error for error in errors))

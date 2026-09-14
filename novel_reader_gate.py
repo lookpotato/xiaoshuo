@@ -51,6 +51,24 @@ def _valid_evidence(body: str, evidence: object) -> bool:
     )
 
 
+def _read_check(path: Path) -> dict:
+    """Read a reader check, tolerating a BOM and one redundant final brace."""
+    text = path.read_text(encoding="utf-8-sig")
+    decoder = json.JSONDecoder()
+    start = len(text) - len(text.lstrip())
+    value, end = decoder.raw_decode(text, start)
+    trailing = text[end:].strip()
+    # Some model-written files close the top-level object twice. Only discard
+    # that single harmless delimiter; prose or additional JSON remains invalid.
+    if trailing == "}":
+        trailing = ""
+    if trailing:
+        raise json.JSONDecodeError("多余的尾随内容", text, end)
+    if not isinstance(value, dict):
+        raise json.JSONDecodeError("验收记录必须是 JSON 对象", text, start)
+    return value
+
+
 def validate_reader_checks(project: Path, from_chapter: int) -> list[str]:
     """Validate every archived chapter at or above the configured rollout point."""
     from creative_modules import validate_reports
@@ -72,7 +90,7 @@ def validate_reader_checks(project: Path, from_chapter: int) -> list[str]:
             errors.append(f"{label}缺失: reader_checks/{number:04d}.json")
             continue
         try:
-            check = json.loads(check_path.read_text(encoding="utf-8"))
+            check = _read_check(check_path)
         except Exception as exc:
             errors.append(f"{label}无法解析: {exc}")
             continue
