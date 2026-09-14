@@ -73,7 +73,8 @@
       "id": "cosmic-404",
       "title": "404修理站",
       "path": "404修理站",
-      "enabled": true,
+      "enabled": false,
+      "status": "completed",
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         "time": "12:00"
@@ -90,7 +91,8 @@
       "id": "free-sky",
       "title": "道友你这天命与我有缘",
       "path": "道友你这天命与我有缘",
-      "enabled": true,
+      "enabled": false,
+      "status": "completed",
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         "time": "18:30"
@@ -107,7 +109,8 @@
       "id": "free-sky-rewrite",
       "title": "道友你这天命与我有缘（重写版）",
       "path": "道友你这天命与我有缘_重写版",
-      "enabled": true,
+      "enabled": false,
+      "status": "completed",
       "schedule": {
         "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         "time": "21:30"
