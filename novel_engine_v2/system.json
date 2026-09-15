@@ -54,6 +54,11 @@
       "title": "旧物回声事务所（试读版）",
       "project": "旧物回声事务所_试读版",
       "author": "echo-v1"
+    },
+    "old-object-echo-rewrite": {
+      "title": "旧物回声事务所（系统重写版）",
+      "project": "旧物回声事务所_系统重写版",
+      "author": "echo-v1"
     }
   }
 }

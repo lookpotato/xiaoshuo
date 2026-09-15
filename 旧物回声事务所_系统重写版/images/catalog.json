@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "book_id": "old-object-echo-rewrite",
+  "max_images_per_chapter": 1,
+  "style_bible": {
+    "visual_style": "当代旧物店的生活质感；暖灰、木色、灯光和纸张纹理，重点突出可说话的物件与人物关系。"
+  },
+  "entities": {},
+  "chapter_images": {}
+}
