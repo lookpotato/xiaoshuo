@@ -42,6 +42,7 @@ class NovelEngine:
     """Compile bounded, stage-specific contexts instead of one giant prompt."""
 
     STAGES = ("director", "writer", "reader", "finalizer")
+    WRITER_GUIDANCE_LIMIT = 14000
 
     def __init__(self, root: Path):
         self.root = root.resolve()
@@ -165,6 +166,35 @@ class NovelEngine:
             raise ValidationError("本书长期反馈知识库超过 6000 字；请合并重复经验")
         return rendered
 
+    def _compile_writer_guidance(self, book: Book) -> tuple[str, list[str]]:
+        """Compile language rules into the writer context instead of leaving them on disk."""
+        candidates = (
+            book.project / "style_guide.md",
+            self.root / "shared" / "chinese_dialogue_foundation.md",
+            self.root / "shared" / "de_ai_writing.md",
+            self.root / "shared" / "chinese_dialogue_feedback.jsonl",
+            book.project / "character_voice_bible.md",
+            book.project / "narrative_style_pack.md",
+        )
+        sections: list[str] = []
+        sources: list[str] = []
+        for path in candidates:
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8-sig").strip()
+            if not text:
+                continue
+            sources.append(str(path.resolve()))
+            sections.append(f"## 语言资料：{path.name}\n{text}")
+        if not sections:
+            return "本项目没有额外语言资料；仍须遵守作者档案中的语言边界。", sources
+        rendered = "\n\n".join(sections)
+        if len(rendered) > self.WRITER_GUIDANCE_LIMIT:
+            raise ValidationError(
+                f"写作者语言上下文超过 {self.WRITER_GUIDANCE_LIMIT} 字；请合并语言规则，不得继续堆提示词"
+            )
+        return rendered, sources
+
     def next_chapter(self, book: Book) -> int:
         state = read_json(book.project / "chapter_state.json")
         number = state.get("next_chapter_number")
@@ -198,6 +228,7 @@ class NovelEngine:
         return [{"id": module_id, **raw} for _, _, module_id, raw in selected]
 
     def context_manifest(self, book: Book, number: int) -> dict:
+        _, writer_guidance_sources = self._compile_writer_guidance(book)
         existing = []
         for name in self.config["legacy_adapter"]["book_sources"]:
             path = (book.project / name).resolve()
@@ -225,6 +256,7 @@ class NovelEngine:
                 (self.home / "authors" / f"{book.author}.json").resolve()
             ),
             "book_sources": existing,
+            "writer_guidance_sources": writer_guidance_sources,
             "recent_chapters": [str(path) for path in self.recent_chapters(book, number)],
         }
 
@@ -259,6 +291,7 @@ class NovelEngine:
         run = Path(manifest["run_dir"])
         author_text = self._compile_author_context(author)
         book_learning = self._compile_book_learning(book)
+        writer_guidance, _ = self._compile_writer_guidance(book)
         sources = "\n".join(f"- `{path}`" for path in manifest["book_sources"])
         recent = "\n".join(f"- `{path}`" for path in manifest["recent_chapters"])
         writer_modules = "\n".join(
@@ -294,6 +327,15 @@ class NovelEngine:
 
 本书经副作者确认的长期经验：
 {book_learning}
+
+写作者必须实际执行的语言资料：
+{writer_guidance}
+
+对白落笔前硬性执行：
+1. 先写关系卡：此刻对谁说、熟悉程度、权力距离、共同知道什么、真正想让对方做什么。
+2. 不把提纲中的条件、背景和价值判断整组翻成对白；一轮只完成一两件事，剩下的通过动作、追问、打断、停顿或下一轮露出。
+3. 中文人物不得人人使用完整主谓宾和同长度句子；至少保留一处没接住、改口、答非所问或无关动作。
+4. 定稿时朗读对白；若像合同摘要、字幕翻译、系统提示或作者替人物总结情绪，必须重写。
 
 只读取 `{run / 'chapter_contract.json'}`、`{run / 'writer_context.md'}`，以及以下最近正文：
 {recent}

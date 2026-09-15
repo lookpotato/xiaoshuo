@@ -62,6 +62,29 @@ class NovelEngineV2Tests(unittest.TestCase):
         self.assertNotIn("unused", writer)
         self.assertNotIn("automation_prompt.md", writer)
 
+    def test_writer_receives_language_guidance_and_audit_sources(self) -> None:
+        (self.root / "shared").mkdir()
+        (self.root / "shared" / "chinese_dialogue_foundation.md").write_text(
+            "中文对白底层：先有关系，再有句子。", encoding="utf-8"
+        )
+        (self.root / "shared" / "de_ai_writing.md").write_text(
+            "去 AI：不要让人物轮流完整解释立场。", encoding="utf-8"
+        )
+        (self.root / "shared" / "chinese_dialogue_feedback.jsonl").write_text(
+            '{"preferred":"先问眼前的东西"}', encoding="utf-8"
+        )
+        (self.root / "book" / "style_guide.md").write_text(
+            "本书对白：条件不能整组念出来。", encoding="utf-8"
+        )
+        engine = NovelEngine(self.root)
+        run = engine.prepare("demo", {"dialogue"})
+        writer = (run / "writer.md").read_text(encoding="utf-8")
+        manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+        self.assertIn("先有关系，再有句子", writer)
+        self.assertIn("条件不能整组念出来", writer)
+        self.assertIn("对白落笔前硬性执行", writer)
+        self.assertEqual(len(manifest["writer_guidance_sources"]), 4)
+
     def test_author_method_and_book_application_are_separate_and_bounded(self) -> None:
         author_path = self.root / "novel_engine_v2" / "authors" / "owner.json"
         author = json.loads(author_path.read_text(encoding="utf-8"))
