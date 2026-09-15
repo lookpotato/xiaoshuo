@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 1,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-15T20:12:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "4d2fcc4e58ca186f56232eb702f91b276a30cfcee915c88103ed7af89ab49b6b",
+  "questions": {
+    "previous_context": {
+      "answer": "唐栀带着待修、待还的旧书来到林默的修理间，归还期限和书角损伤构成开场承接。",
+      "evidence": ["唐栀用肩膀撞开修理间的门，怀里那本旧《夜航故事》先挤了进来。"]
+    },
+    "immediate_problem": {
+      "answer": "书角需要修补且孟阿婆等着拿回；七号靠近书时出现异常声音，继续测试又可能越过书的归还和声音边界。",
+      "evidence": ["七号的单眼灯仍是红色，没有播放提示时惯用的蓝光。"]
+    },
+    "decision_basis": {
+      "answer": "林默核对到异常声音没有出现在录音笔和七号的既有离线日志中，并观察到没有播放编号的波形，因此认为需要一次受限复测。",
+      "evidence": ["后面多出一行空白，时间戳却跳了两秒。"]
+    },
+    "action_logic": {
+      "answer": "他关掉提示音、拔掉外接麦克风和风扇，把书停在白线外，只让七号按指令靠近一次，以排除环境声并保留记录。",
+      "evidence": ["不拆页，不播放。书离七号一掌远，只做一次复测。"]
+    },
+    "result_and_cost": {
+      "answer": "七号低电量下再次说出异常短句，留下可记录的波形但仍无来源；唐栀拔走旧书，林默失去继续直接接触它的资格，七号也耗到停机。",
+      "evidence": ["文件夹建立时，七号已经没有电了。"]
+    },
+    "reader_hook": {
+      "answer": "两次异常输出之间有一段没有指令、播放编号和联网记录的空白，来源仍待查证。",
+      "evidence": ["那四十六秒里，没有指令，没有播放编号，也没有联网记录。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "离线日志",
+      "plain_explanation": "七号本地保存的记录，只记时间、指令和播放编号，不联网。",
+      "evidence": "七号的日志只记时间、指令和播放编号，不上传，也没有联网接口。"
+    },
+    {
+      "term": "复测",
+      "plain_explanation": "在减少风扇、手机和外接麦克风等干扰后，再让七号靠近书页测试一次。",
+      "evidence": "不拆页，不播放。书离七号一掌远，只做一次复测。"
+    }
+  ],
+  "unexplained_terms": []
+}

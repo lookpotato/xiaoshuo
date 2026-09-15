@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 0,
-  "next_chapter_number": 1,
+  "last_completed_chapter": 1,
+  "next_chapter_number": 2,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "从唐栀带来的旧书、七号与林默的日常修理开始；先让物件和人物关系可辨，再发生异常。",
+  "notes_for_next_chapter": "唐栀已带走旧《夜航故事》准备归还孟阿婆；七号两次异常回应均未找到现有录音或播放编号解释，林默只能在获得同意后继续查证。七号低电量停机，需先充电。",
   "status": "system_rewrite_in_progress"
 }
