@@ -184,6 +184,12 @@
       "mode": "write_only",
       "daily_chapter_target": 1,
       "reader_gate_from_chapter": 6,
+      "chapter_length": {
+        "target_min_hanzi": 2200,
+        "target_hanzi": 2600,
+        "target_max_hanzi": 3000,
+        "overlong_review_hanzi": 3200
+      },
       "manual_extra_chapters_supported": true,
       "default_publish_times": [],
       "note": "独立五章试读；第六章起执行读者验收。本地写作，不自动排期、不连接番茄。"

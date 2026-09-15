@@ -21,6 +21,21 @@ def chapter_length_instruction(book: dict, chapter_number: int) -> str:
             "根据情节完整度自然决定篇幅，不为凑字扩写，也不为压字删减必要内容。"
             "此设置只豁免字数规则，不豁免读者验收、连续性、人物线和其他质量门禁。"
         )
+    book_length = book.get("chapter_length")
+    if isinstance(book_length, dict):
+        minimum = book_length.get("target_min_hanzi")
+        target = book_length.get("target_hanzi")
+        maximum = book_length.get("target_max_hanzi")
+        review = book_length.get("overlong_review_hanzi")
+        if all(
+            isinstance(value, int) and not isinstance(value, bool)
+            for value in (minimum, target, maximum, review)
+        ) and 0 < minimum <= target <= maximum <= review:
+            return (
+                f"第 {chapter_number} 章执行本书专属篇幅：正文常规 {minimum}—{maximum} 汉字，"
+                f"以约 {target} 汉字为中心；超过 {review} 汉字先复核是否能在真实阶段胜负处拆章。"
+                "本书设置优先于共享规范的通用字数建议；不为凑字扩写，也不为压字删减必要的动作、因果、人物反应和结果余波。"
+            )
     return (
         f"第 {chapter_number} 章继续执行本书 novel_config.md 及写作规范中的字数要求；"
         "不得把单章字数限制扩展为整本书的篇幅限制。"

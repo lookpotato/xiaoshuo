@@ -28,6 +28,20 @@ class ChapterLengthPolicyTests(unittest.TestCase):
         self.assertTrue(chapter_length_limited({}, 1))
         self.assertIn("继续执行本书 novel_config.md", chapter_length_instruction({}, 1))
 
+    def test_book_specific_hanzi_range_overrides_shared_guidance(self):
+        book = {"chapter_length": {
+            "target_min_hanzi": 2200,
+            "target_hanzi": 2600,
+            "target_max_hanzi": 3000,
+            "overlong_review_hanzi": 3200,
+        }}
+        instruction = chapter_length_instruction(book, 6)
+        self.assertIn("2200—3000 汉字", instruction)
+        self.assertIn("约 2600 汉字", instruction)
+        self.assertIn("优先于共享规范", instruction)
+        book["word_count_limit_enabled"] = False
+        self.assertIn("已关闭字数限制", chapter_length_instruction(book, 6))
+
     def test_project_setting_controls_short_upload_parser_gate(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
