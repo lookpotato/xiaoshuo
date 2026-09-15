@@ -38,6 +38,7 @@ class ChapterLengthPolicyTests(unittest.TestCase):
         instruction = chapter_length_instruction(book, 6)
         self.assertIn("2200—3000 汉字", instruction)
         self.assertIn("约 2600 汉字", instruction)
+        self.assertIn("不得用非空白字符数冒充汉字数", instruction)
         self.assertIn("优先于共享规范", instruction)
         book["word_count_limit_enabled"] = False
         self.assertIn("已关闭字数限制", chapter_length_instruction(book, 6))

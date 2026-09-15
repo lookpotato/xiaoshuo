@@ -34,7 +34,10 @@ def chapter_length_instruction(book: dict, chapter_number: int) -> str:
             return (
                 f"第 {chapter_number} 章执行本书专属篇幅：正文常规 {minimum}—{maximum} 汉字，"
                 f"以约 {target} 汉字为中心；超过 {review} 汉字先复核是否能在真实阶段胜负处拆章。"
-                "本书设置优先于共享规范的通用字数建议；不为凑字扩写，也不为压字删减必要的动作、因果、人物反应和结果余波。"
+                "字数按正文实际汉字（Unicode U+4E00—U+9FFF）计，不含标题和 Metadata；"
+                "不得用非空白字符数冒充汉字数。完成后按这一口径复核，常规章尽量靠近中心目标；"
+                "偏短先检查现场动作、人物关系、因果桥梁和结果余波是否写足。"
+                "本书设置优先于共享规范的通用字数建议；不为凑字扩写，也不为压字删减必要内容。"
             )
     return (
         f"第 {chapter_number} 章继续执行本书 novel_config.md 及写作规范中的字数要求；"
