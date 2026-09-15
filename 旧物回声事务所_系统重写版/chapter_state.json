@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 1,
-  "next_chapter_number": 2,
+  "last_completed_chapter": 3,
+  "next_chapter_number": 4,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "唐栀已带走旧《夜航故事》准备归还孟阿婆；七号两次异常回应均未找到现有录音或播放编号解释，林默只能在获得同意后继续查证。七号低电量停机，需先充电。",
+  "notes_for_next_chapter": "第3章已在不播放原声、不拆机的前提下完成七号隔离复测：21:18:18再次无指令启动，实际输出“收到”无播放编号；导出副本出现无时间戳、非正常格式写入，且记录显示21:18:17.5已开始写入。七号电量耗空并封存，林默与唐栀约定下次查接口来源须两人到场；旧书仍在孟阿婆手中，不凭音认人。",
   "status": "system_rewrite_in_progress"
 }
