@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 3,
-  "next_chapter_number": 4,
+  "last_completed_chapter": 5,
+  "next_chapter_number": 6,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "第3章已在不播放原声、不拆机的前提下完成七号隔离复测：21:18:18再次无指令启动，实际输出“收到”无播放编号；导出副本出现无时间戳、非正常格式写入，且记录显示21:18:17.5已开始写入。七号电量耗空并封存，林默与唐栀约定下次查接口来源须两人到场；旧书仍在孟阿婆手中，不凭音认人。",
-  "status": "system_rewrite_in_progress"
+  "notes_for_next_chapter": "第5章两人在场试旧播放器与台灯的接口线：灯闪可复现，时间跳变未稳定复现，不能据此解释21:18:17.5异常写入或辨认声音。七号只从原充电口短暂通电，无声音和新记录，未拆机；林默在后盖前停手。孟阿婆说‘小默，别把灯关了’是她当年对林默说过的话，但拒绝据此认领设备里的声音。旧书已归还她；旧灯开关底下出现2024.09.13和‘演示线’维修贴，日期与七号演示事故后设备清点相邻，连接关系待查。后续继续遵守不播放原声、不凭音认人、先征得同意的边界。",
+  "status": "system_rewrite_five_chapters_reviewed"
 }

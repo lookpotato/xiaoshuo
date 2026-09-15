@@ -5,7 +5,7 @@
   "max_daily_attempts": 2,
   "retry_delay_minutes": 30,
   "default_failure_policy": "retry_same_day",
-  "default_book_id": "old-object-echo-sample",
+  "default_book_id": "old-object-echo-rewrite",
   "writing_policy": {
     "de_ai_writing": {
       "enabled": true,
@@ -174,7 +174,7 @@
       "id": "old-object-echo-sample",
       "title": "旧物回声事务所（五章试读）",
       "path": "旧物回声事务所_试读版",
-      "enabled": true,
+      "enabled": false,
       "status": "testing",
       "schedule": {
         "days": [],
@@ -198,7 +198,7 @@
       "id": "old-object-echo-rewrite",
       "title": "旧物回声事务所（系统重写版）",
       "path": "旧物回声事务所_系统重写版",
-      "enabled": false,
+      "enabled": true,
       "status": "testing",
       "schedule": {
         "days": [],
@@ -216,7 +216,7 @@
       },
       "manual_extra_chapters_supported": true,
       "default_publish_times": [],
-      "note": "从第1章走统一小说生产流程的系统重写版；通过五章验收后替换旧试读版展示。本地写作，不自动排期、不连接番茄。"
+      "note": "从第1章走统一小说生产流程的系统重写版；五章已通过读者关卡和独立文学终审，现为默认展示。本地写作，不自动排期、不连接番茄。"
     }
   ]
 }
