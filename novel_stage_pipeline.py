@@ -377,7 +377,7 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
     "reader_orientation": {{"verdict": "pass 或 revise", "assessment": "陌生读者能否定位当下场景、人物身份、行动原因和正常参照", "evidence": ["正文原句"]}},
     "character_motivation": {{"verdict": "pass 或 revise", "assessment": "具体读感判断", "evidence": ["正文原句"]}},
     "emotional_progression": {{"verdict": "pass 或 revise", "assessment": "具体读感判断", "evidence": ["正文原句"]}},
-    "dialogue_in_context": {{"verdict": "pass 或 revise", "assessment": "对白是否符合关系、危险和情绪", "evidence": ["正文原句"]}},
+    "dialogue_in_context": {{"verdict": "pass 或 revise", "assessment": "对白是否像这个人在该现场自然开口，而非作者概括、功能清单、系统提示或翻译腔", "evidence": ["正文原句"]}},
     "narrative_progress": {{"verdict": "pass 或 revise", "assessment": "本章是否重复旧局面", "evidence": ["正文原句"]}},
     "promise_payoff": {{"verdict": "pass 或 revise", "assessment": "旧期待得到什么实质回应", "evidence": ["正文原句"]}},
     "next_chapter_pull": {{"verdict": "pass 或 revise", "assessment": "继续阅读欲望是否具体", "evidence": ["正文原句"]}}
@@ -394,6 +394,8 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
 - 第一章若只给出地点或时令标签，却没有建立主角身份、现实目标和异常发生前的正常参照，reader_orientation 必须判 revise；若需要重排整章信息顺序，判 redesign/chapter_plan。
 - 重点寻找人物在此刻不会说的话、危机中伤害情绪的玩笑、工整攻防、无余波的损失、
   重复处理同类问题、只开新谜团不兑现旧期待。
+- 审 dialogue_in_context 时，先暂时遮住人设说明，只看台词和相邻动作：一个当代中国人是否会在此刻对眼前这个人自然说出这句话。人物目的正确、关系熟悉、信息有用，都不能替生硬措辞免责。
+- 特别拦截把人物判断或旁白概括硬塞进嘴里的抽象词、把两三项写作任务并列成一句的清单话，以及句句准确完整、没有现场指代和话轮反应的“功能性对白”。若一句话只有换成生活中的说法才能成立，必须判 revise，不能写成“略有风险但符合人设”。
 - 即使决定通过，也必须挑出全章最脆弱的一处并作反方判断，不能用“没有明显问题”代替。
 - 小范围措辞问题用 revise；中心冲突、情绪峰值或整章任务不成立用 redesign 和
   chapter_plan。任何 revise 维度都必须进入 blocking_issues。

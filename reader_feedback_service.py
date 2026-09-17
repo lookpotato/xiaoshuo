@@ -34,6 +34,7 @@ REVIEW_MODES = {
 SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
+MAX_DIALOGUE_MESSAGE_CHARS = 5000
 PROMOTION_SCOPES = {"book": "本书", "author": "作者"}
 PROMOTION_LOCK = threading.RLock()
 
@@ -238,6 +239,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
     analysis = read_json(folder / "analysis.json")
     blind_reader = read_json(folder / "blind_reader_analysis.json")
     promotion = read_json(folder / "promotion.json")
+    dialogue = read_json(folder / "author_dialogue.json", {}) or {}
     return {
         **feedback,
         "status": status.get("status", "queued"),
@@ -249,7 +251,60 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
         "receipt": status.get("receipt") if isinstance(status.get("receipt"), dict) else None,
+        "author_dialogue": (
+            dialogue.get("messages", [])
+            if isinstance(dialogue, dict) and isinstance(dialogue.get("messages", []), list)
+            else []
+        ),
+        "author_dialogue_status": (
+            dialogue.get("status", "idle") if isinstance(dialogue, dict) else "idle"
+        ),
     }
+
+
+def append_author_dialogue_message(
+    root: Path, book_id: str, feedback_id: str, content: str
+) -> dict:
+    """Append a co-author correction without starting a disconnected feedback record."""
+    folder = _feedback_dir(root, book_id, feedback_id)
+    analysis = read_json(folder / "analysis.json")
+    if not isinstance(analysis, dict):
+        raise ValueError("作者尚未完成首次判断，暂时不能继续追问")
+    content = str(content).strip()
+    if not content or len(content) > MAX_DIALOGUE_MESSAGE_CHARS:
+        raise ValueError(f"追问内容必须为1—{MAX_DIALOGUE_MESSAGE_CHARS}字")
+    dialogue_path = folder / "author_dialogue.json"
+    dialogue = read_json(dialogue_path, {"schema_version": 1, "messages": []})
+    if not isinstance(dialogue, dict) or not isinstance(dialogue.get("messages"), list):
+        raise ValueError("作者对话记录损坏")
+    if dialogue.get("status") in {"queued", "responding"}:
+        raise ValueError("作者正在回复上一条消息，请稍后再发")
+    message = {
+        "id": uuid.uuid4().hex[:12],
+        "role": "user",
+        "content": content,
+        "created_at": datetime.now().astimezone().isoformat(),
+    }
+    dialogue["messages"].append(message)
+    dialogue["status"] = "queued"
+    dialogue["pending_message_id"] = message["id"]
+    dialogue["updated_at"] = message["created_at"]
+    atomic_json(dialogue_path, dialogue)
+    return {"message": message, "dialogue": dialogue}
+
+
+def update_author_dialogue(
+    root: Path, book_id: str, feedback_id: str, **changes
+) -> dict:
+    folder = _feedback_dir(root, book_id, feedback_id)
+    path = folder / "author_dialogue.json"
+    dialogue = read_json(path, {"schema_version": 1, "messages": []})
+    if not isinstance(dialogue, dict) or not isinstance(dialogue.get("messages"), list):
+        raise ValueError("作者对话记录损坏")
+    dialogue.update(changes)
+    dialogue["updated_at"] = datetime.now().astimezone().isoformat()
+    atomic_json(path, dialogue)
+    return dialogue
 
 
 def list_feedback(root: Path, book_id: str, chapter: int | None = None) -> list[dict]:

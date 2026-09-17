@@ -344,6 +344,18 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .applied-note { margin-top: 15px; padding: 10px 12px; border-radius: 8px; color: var(--green); background: rgba(31,128,101,.08); font-size: 11px; line-height: 1.7; }
 .stale-version-warning { padding: 10px 12px; border-radius: 8px; color: #805e25; background: #f4ead5; font-size: 11px; line-height: 1.6; }
 .feedback-error { margin: 14px 0 0; color: var(--red); font-size: 11px; }
+.author-dialogue { margin-top: 16px; padding: 14px; border: 1px solid rgba(78, 91, 121, .18); border-radius: 10px; background: rgba(245, 247, 251, .78); }
+.author-dialogue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.author-dialogue-head h4 { margin: 0; color: var(--ink); }
+.author-dialogue-head small { color: var(--muted); font-size: 9px; }
+.author-dialogue-messages { display: grid; gap: 8px; margin-top: 12px; }
+.author-dialogue-message { max-width: 88%; padding: 9px 11px; border-radius: 9px; background: white; }
+.author-dialogue-message.user { justify-self: end; background: #f1e6d8; }
+.author-dialogue-message.author { justify-self: start; background: #e8f1ed; }
+.author-dialogue-message strong { font-size: 9px; color: var(--muted); }
+.author-dialogue-message p { margin: 4px 0 0; white-space: pre-wrap; }
+.author-dialogue-compose { display: grid; grid-template-columns: 1fr auto; gap: 9px; margin-top: 12px; align-items: end; }
+.author-dialogue-compose textarea { width: 100%; resize: vertical; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; font: 12px/1.65 "Microsoft YaHei UI", sans-serif; }
 .learning-candidate { margin-top: 16px; padding: 15px; border: 1px solid rgba(31,128,101,.24); border-radius: 10px; background: rgba(31,128,101,.055); }
 .learning-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .learning-head small { color: var(--green); font-size: 8px; font-weight: 800; letter-spacing: .12em; }

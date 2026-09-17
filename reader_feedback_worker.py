@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -89,6 +90,35 @@ def parse_result(text: str) -> dict:
     else:
         revision = None
     return {"analysis": value, "revision": revision}
+
+
+def parse_follow_up_result(text: str) -> dict:
+    stripped = text.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
+    if fenced:
+        stripped = fenced.group(1)
+    try:
+        value = json.loads(stripped)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"作者回复没有返回有效JSON：{exc}") from exc
+    if not isinstance(value, dict) or not isinstance(value.get("reply"), str) or not value["reply"].strip():
+        raise ValueError("作者回复缺少 reply")
+    changed = value.get("changed_judgment")
+    if not isinstance(changed, bool):
+        raise ValueError("作者回复 changed_judgment 必须为布尔值")
+    if not changed:
+        return {"reply": value["reply"].strip(), "changed_judgment": False}
+    analysis_value = value.get("analysis")
+    if not isinstance(analysis_value, dict):
+        raise ValueError("修改判断时必须返回完整 analysis")
+    analysis_value = dict(analysis_value)
+    analysis_value["proposed_revision"] = value.get("proposed_revision")
+    parsed = parse_result(json.dumps(analysis_value, ensure_ascii=False))
+    return {
+        "reply": value["reply"].strip(),
+        "changed_judgment": True,
+        **parsed,
+    }
 
 
 def build_blind_reader_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
@@ -179,14 +209,15 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 {context}
 
 判断顺序：
-1. 区分“症状”和“读者猜测的病因”。
-2. 在 wording、scene、chapter 中明确选择修改层级。若问题涉及开篇承诺、正常世界参照、中心冲突、信息顺序或整章任务，必须选择 chapter，不能用局部补句掩盖。
-3. 用作者档案、人物当下目的、相邻章节、连续性台账和作品读者承诺判断是否采纳；{blind_scope_rule}
-4. 不得自行永久新增规则；但若有效意见能跨句、跨场景复用，必须提炼一条等待副作者确认的长期经验候选。一次性措辞、仅服务当前情节的修补或不采纳意见不提炼。
-5. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
-6. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
-7. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
-8. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
+1. 先做真人开口测试：暂时不看人物设定，只问一个当代中国人在这个可见现场、面对这个关系对象时，会不会自然地这样开口。读着像作者概括、功能清单、系统提示或翻译腔，就必须承认语言问题；人物目的正确不能替不自然的说法辩护。
+2. 再区分“症状”和“读者猜测的病因”。用户对真实中文口语的直接纠正，优先级高于作者为既有台词寻找合理解释；不同意时必须给出正文与现实语用证据，不能只说“符合人设”。
+3. 在 wording、scene、chapter 中明确选择修改层级。若问题涉及开篇承诺、正常世界参照、中心冲突、信息顺序或整章任务，必须选择 chapter，不能用局部补句掩盖。
+4. 用作者档案、人物当下目的、相邻章节、连续性台账和作品读者承诺判断如何修改；这些资料用于保连续性，不能用来否定已经成立的阅读不适。{blind_scope_rule}
+5. 不得自行永久新增规则；但若有效意见能跨句、跨场景复用，必须提炼一条等待副作者确认的长期经验候选。一次性措辞、仅服务当前情节的修补或不采纳意见不提炼。
+6. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
+7. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
+8. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
+9. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
 
 最终只输出一个JSON对象，不要代码围栏，不要修改任何文件：
 {{
@@ -211,6 +242,94 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     return prompt, folder / "model_result.json"
+
+
+def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
+    item = service.feedback_item(ROOT, book_id, feedback_id)
+    _, project = service._book(ROOT, book_id)
+    folder = project / "reader_feedback" / feedback_id
+    author = author_registry.book_author(ROOT, book_id)
+    author_path = ROOT / author["document_id"]
+    dialogue = service.read_json(folder / "author_dialogue.json", {}) or {}
+    messages = dialogue.get("messages", [])
+    if not isinstance(messages, list) or not messages or messages[-1].get("role") != "user":
+        raise ValueError("没有等待作者回复的追问")
+    prompt = folder / "author_follow_up_prompt.md"
+    result = folder / "author_follow_up_model_result.json"
+    prompt.write_text(f"""# 作者判断连续对话
+
+你是本书绑定作者，正在和副作者继续讨论同一条反馈。这里不是一次新的审稿，不要忘记前文，也不要维护面子。副作者指出你分析错了时，必须重新检查现实中文语用；人物目的、熟人关系和剧情功能只能解释“为什么要说”，不能自动证明“这句话会这样说”。
+
+读取：
+- 作者档案：`{author_path}`
+- 当前章节：`{item['chapter_file']}`
+- 原始反馈：`{folder / 'feedback.json'}`
+- 当前作者判断：`{folder / 'analysis.json'}`
+- 完整连续对话：`{folder / 'author_dialogue.json'}`
+- 本书文风：`{project / 'style_guide.md'}`
+- 中国口语基础：`{ROOT / 'shared' / 'chinese_dialogue_foundation.md'}`
+
+先直接回应副作者最新一句，再判断原结论是否需要改。若副作者纠正的是“现实中不会这样说”，先把台词还原成它在现场真正想完成的动作，检查抽象概括、清单结构、书面词和过度完整；不得用“符合人设”“目的成立”“其余部分没问题”回避该句本身。
+
+只输出一个 JSON 对象，不要代码围栏：
+{{
+  "reply": "直接、具体地回应最新追问；承认或反驳都要给出理由",
+  "changed_judgment": true或false,
+  "analysis": null或完整的新判断对象（字段与首次作者判断一致，不含 schema_version、analyzed_at、policy），
+  "proposed_revision": null或修改判断后对应的完整候选章节
+}}
+
+changed_judgment 为 true 时，analysis 必须完整包含 decision、revision_scope、scope_rationale、author_judgment、valid_observations、misdiagnoses、revision_strategy、learning_candidate；采纳或部分采纳时必须同时返回完整 proposed_revision。为 false 时 analysis 与 proposed_revision 均为 null。
+""", encoding="utf-8")
+    return prompt, result
+
+
+def run_follow_up(book_id: str, feedback_id: str) -> None:
+    _, project = service._book(ROOT, book_id)
+    folder = project / "reader_feedback" / feedback_id
+    dialogue = service.update_author_dialogue(
+        ROOT, book_id, feedback_id, status="responding", error=None
+    )
+    pending_id = dialogue.get("pending_message_id")
+    prompt, result_path = build_follow_up_prompt(book_id, feedback_id)
+    command = [
+        resolve_codex(), "exec", "--ephemeral", "-C", str(ROOT),
+        "--sandbox", "read-only", "--config", 'approval_policy="never"',
+        "--output-last-message", str(result_path), "-",
+    ]
+    result = subprocess.run(command, cwd=ROOT, input=prompt.read_text(encoding="utf-8"),
+                            text=True, encoding="utf-8", errors="replace")
+    if result.returncode:
+        raise RuntimeError(f"作者连续对话进程退出码 {result.returncode}")
+    parsed = parse_follow_up_result(result_path.read_text(encoding="utf-8"))
+    changed = bool(parsed["changed_judgment"])
+    if changed:
+        previous = service.read_json(folder / "analysis.json")
+        history = folder / "analysis_history"
+        history.mkdir(parents=True, exist_ok=True)
+        service.atomic_json(history / f"{datetime.now():%Y%m%d-%H%M%S}.json", previous)
+        analysis = {
+            "schema_version": 3, **parsed["analysis"],
+            "analyzed_at": datetime.now().astimezone().isoformat(),
+            "policy": "副作者可通过连续对话纠正作者判断；现实中文语用优先于事后人设辩护",
+        }
+        service.atomic_json(folder / "analysis.json", analysis)
+        proposal = folder / "proposed_revision.md"
+        if parsed["revision"] is None:
+            proposal.unlink(missing_ok=True)
+        else:
+            service.atomic_text(proposal, parsed["revision"].strip() + "\n")
+    latest = service.read_json(folder / "author_dialogue.json", {}) or {}
+    messages = latest.get("messages", [])
+    messages.append({
+        "id": uuid.uuid4().hex[:12], "role": "author",
+        "content": parsed["reply"], "changed_judgment": changed,
+        "reply_to": pending_id, "created_at": datetime.now().astimezone().isoformat(),
+    })
+    service.update_author_dialogue(
+        ROOT, book_id, feedback_id, messages=messages, status="idle",
+        pending_message_id=None, error=None,
+    )
 
 
 def run(book_id: str, feedback_id: str) -> None:
@@ -316,12 +435,26 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="分析真实读者反馈")
     parser.add_argument("--book", required=True)
     parser.add_argument("--feedback-id", required=True)
+    parser.add_argument("--follow-up", action="store_true")
     args = parser.parse_args()
     try:
-        run(args.book, args.feedback_id)
+        if args.follow_up:
+            run_follow_up(args.book, args.feedback_id)
+        else:
+            run(args.book, args.feedback_id)
         print("真实读者反馈分析完成")
         return 0
     except Exception as exc:
+        if getattr(args, "follow_up", False):
+            try:
+                service.update_author_dialogue(
+                    ROOT, args.book, args.feedback_id,
+                    status="failed", error=str(exc), pending_message_id=None,
+                )
+            except Exception:
+                pass
+            print(f"作者连续对话失败：{exc}", file=sys.stderr)
+            return 1
         try:
             service.update_status(
                 ROOT,

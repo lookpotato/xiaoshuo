@@ -6,7 +6,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import reader_feedback_service as service
-from reader_feedback_worker import parse_blind_reader_result, parse_result
+from reader_feedback_worker import (
+    parse_blind_reader_result,
+    parse_follow_up_result,
+    parse_result,
+)
 
 
 class ReaderFeedbackServiceTests(unittest.TestCase):
@@ -82,6 +86,37 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
                 "book_id": "demo", "chapter": 1, "category": "confusing",
                 "comment": "测试无效审稿方式。", "review_mode": "pretend",
             })
+
+    def test_author_dialogue_keeps_correction_in_same_feedback_record(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "character_voice",
+            "comment": "这句不像真人说话。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "revision_scope": "wording",
+            "scope_rationale": "局部对白问题。", "author_judgment": "略显生硬。",
+            "valid_observations": ["措辞生硬"], "misdiagnoses": [],
+            "revision_strategy": ["改台词"], "learning_candidate": None,
+        })
+        queued = service.append_author_dialogue_message(
+            self.root, "demo", item["id"], "不是略显生硬，是正常人根本不会这样开口。"
+        )
+        refreshed = service.feedback_item(self.root, "demo", item["id"])
+        self.assertEqual(queued["dialogue"]["status"], "queued")
+        self.assertEqual(refreshed["author_dialogue_status"], "queued")
+        self.assertEqual(refreshed["author_dialogue"][0]["role"], "user")
+
+    def test_author_dialogue_rejects_second_pending_message(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "character_voice",
+            "comment": "这句不像真人说话。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {"decision": "reject"})
+        service.append_author_dialogue_message(self.root, "demo", item["id"], "第一条")
+        with self.assertRaisesRegex(ValueError, "正在回复"):
+            service.append_author_dialogue_message(self.root, "demo", item["id"], "第二条")
 
     def test_feedback_rejects_quote_not_in_chapter(self) -> None:
         with self.assertRaisesRegex(ValueError, "不属于当前章节"):
@@ -322,6 +357,23 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "proposed_revision": None,
         }, ensure_ascii=False))
         self.assertIsNone(parsed["analysis"]["learning_candidate"])
+
+    def test_follow_up_result_can_replace_author_judgment(self) -> None:
+        parsed = parse_follow_up_result(json.dumps({
+            "reply": "你说得对，原判断拿人物目的替台词自然度辩护了。",
+            "changed_judgment": True,
+            "analysis": {
+                "decision": "partial", "revision_scope": "wording",
+                "scope_rationale": "局部台词失真。",
+                "author_judgment": "这句话不像现场中的真人表达。",
+                "valid_observations": ["抽象概括被塞进人物嘴里"],
+                "misdiagnoses": [], "revision_strategy": ["改为眼前动作"],
+                "learning_candidate": None,
+            },
+            "proposed_revision": "# 第 1 章 试读\n\n正文\n\n---\n\n## Metadata\n\n- word_count: 500",
+        }, ensure_ascii=False))
+        self.assertTrue(parsed["changed_judgment"])
+        self.assertEqual(parsed["analysis"]["decision"], "partial")
 
     def test_blind_reader_result_requires_explicit_scope(self) -> None:
         parsed = parse_blind_reader_result(json.dumps({

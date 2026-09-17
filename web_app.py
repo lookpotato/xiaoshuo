@@ -536,6 +536,36 @@ def launch_reader_feedback(payload: dict) -> dict:
     }
 
 
+def launch_author_dialogue(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    feedback_id = str(payload.get("feedback_id", "")).strip()
+    content = str(payload.get("content", "")).strip()
+    queued = reader_feedback_service.append_author_dialogue_message(
+        ROOT, book_id, feedback_id, content
+    )
+    item = reader_feedback_service.feedback_item(ROOT, book_id, feedback_id)
+    command = [
+        sys.executable,
+        str(ROOT / "reader_feedback_worker.py"),
+        "--book", book_id,
+        "--feedback-id", feedback_id,
+        "--follow-up",
+    ]
+    try:
+        run = launch_command(
+            command,
+            "reader_feedback_dialogue",
+            f"《{item['book_title']}》第 {item['chapter']} 章继续讨论作者判断",
+        )
+    except Exception as exc:
+        reader_feedback_service.update_author_dialogue(
+            ROOT, book_id, feedback_id,
+            status="failed", error=f"无法启动作者回复：{exc}", pending_message_id=None,
+        )
+        raise
+    return {"dialogue": queued["dialogue"], "run": run}
+
+
 class AppHandler(BaseHTTPRequestHandler):
     server_version = "FanqieWorkbench/1.0"
 
@@ -631,6 +661,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback": 64 * 1024,
                 "/api/reader-feedback/apply": 16 * 1024,
                 "/api/reader-feedback/promote": 16 * 1024,
+                "/api/reader-feedback/dialogue": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -679,6 +710,12 @@ class AppHandler(BaseHTTPRequestHandler):
                         ROOT, book_id, feedback_id, scope
                     ),
                 })
+                return
+            if parsed.path == "/api/reader-feedback/dialogue":
+                self.send_json(
+                    {"ok": True, **launch_author_dialogue(payload)},
+                    HTTPStatus.ACCEPTED,
+                )
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

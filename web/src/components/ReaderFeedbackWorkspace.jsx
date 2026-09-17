@@ -26,6 +26,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [quote, setQuote] = useState("");
   const [comment, setComment] = useState("");
   const [reviewMode, setReviewMode] = useState("combined");
+  const [dialogueDrafts, setDialogueDrafts] = useState({});
   const [busy, setBusy] = useState(false);
   const readerRef = useRef(null);
 
@@ -114,6 +115,19 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     } catch (error) { onNotice(error.message); }
   }
 
+  async function continueAuthorDialogue(item) {
+    const content = (dialogueDrafts[item.id] || "").trim();
+    if (!content || item.author_dialogue_status === "queued" || item.author_dialogue_status === "responding") return;
+    try {
+      await api("/api/reader-feedback/dialogue", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, content }),
+      });
+      setDialogueDrafts((current) => ({ ...current, [item.id]: "" }));
+      onNotice("已把纠正意见发给作者，会在同一条记录中继续回复"); await load();
+    } catch (error) { onNotice(error.message); }
+  }
+
   const archivedVersion = versions.find((item) => item.id === selectedVersion);
   const displayedChapter = selectedVersion === "current" ? chapter : archivedVersion;
   const lines = displayedChapter?.content.split(/\r?\n/) || [];
@@ -186,6 +200,18 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           {!!item.analysis.valid_observations?.length && <><h4>有效观察</h4><ul>{item.analysis.valid_observations.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
           {!!item.analysis.misdiagnoses?.length && <><h4>不照单全收的部分</h4><ul>{item.analysis.misdiagnoses.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
           {!!item.analysis.revision_strategy?.length && <><h4>候选改法</h4><ul>{item.analysis.revision_strategy.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
+          <section className="author-dialogue">
+            <div className="author-dialogue-head"><h4>继续和作者讨论</h4><small>同一条记录保留上下文；可以指出误判、追问原因或要求重新判断</small></div>
+            {!!item.author_dialogue?.length && <div className="author-dialogue-messages">{item.author_dialogue.map((message) => <div className={`author-dialogue-message ${message.role}`} key={message.id}>
+              <strong>{message.role === "user" ? "你" : "作者"}{message.changed_judgment ? " · 已修正判断" : ""}</strong>
+              <p>{message.content}</p>
+            </div>)}</div>}
+            {item.author_dialogue_status === "failed" && <p className="feedback-error">作者回复失败，可以重新发送一条消息。</p>}
+            <div className="author-dialogue-compose">
+              <textarea rows="3" maxLength="5000" value={dialogueDrafts[item.id] || ""} onChange={(event) => setDialogueDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="例如：你判断错了。问题不是三个短句连在一起，而是‘临时起意’根本不像她此刻会说的话，请按现实中文口语重新判断。" />
+              <button className="button" disabled={!dialogueDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => continueAuthorDialogue(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在回复" : "继续讨论"}</button>
+            </div>
+          </section>
           {item.analysis.learning_candidate && <div className="learning-candidate">
             <div className="learning-head"><div><small>LONG-TERM LEARNING</small><h4>长期经验候选</h4></div><span>{item.analysis.learning_candidate.confidence === "high" ? "高把握" : "中等把握"}</span></div>
             <strong>{item.analysis.learning_candidate.principle}</strong>

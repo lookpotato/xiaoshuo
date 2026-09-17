@@ -129,6 +129,29 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("free-sky-rewrite", command)
         self.assertEqual(result["run"], run)
 
+    def test_author_dialogue_launches_follow_up_worker(self) -> None:
+        queued = {"dialogue": {"status": "queued", "messages": []}}
+        item = {"book_title": "测试书", "chapter": 2}
+        run = {"id": "run-dialogue", "status": "running"}
+        with (
+            patch.object(
+                web_app.reader_feedback_service,
+                "append_author_dialogue_message",
+                return_value=queued,
+            ),
+            patch.object(
+                web_app.reader_feedback_service, "feedback_item", return_value=item
+            ),
+            patch.object(web_app, "launch_command", return_value=run) as launch,
+        ):
+            result = web_app.launch_author_dialogue({
+                "book_id": "demo", "feedback_id": "feedback-12345678",
+                "content": "原判断不对。",
+            })
+        command = launch.call_args.args[0]
+        self.assertIn("--follow-up", command)
+        self.assertEqual(result["run"], run)
+
     def test_run_log_returns_tail_and_redacts_credentials(self) -> None:
         with TemporaryDirectory() as temp, patch.object(
             web_app, "RUNS_ROOT", Path(temp)
