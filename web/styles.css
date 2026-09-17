@@ -315,6 +315,18 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .quote-label + blockquote { margin-top: 6px; }
 .reader-comment { margin: 12px 0 0; font-size: 13px; line-height: 1.75; }
 .author-review { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.blind-reader-review { margin-top: 16px; padding: 15px; border: 1px solid rgba(190,129,64,.25); border-radius: 10px; background: rgba(190,129,64,.06); }
+.blind-reader-review h3, .blind-reader-review h4, .blind-reader-review p { margin-top: 0; }
+.blind-reader-review h4 { margin-bottom: 6px; color: var(--muted); font-size: 11px; }
+.blind-reader-review p, .blind-reader-review li { font-size: 12px; line-height: 1.75; }
+.blind-reader-review ul { margin: 0; padding-left: 20px; }
+.review-stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.review-stage-head small { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.review-stage-head h3 { margin: 2px 0 0; }
+.review-stage-head > span { padding: 5px 8px; border-radius: 20px; color: #7b552d; background: rgba(190,129,64,.13); font-size: 10px; font-weight: 800; white-space: nowrap; }
+.author-review .review-stage-head > span { color: var(--green); background: rgba(31,128,101,.1); }
+.scope-reason { padding: 9px 11px; border-radius: 8px; color: #5f554a; background: rgba(0,0,0,.035); }
+.feedback-progress { color: var(--muted); font-size: 11px; }
 .author-review h3 { margin: 0 0 8px; font-size: 15px; }
 .author-review h4 { margin: 15px 0 6px; color: var(--muted); font-size: 11px; }
 .author-review p, .author-review li { font-size: 12px; line-height: 1.75; }

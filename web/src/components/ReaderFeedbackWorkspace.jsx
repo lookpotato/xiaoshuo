@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
 const decisionLabel = { accept: "采纳", partial: "部分采纳", reject: "不采纳" };
+const scopeLabel = { wording: "措辞级", scene: "场景级", chapter: "整章结构级" };
 const statusLabel = {
   queued: "已排队", analyzing: "分析中", reviewed: "作者已判断",
   applied: "已采用", failed: "分析失败",
@@ -71,7 +72,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, category, quote, comment }),
       });
-      setComment(""); setQuote(""); onNotice("反馈已收到，作者正在独立判断"); await load();
+      setComment(""); setQuote(""); onNotice("反馈已收到，陌生读者将先只看正文试读，再交给作者判断"); await load();
     } catch (error) { onNotice(error.message); }
     finally { setBusy(false); }
   }
@@ -114,7 +115,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
 
   return <section className="reader-feedback-page">
     <article className="panel feedback-intro">
-      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>副作者审稿与成长闭环</h2><p>你指出阅读问题，绑定作者先独立判断并修订当前章；可复用的意见会提炼成长期经验候选，等你确认后进入本书或作者知识库。</p></div>
+      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>陌生读者试读 × 作者审稿</h2><p>陌生读者只看当前正文，先判断问题属于措辞、场景还是整章结构；随后绑定作者结合设定与连续性决定改法。可复用意见仍需你确认后才进入长期规则。</p></div>
       <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setSelectedVersion("current"); setReceipt(null); setQuote(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
     </article>
 
@@ -157,9 +158,18 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         <header><div><strong>第 {item.chapter} 章 · {item.category_label}</strong><small>{new Date(item.created_at).toLocaleString("zh-CN")}</small></div><span>{item.analysis ? decisionLabel[item.analysis.decision] : statusLabel[item.status] || item.status}</span></header>
         {item.quote && <><small className="quote-label">当时选中的原文（留档，不随正文变化）</small><blockquote>{item.quote}</blockquote></>}
         <p className="reader-comment">“{item.comment}”</p>
+        {item.status === "analyzing" && <p className="feedback-progress">{item.status_message}</p>}
         {item.status === "failed" && <p className="feedback-error">{item.status_message}</p>}
+        {item.blind_reader && <div className="blind-reader-review">
+          <div className="review-stage-head"><div><small>FIRST-TIME READER</small><h3>陌生读者试读</h3></div><span>{scopeLabel[item.blind_reader.recommended_scope] || item.blind_reader.recommended_scope}</span></div>
+          <p>{item.blind_reader.reader_experience}</p>
+          {!!item.blind_reader.missing_or_late_information?.length && <><h4>缺少或出现过晚的信息</h4><ul>{item.blind_reader.missing_or_late_information.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
+          <p className="scope-reason">{item.blind_reader.scope_rationale}</p>
+        </div>}
         {item.analysis && <div className="author-review">
-          <h3>作者判断</h3><p>{item.analysis.author_judgment}</p>
+          <div className="review-stage-head"><div><small>AUTHOR REVIEW</small><h3>作者判断</h3></div><span>{scopeLabel[item.analysis.revision_scope] || "旧版局部判断"}</span></div>
+          <p>{item.analysis.author_judgment}</p>
+          {item.analysis.scope_rationale && <p className="scope-reason"><b>修改范围：</b>{item.analysis.scope_rationale}</p>}
           {!!item.analysis.valid_observations?.length && <><h4>有效观察</h4><ul>{item.analysis.valid_observations.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
           {!!item.analysis.misdiagnoses?.length && <><h4>不照单全收的部分</h4><ul>{item.analysis.misdiagnoses.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
           {!!item.analysis.revision_strategy?.length && <><h4>候选改法</h4><ul>{item.analysis.revision_strategy.map((text, index) => <li key={index}>{text}</li>)}</ul></>}
@@ -174,7 +184,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>
             </div>}
           </div>}
-          {item.has_revision && item.status !== "applied" && <button className="button apply-revision" onClick={() => apply(item)}>确认采用本地修订</button>}
+          {item.has_revision && item.status !== "applied" && <button className="button apply-revision" onClick={() => apply(item)}>确认采用{scopeLabel[item.analysis.revision_scope] || "本地"}修订</button>}
           {item.status === "applied" && <div className="applied-note"><strong>更新完成</strong>{item.applied_at && <> · {new Date(item.applied_at).toLocaleString("zh-CN")}</>}<br />正式稿已更新，应用前原文可在草稿箱查看；重新验收前不会发布。</div>}
         </div>}
       </section>) : <div className="empty">本章还没有真实读者反馈</div>}</div>

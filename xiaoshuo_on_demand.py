@@ -12,6 +12,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import fanqie_novel_manager as manager
 import creative_modules
@@ -591,41 +592,63 @@ def run_independent_literary_review(
     last_error = "尚未生成有效审稿结果"
     valid_review = False
     try:
-        for attempt in range(MAX_LITERARY_REVIEW_ATTEMPTS):
-            review_path.unlink(missing_ok=True)
-            prompt = base_prompt
-            if attempt:
-                prompt += (
-                    "\n\n## 上一份审稿结果未通过机械校验\n"
-                    f"{last_error}\n"
-                    "请只重写审稿 JSON，不要修改章节正文。重新读取指定的当前正文；"
-                    "所有 evidence 和 quote 都必须从正文逐字复制，不得转述、补写或沿用旧审稿中的句子。"
-                )
-            print(
-                f"独立文学终审校验重试（{attempt + 1}/{MAX_LITERARY_REVIEW_ATTEMPTS}）……",
-                flush=True,
+        with TemporaryDirectory(prefix="novel-literary-reader-") as temporary:
+            isolated = Path(temporary)
+            shutil.copyfile(
+                stage_pipeline.current_chapter_path(project, chapter_number),
+                isolated / "chapter.md",
             )
-            process = subprocess.run(
-                _stage_command(codex, result_file),
-                cwd=ROOT,
-                input=prompt,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
-            try:
-                stage_pipeline.validate_literary_review(
-                    ROOT, project, chapter_number
-                )
-            except stage_pipeline.PipelineValidationError as exc:
-                last_error = str(exc)
-                if process.returncode:
-                    last_error = (
-                        f"Codex 退出码 {process.returncode}；{last_error}"
+            isolated_result = isolated / "review.json"
+            for attempt in range(MAX_LITERARY_REVIEW_ATTEMPTS):
+                review_path.unlink(missing_ok=True)
+                isolated_result.unlink(missing_ok=True)
+                prompt = base_prompt
+                if attempt:
+                    prompt += (
+                        "\n\n## 上一份审稿结果未通过机械校验\n"
+                        f"{last_error}\n"
+                        "请重新读取 chapter.md，只重写审稿 JSON；所有 evidence 和 quote "
+                        "都必须从正文逐字复制，不得转述、补写或沿用旧审稿中的句子。"
                     )
-                continue
-            valid_review = True
-            return
+                print(
+                    f"独立文学终审校验重试（{attempt + 1}/{MAX_LITERARY_REVIEW_ATTEMPTS}）……",
+                    flush=True,
+                )
+                process = subprocess.run(
+                    [
+                        codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                        "-C", str(isolated),
+                        "--sandbox", "read-only", "--config", 'approval_policy="never"',
+                        "--output-last-message", str(isolated_result), "-",
+                    ],
+                    cwd=isolated,
+                    input=prompt,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                if process.returncode or not isolated_result.is_file():
+                    last_error = f"Codex 退出码 {process.returncode}，未形成审稿 JSON"
+                    continue
+                try:
+                    raw = isolated_result.read_text(encoding="utf-8")
+                    fenced = re.fullmatch(
+                        r"```(?:json)?\s*(.*?)\s*```", raw.strip(), re.S | re.I
+                    )
+                    payload = json.loads(fenced.group(1) if fenced else raw)
+                    if not isinstance(payload, dict):
+                        raise ValueError("审稿结果必须是 JSON 对象")
+                    result_file.parent.mkdir(parents=True, exist_ok=True)
+                    result_file.write_text(raw, encoding="utf-8")
+                    manager.write_json(review_path, payload)
+                    stage_pipeline.validate_literary_review(
+                        ROOT, project, chapter_number
+                    )
+                except (ValueError, json.JSONDecodeError, stage_pipeline.PipelineValidationError) as exc:
+                    last_error = str(exc)
+                    continue
+                valid_review = True
+                return
     finally:
         if not valid_review:
             if previous_review is None:

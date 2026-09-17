@@ -21,6 +21,11 @@ CATEGORIES = {
     "emotion": "情绪不对",
     "other": "其他",
 }
+REVISION_SCOPES = {
+    "wording": "措辞级",
+    "scene": "场景级",
+    "chapter": "整章结构级",
+}
 SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
@@ -99,16 +104,17 @@ def _chapter_length_range(project: Path) -> tuple[int, int] | None:
     return (minimum, maximum) if 0 < minimum <= maximum else None
 
 
-def _validate_revision_scope(current: str, revision: str, quote: str) -> None:
-    """Keep a selected-passage revision close to the passage the reader marked."""
-    marked = _compact(quote)
-    if not marked:
+def _validate_revision_scope(
+    current: str, revision: str, quote: str, revision_scope: str = "wording"
+) -> None:
+    """Enforce the author-selected repair level instead of always forcing a local patch."""
+    if revision_scope not in REVISION_SCOPES:
+        raise ValueError("反馈分析缺少有效的修改层级")
+    if revision_scope == "chapter":
         return
+    marked = _compact(quote)
     before = _compact(_narrative(current))
     after = _compact(_narrative(revision))
-    quote_start = before.find(marked)
-    if quote_start < 0:
-        raise ValueError("反馈选中原文已经不属于当前章节")
     prefix = 0
     prefix_limit = min(len(before), len(after))
     while prefix < prefix_limit and before[prefix] == after[prefix]:
@@ -118,12 +124,29 @@ def _validate_revision_scope(current: str, revision: str, quote: str) -> None:
     while suffix < suffix_limit and before[-1 - suffix] == after[-1 - suffix]:
         suffix += 1
     changed_end = len(before) - suffix
-    quote_end = quote_start + len(marked)
-    margin = 300
-    if prefix < max(0, quote_start - margin) or changed_end > min(
-        len(before), quote_end + margin
-    ):
-        raise ValueError("局部反馈的候选稿改动超出选中段落附近，请改用整章重写")
+    changed_after_end = len(after) - suffix
+    changed_span = max(changed_end - prefix, changed_after_end - prefix)
+
+    if marked:
+        quote_start = before.find(marked)
+        if quote_start < 0:
+            raise ValueError("反馈选中原文已经不属于当前章节")
+        quote_end = quote_start + len(marked)
+        margin = 300 if revision_scope == "wording" else max(
+            900, min(1800, len(before) // 3)
+        )
+        if prefix < max(0, quote_start - margin) or changed_end > min(
+            len(before), quote_end + margin
+        ):
+            label = REVISION_SCOPES[revision_scope]
+            raise ValueError(f"{label}候选稿改动超出允许范围，请重新判断修改层级")
+
+    maximum_span = 600 if revision_scope == "wording" else max(
+        1400, int(len(before) * 0.65)
+    )
+    if changed_span > maximum_span:
+        label = REVISION_SCOPES[revision_scope]
+        raise ValueError(f"{label}候选稿改动过大，请升级修改层级")
 
 
 def _refresh_word_count(revision: str, count: int) -> str:
@@ -203,6 +226,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         raise ValueError("找不到反馈记录")
     status = read_json(folder / "status.json", {}) or {}
     analysis = read_json(folder / "analysis.json")
+    blind_reader = read_json(folder / "blind_reader_analysis.json")
     promotion = read_json(folder / "promotion.json")
     return {
         **feedback,
@@ -210,6 +234,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         "status_message": status.get("message", ""),
         "run_id": status.get("run_id"),
         "analysis": analysis if isinstance(analysis, dict) else None,
+        "blind_reader": blind_reader if isinstance(blind_reader, dict) else None,
         "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
@@ -521,7 +546,10 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
         )
     if not length_range and revision_count < int(current_count * 0.85):
         raise ValueError("候选修订删减超过原正文 15%，请改用整章重写")
-    _validate_revision_scope(current, revision, str(feedback.get("quote", "")))
+    revision_scope = str(analysis.get("revision_scope", "wording"))
+    _validate_revision_scope(
+        current, revision, str(feedback.get("quote", "")), revision_scope
+    )
     revision = _refresh_word_count(revision, revision_count)
     backup = folder / "original_before_apply.md"
     if not backup.exists():
@@ -548,6 +576,8 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
         "filename": chapter_path.name,
         "applied_at": applied_at,
         "word_count": revision_count,
+        "revision_scope": revision_scope,
+        "revision_scope_label": REVISION_SCOPES[revision_scope],
         "previous_sha256": hashlib.sha256(current.encode("utf-8")).hexdigest(),
         "current_sha256": current_hash,
         "backup": str(backup.relative_to(project)),

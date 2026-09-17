@@ -45,6 +45,10 @@ class IndependentReviewRunnerTests(TestCase):
             def fake_codex_run(*args, **kwargs):
                 nonlocal calls
                 calls += 1
+                command = args[0]
+                self.assertIn("--skip-git-repo-check", command)
+                self.assertIn("read-only", command)
+                output_path = Path(command[command.index("--output-last-message") + 1])
                 review = {
                     "schema_version": 1,
                     "chapter_number": 2,
@@ -69,7 +73,7 @@ class IndependentReviewRunnerTests(TestCase):
                     },
                     "strengths_to_preserve": ["人物主动核验来源。"],
                 }
-                review_path.write_text(
+                output_path.write_text(
                     json.dumps(review, ensure_ascii=False), encoding="utf-8"
                 )
                 return SimpleNamespace(returncode=0)
@@ -78,9 +82,6 @@ class IndependentReviewRunnerTests(TestCase):
                 mock.patch.object(xiaoshuo_on_demand, "ROOT", root),
                 mock.patch.object(
                     xiaoshuo_on_demand.manager, "JOB_DIR", root / ".manager_jobs"
-                ),
-                mock.patch.object(
-                    xiaoshuo_on_demand, "_stage_command", return_value=["codex"]
                 ),
                 mock.patch.object(
                     xiaoshuo_on_demand.subprocess,

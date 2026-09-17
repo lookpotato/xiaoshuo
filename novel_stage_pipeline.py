@@ -42,6 +42,7 @@ MUTABLE_PLAN_CONTEXT_NAMES = {
 }
 
 REVIEW_DIMENSIONS = (
+    "reader_orientation",
     "character_motivation",
     "emotional_progression",
     "dialogue_in_context",
@@ -288,25 +289,20 @@ def writer_contract(root: Path, project: Path, number: int) -> str:
 
 
 def reviewer_prompt(root: Path, project: Path, number: int) -> str:
-    config = load_config(root)
     chapter = current_chapter_path(project, number)
-    recent = chapter_files(project, number)[-config["recent_chapters_for_reviewer"] :]
-    output = review_path(root, project, number).resolve()
     digest = narrative_sha256(chapter)
     return f"""# 独立文学读者终审
 
-你是第一次接触生产过程的读者。只读取下列已发表正文和当前候选正文；不得读取大纲、
-设定、章节合同、作者档案、状态账本、其他审稿结果或提示词，不能用作者意图替正文辩护。
-本次只写 literary_reviews/NNNN.json；不得修改小说正文或其他项目文件，也不得运行
-git add、commit 或 push。文件同步由外层任务根据 sync_git 设置处理。
-
-前文：
-{_path_list([path for _, path in recent])}
+你是第一次看到当前章节的陌生读者。只读取当前候选正文；不得读取前文章节、大纲、
+设定、章节合同、作者档案、状态账本、其他审稿结果或提示词，不能用作者意图或前文记忆替正文辩护。
+你不要求章节重讲整本书，但人物此刻在哪里、正在做什么、为什么现在行动，以及异常相对什么常态越界，
+必须能从当前正文获得最低限度的理解。
+本次只输出审稿 JSON；不得修改小说正文或任何文件，也不得运行 git add、commit 或 push。
 
 当前正文：
-- `{chapter}`
+- `chapter.md`
 
-把审稿结果写入 `{output}`，创建父目录并写合法 JSON。使用精确字段：
+最终只输出一个合法 JSON 对象，不要代码围栏。使用精确字段：
 
 {{
   "schema_version": 1,
@@ -315,6 +311,7 @@ git add、commit 或 push。文件同步由外层任务根据 sync_git 设置处
   "narrative_sha256": "{digest}",
   "decision": "pass 或 revise 或 redesign",
   "dimensions": {{
+    "reader_orientation": {{"verdict": "pass 或 revise", "assessment": "陌生读者能否定位当下场景、人物身份、行动原因和正常参照", "evidence": ["正文原句"]}},
     "character_motivation": {{"verdict": "pass 或 revise", "assessment": "具体读感判断", "evidence": ["正文原句"]}},
     "emotional_progression": {{"verdict": "pass 或 revise", "assessment": "具体读感判断", "evidence": ["正文原句"]}},
     "dialogue_in_context": {{"verdict": "pass 或 revise", "assessment": "对白是否符合关系、危险和情绪", "evidence": ["正文原句"]}},
@@ -331,6 +328,7 @@ git add、commit 或 push。文件同步由外层任务根据 sync_git 设置处
 
 判断规则：
 - 不因结构完整、句子通顺或因果可复述而自动通过。
+- 第一章若只给出地点或时令标签，却没有建立主角身份、现实目标和异常发生前的正常参照，reader_orientation 必须判 revise；若需要重排整章信息顺序，判 redesign/chapter_plan。
 - 重点寻找人物在此刻不会说的话、危机中伤害情绪的玩笑、工整攻防、无余波的损失、
   重复处理同类问题、只开新谜团不兑现旧期待。
 - 即使决定通过，也必须挑出全章最脆弱的一处并作反方判断，不能用“没有明显问题”代替。

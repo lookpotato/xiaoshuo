@@ -193,10 +193,13 @@ class NovelStagePipelineTests(unittest.TestCase):
     def test_independent_reviewer_cannot_see_plan_or_book_bible(self) -> None:
         self.write_plan()
         prompt = pipeline.reviewer_prompt(self.root, self.project, 2)
-        self.assertIn(str(self.chapter.resolve()), prompt)
+        self.assertIn("`chapter.md`", prompt)
+        self.assertNotIn(str(self.chapter.resolve()), prompt)
+        self.assertNotIn(str((self.project / "chapters" / "0001-开门.md").resolve()), prompt)
         self.assertNotIn("chapter_plans", prompt)
         self.assertNotIn("style_guide.md", prompt)
         self.assertNotIn("outline.md", prompt)
+        self.assertIn("reader_orientation", prompt)
         self.assertIn("不得运行", prompt)
         self.assertIn("git add、commit 或 push", prompt)
 

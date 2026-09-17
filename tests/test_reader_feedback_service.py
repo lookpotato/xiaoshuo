@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import reader_feedback_service as service
-from reader_feedback_worker import parse_result
+from reader_feedback_worker import parse_blind_reader_result, parse_result
 
 
 class ReaderFeedbackServiceTests(unittest.TestCase):
@@ -71,6 +71,23 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
                 "quote": "根本不存在的原文", "comment": "不舒服",
             })
 
+    def test_feedback_exposes_blind_reader_report_separately_from_author(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "confusing",
+            "quote": "甲把门推开。", "comment": "我不知道他为什么来。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "blind_reader_analysis.json", {
+            "recommended_scope": "scene", "reader_experience": "进入场景没有原因。",
+        })
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "revision_scope": "scene",
+            "author_judgment": "需要补场景。",
+        })
+        result = service.feedback_item(self.root, "demo", item["id"])
+        self.assertEqual(result["blind_reader"]["recommended_scope"], "scene")
+        self.assertEqual(result["analysis"]["revision_scope"], "scene")
+
     def test_revision_requires_author_acceptance_and_preserves_backup(self) -> None:
         item = service.create_feedback(self.root, {
             "book_id": "demo", "chapter": 1, "category": "pacing",
@@ -121,6 +138,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
     def test_worker_result_requires_revision_only_when_author_accepts(self) -> None:
         parsed = parse_result(json.dumps({
             "decision": "reject", "author_judgment": "人物有意沉默。",
+            "revision_scope": "wording", "scope_rationale": "只有一句口吻需要判断。",
             "valid_observations": ["读者感到疏远"],
             "misdiagnoses": ["疏远正是本场目的"],
             "revision_strategy": [], "proposed_revision": None,
@@ -165,7 +183,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "# 第 1 章 试读\n\n甲停了一下，再把门推开。" + "完全改写。" * 180
             + "\n\n---\n\n## Metadata\n\n- word_count: 900\n",
         )
-        with self.assertRaisesRegex(ValueError, "超出选中段落"):
+        with self.assertRaisesRegex(ValueError, "超出允许范围"):
             service.apply_revision(self.root, "demo", item["id"])
 
     def test_revision_refreshes_word_count_and_invalidates_reader_check(self) -> None:
@@ -204,6 +222,27 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             result["receipt"]["invalidated_checks"],
             ["读者验收", "文学终审", "创作能力报告"],
         )
+
+    def test_chapter_scope_allows_structural_rewrite_beyond_selected_quote(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "整章缺少进入场景的背景。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "accept", "revision_scope": "chapter",
+            "scope_rationale": "问题影响整章的信息顺序。",
+            "author_judgment": "需要重做结构。", "valid_observations": ["缺少参照"],
+            "misdiagnoses": [], "revision_strategy": ["重排整章"],
+        })
+        service.atomic_text(
+            folder / "proposed_revision.md",
+            "# 第 1 章 试读\n\n" + "新的完整场景。" * 220
+            + "\n\n---\n\n## Metadata\n\n- word_count: 9999\n",
+        )
+        result = service.apply_revision(self.root, "demo", item["id"])
+        self.assertEqual(result["receipt"]["revision_scope"], "chapter")
+        self.assertIn("新的完整场景", self.chapter.read_text(encoding="utf-8"))
 
     def _feedback_with_learning(self, category: str = "character_voice") -> dict:
         item = service.create_feedback(self.root, {
@@ -258,11 +297,23 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
     def test_worker_accepts_bounded_learning_candidate(self) -> None:
         parsed = parse_result(json.dumps({
             "decision": "reject", "author_judgment": "本章有意这样处理。",
+            "revision_scope": "scene", "scope_rationale": "读感涉及完整场景，但作者决定保留。",
             "valid_observations": [], "misdiagnoses": ["不是长期问题"],
             "revision_strategy": [], "learning_candidate": None,
             "proposed_revision": None,
         }, ensure_ascii=False))
         self.assertIsNone(parsed["analysis"]["learning_candidate"])
+
+    def test_blind_reader_result_requires_explicit_scope(self) -> None:
+        parsed = parse_blind_reader_result(json.dumps({
+            "reader_experience": "读者不知道人物为什么此刻进门。",
+            "visible_facts": ["有人推门"],
+            "missing_or_late_information": ["来访目的"],
+            "recommended_scope": "scene",
+            "scope_rationale": "需要补全整个进门场景的行动原因。",
+            "evidence": ["甲把门推开。"],
+        }, ensure_ascii=False))
+        self.assertEqual(parsed["recommended_scope"], "scene")
 
 
 if __name__ == "__main__":
