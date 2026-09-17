@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 5,
-  "next_chapter_number": 6,
+  "last_completed_chapter": 1,
+  "next_chapter_number": 2,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "第5章两人在场试旧播放器与台灯的接口线：灯闪可复现，时间跳变未稳定复现，不能据此解释21:18:17.5异常写入或辨认声音。七号只从原充电口短暂通电，无声音和新记录，未拆机；林默在后盖前停手。孟阿婆说‘小默，别把灯关了’是她当年对林默说过的话，但拒绝据此认领设备里的声音。旧书已归还她；旧灯开关底下出现2024.09.13和‘演示线’维修贴，日期与七号演示事故后设备清点相邻，连接关系待查。后续继续遵守不播放原声、不凭音认人、先征得同意的边界。",
-  "status": "system_rewrite_five_chapters_reviewed"
+  "notes_for_next_chapter": "唐栀已带旧《夜航故事》离开修理间，准备归还孟阿婆；林默确认七号两次异常回应不在预设语音和现有离线日志中，日志存在四十六秒空白，七号已低电量停机。第2章应从归还旧书、征得核查许可和复核声源条件继续，不得继承已删除章节的事件。",
+  "status": "chapter_0001_archived"
 }
