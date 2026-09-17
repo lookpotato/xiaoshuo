@@ -5,8 +5,13 @@ const decisionLabel = { accept: "采纳", partial: "部分采纳", reject: "不�
 const scopeLabel = { wording: "措辞级", scene: "场景级", chapter: "整章结构级" };
 const statusLabel = {
   queued: "已排队", analyzing: "分析中", reviewed: "作者已判断",
-  applied: "已采用", failed: "分析失败",
+  blind_reviewed: "试读完成", applied: "已采用", failed: "分析失败",
 };
+const reviewModes = [
+  { id: "blind", title: "陌生读者试读", note: "只看当前章，不读取设定；诊断真实读感，不改稿" },
+  { id: "author", title: "作者审稿", note: "读取设定与连续性；判断反馈并生成候选修改" },
+  { id: "combined", title: "双重审稿", note: "先陌生试读，再由作者裁决与改稿", recommended: true },
+];
 
 export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const readableChapters = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
@@ -20,6 +25,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [category, setCategory] = useState("uncomfortable");
   const [quote, setQuote] = useState("");
   const [comment, setComment] = useState("");
+  const [reviewMode, setReviewMode] = useState("combined");
   const [busy, setBusy] = useState(false);
   const readerRef = useRef(null);
 
@@ -70,9 +76,10 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     try {
       await api("/api/reader-feedback", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, category, quote, comment }),
+        body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, category, quote, comment, review_mode: reviewMode }),
       });
-      setComment(""); setQuote(""); onNotice("反馈已收到，陌生读者将先只看正文试读，再交给作者判断"); await load();
+      const label = reviewModes.find((item) => item.id === reviewMode)?.title || "审稿";
+      setComment(""); setQuote(""); onNotice(`反馈已收到，已启动${label}`); await load();
     } catch (error) { onNotice(error.message); }
     finally { setBusy(false); }
   }
@@ -142,12 +149,18 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         </section>
         <form className="panel feedback-form" onSubmit={submit}>
           <div className="panel-head"><div><p className="eyebrow">MARK</p><h2>哪里不舒服</h2></div></div>
+          <fieldset className="review-mode-picker">
+            <legend>选择怎么审</legend>
+            <div className="review-mode-options">{reviewModes.map((mode) => <button type="button" className={reviewMode === mode.id ? "active" : ""} aria-pressed={reviewMode === mode.id} key={mode.id} onClick={() => setReviewMode(mode.id)}>
+              <span>{mode.title}{mode.recommended && <em>推荐</em>}</span><small>{mode.note}</small>
+            </button>)}</div>
+          </fieldset>
           <label>问题感觉<select value={category} onChange={(event) => setCategory(event.target.value)}>{Object.entries(categories).map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select></label>
           <label>选中的原文<textarea value={quote} onChange={(event) => setQuote(event.target.value.slice(0, 3000))} placeholder="可直接留言，也可以先在左侧圈选原文" rows="5" /></label>
           <label>你的真实感受<textarea value={comment} onChange={(event) => setComment(event.target.value.slice(0, 5000))} placeholder="例如：我看到这里突然不相信这个人物了，但我不确定为什么。" rows="7" required /></label>
-          <div className="author-boundary"><strong>双重确认边界</strong><span>当前章修订和长期经验分开确认；主作者负责提炼，你决定是否让它永久学习。</span></div>
+          <div className="author-boundary"><strong>{reviewModes.find((item) => item.id === reviewMode)?.title}</strong><span>{reviewMode === "blind" ? "这次只报告陌生读感，不生成修改稿。" : reviewMode === "author" ? "这次由作者直接审稿，不会伪装成不知道设定的读者。" : "陌生读者与作者使用不同上下文，报告分开显示。"}</span></div>
           {!isCurrent && <div className="stale-version-warning">你正在查看历史版本。请先切回“最新正式稿”再继续评审。</div>}
-          <button className="button primary" disabled={busy || !comment.trim() || !isCurrent}>{busy ? "正在提交" : "提交并让作者分析"}<b>→</b></button>
+          <button className="button primary" disabled={busy || !comment.trim() || !isCurrent}>{busy ? "正在提交" : `提交并开始${reviewModes.find((item) => item.id === reviewMode)?.title}`}<b>→</b></button>
         </form>
       </aside>
     </div>
@@ -155,7 +168,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     <article className="panel feedback-history">
       <div className="panel-head"><div><p className="eyebrow">AUTHOR REVIEW</p><h2>作者判断记录</h2></div><span className="count-label">{items.length} 条</span></div>
       <div className="feedback-cards">{items.length ? items.map((item) => <section className={`feedback-card ${item.analysis?.decision || item.status}`} key={item.id}>
-        <header><div><strong>第 {item.chapter} 章 · {item.category_label}</strong><small>{new Date(item.created_at).toLocaleString("zh-CN")}</small></div><span>{item.analysis ? decisionLabel[item.analysis.decision] : statusLabel[item.status] || item.status}</span></header>
+        <header><div><strong>第 {item.chapter} 章 · {item.category_label}</strong><small>{item.review_mode_label || "旧版审稿"} · {new Date(item.created_at).toLocaleString("zh-CN")}</small></div><span>{item.analysis ? decisionLabel[item.analysis.decision] : statusLabel[item.status] || item.status}</span></header>
         {item.quote && <><small className="quote-label">当时选中的原文（留档，不随正文变化）</small><blockquote>{item.quote}</blockquote></>}
         <p className="reader-comment">“{item.comment}”</p>
         {item.status === "analyzing" && <p className="feedback-progress">{item.status_message}</p>}

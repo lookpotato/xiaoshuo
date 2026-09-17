@@ -298,6 +298,15 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .feedback-form .panel-head { margin-bottom: 0; }
 .feedback-form label { color: var(--muted); font-size: 11px; font-weight: 800; }
 .feedback-form textarea { resize: vertical; font: 13px/1.75 "Microsoft YaHei UI", sans-serif; }
+.review-mode-picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.review-mode-picker legend { margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.review-mode-options { display: grid; gap: 8px; }
+.review-mode-options button { display: grid; gap: 4px; width: 100%; padding: 11px 12px; text-align: left; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+.review-mode-options button:hover { border-color: rgba(31,128,101,.45); }
+.review-mode-options button.active { color: #245c49; border-color: rgba(31,128,101,.65); background: rgba(31,128,101,.07); box-shadow: inset 3px 0 0 var(--accent); }
+.review-mode-options span { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; }
+.review-mode-options small { font-size: 10px; line-height: 1.5; }
+.review-mode-options em { padding: 2px 6px; color: #fff; background: var(--accent); border-radius: 999px; font-size: 9px; font-style: normal; }
 .author-boundary { display: grid; gap: 5px; padding: 12px 14px; border: 1px solid rgba(31,128,101,.2); border-radius: 9px; color: #386553; background: rgba(31,128,101,.06); font-size: 10px; line-height: 1.6; }
 .feedback-form .button.primary { margin-top: 0; }
 .feedback-cards { display: grid; gap: 12px; }

@@ -26,6 +26,11 @@ REVISION_SCOPES = {
     "scene": "场景级",
     "chapter": "整章结构级",
 }
+REVIEW_MODES = {
+    "blind": "陌生读者试读",
+    "author": "作者审稿",
+    "combined": "双重审稿",
+}
 SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
@@ -172,8 +177,11 @@ def create_feedback(root: Path, payload: dict) -> dict:
     category = str(payload.get("category", "uncomfortable")).strip()
     quote = str(payload.get("quote", "")).strip()
     comment = str(payload.get("comment", "")).strip()
+    review_mode = str(payload.get("review_mode", "combined")).strip()
     if category not in CATEGORIES:
         raise ValueError("反馈类型无效")
+    if review_mode not in REVIEW_MODES:
+        raise ValueError("审稿方式无效")
     if not 1 <= chapter <= 100000:
         raise ValueError("章节号无效")
     if not comment or len(comment) > MAX_COMMENT_CHARS:
@@ -199,12 +207,14 @@ def create_feedback(root: Path, payload: dict) -> dict:
         "category_label": CATEGORIES[category],
         "quote": quote,
         "comment": comment,
+        "review_mode": review_mode,
+        "review_mode_label": REVIEW_MODES[review_mode],
         "created_at": datetime.now().astimezone().isoformat(),
     }
     atomic_json(folder / "feedback.json", data)
     atomic_json(folder / "status.json", {
         "status": "queued",
-        "message": "已收到真实读者反馈，等待作者判断",
+        "message": f"已收到真实读者反馈，等待{REVIEW_MODES[review_mode]}",
         "updated_at": datetime.now().astimezone().isoformat(),
     })
     return feedback_item(root, book_id, feedback_id)

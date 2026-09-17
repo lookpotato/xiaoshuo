@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ask the bound author to judge reader feedback and propose a safe revision."""
+"""Run the user-selected blind-reader and/or bound-author feedback review."""
 
 from __future__ import annotations
 
@@ -149,6 +149,22 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
         *adjacent_chapters,
     ]
     context = "\n".join(f"- `{path}`" for path in context_paths if path.is_file())
+    blind_report = folder / "blind_reader_analysis.json"
+    if blind_report.is_file():
+        blind_context = (
+            f"- 陌生读者试读报告：`{blind_report}`\n"
+            "先读取陌生读者报告，确认一个不知道作者设定的人实际读到了什么；"
+            "不得用作者本意抹掉其阅读事实。"
+        )
+        blind_scope_rule = (
+            "若推翻陌生读者建议的层级，必须在 scope_rationale 说明正文证据。"
+        )
+    else:
+        blind_context = (
+            "本次选择的是单独作者审稿，没有陌生读者报告。"
+            "请直接根据正文证据、作者档案、设定与连续性判断。"
+        )
+        blind_scope_rule = "在 scope_rationale 中说明修改层级所依据的正文证据。"
     prompt = folder / "analysis_prompt.md"
     prompt.write_text(
         f"""# 真实读者反馈：作者判断阶段
@@ -159,19 +175,18 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 - 作者档案：`{author_path}`
 - 当前章节：`{source}`
 - 结构化反馈：`{folder / 'feedback.json'}`
-- 陌生读者试读报告：`{folder / 'blind_reader_analysis.json'}`
+{blind_context}
 {context}
 
 判断顺序：
-1. 先读取陌生读者报告，确认一个不知道作者设定的人实际读到了什么；不得用作者本意抹掉其阅读事实。
-2. 区分“症状”和“读者猜测的病因”。
-3. 在 wording、scene、chapter 中明确选择修改层级。若问题涉及开篇承诺、正常世界参照、中心冲突、信息顺序或整章任务，必须选择 chapter，不能用局部补句掩盖。
-4. 再用作者档案、人物当下目的、相邻章节、连续性台账和作品读者承诺判断是否采纳；若推翻陌生读者建议的层级，必须在 scope_rationale 说明正文证据。
-5. 不得自行永久新增规则；但若有效意见能跨句、跨场景复用，必须提炼一条等待副作者确认的长期经验候选。一次性措辞、仅服务当前情节的修补或不采纳意见不提炼。
-6. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
-7. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
-8. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
-9. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
+1. 区分“症状”和“读者猜测的病因”。
+2. 在 wording、scene、chapter 中明确选择修改层级。若问题涉及开篇承诺、正常世界参照、中心冲突、信息顺序或整章任务，必须选择 chapter，不能用局部补句掩盖。
+3. 用作者档案、人物当下目的、相邻章节、连续性台账和作品读者承诺判断是否采纳；{blind_scope_rule}
+4. 不得自行永久新增规则；但若有效意见能跨句、跨场景复用，必须提炼一条等待副作者确认的长期经验候选。一次性措辞、仅服务当前情节的修补或不采纳意见不提炼。
+5. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
+6. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
+7. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
+8. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
 
 最终只输出一个JSON对象，不要代码围栏，不要修改任何文件：
 {{
@@ -199,53 +214,67 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 
 
 def run(book_id: str, feedback_id: str) -> None:
-    service.update_status(
-        ROOT, book_id, feedback_id, status="analyzing", message="陌生读者正在只看正文试读"
-    )
-    blind_prompt, blind_result_path = build_blind_reader_prompt(book_id, feedback_id)
     item = service.feedback_item(ROOT, book_id, feedback_id)
-    chapter_source = Path(item["chapter_file"]).read_text(encoding="utf-8")
-    chapter_text = service._narrative(chapter_source)
-    feedback_source = (blind_result_path.parent / "feedback.json").read_text(
-        encoding="utf-8"
-    )
-    with TemporaryDirectory(prefix="novel-blind-reader-") as temporary:
-        isolated = Path(temporary)
-        (isolated / "chapter.md").write_text(chapter_source, encoding="utf-8")
-        (isolated / "feedback.json").write_text(feedback_source, encoding="utf-8")
-        isolated_result = isolated / "result.json"
-        blind_command = [
-            resolve_codex(), "exec", "--ephemeral", "--skip-git-repo-check",
-            "-C", str(isolated),
-            "--sandbox", "read-only", "--config", 'approval_policy="never"',
-            "--output-last-message", str(isolated_result), "-",
-        ]
-        blind_process = subprocess.run(
-            blind_command,
-            cwd=isolated,
-            input=blind_prompt.read_text(encoding="utf-8"),
-            text=True,
-            encoding="utf-8",
-            errors="replace",
+    review_mode = str(item.get("review_mode", "combined"))
+    if review_mode not in service.REVIEW_MODES:
+        raise ValueError("审稿方式无效")
+    if review_mode in {"blind", "combined"}:
+        service.update_status(
+            ROOT, book_id, feedback_id, status="analyzing", message="陌生读者正在只看正文试读"
         )
-        if blind_process.returncode:
-            raise RuntimeError(f"陌生读者试读进程退出码 {blind_process.returncode}")
-        blind_result_text = isolated_result.read_text(encoding="utf-8")
-    service.atomic_text(blind_result_path, blind_result_text)
-    blind = parse_blind_reader_result(blind_result_text)
-    if not blind["evidence"] or not all(
-        evidence.strip() in chapter_text for evidence in blind["evidence"]
-    ):
-        raise ValueError("陌生读者报告的 evidence 必须逐字存在于当前正文")
-    folder = blind_result_path.parent
-    service.atomic_json(folder / "blind_reader_analysis.json", {
-        "schema_version": 1,
-        **blind,
-        "reviewed_at": datetime.now().astimezone().isoformat(),
-        "context_policy": "只读当前章节与原始反馈，不读取作者设定或相邻章节",
-    })
+        blind_prompt, blind_result_path = build_blind_reader_prompt(book_id, feedback_id)
+        chapter_source = Path(item["chapter_file"]).read_text(encoding="utf-8")
+        chapter_text = service._narrative(chapter_source)
+        feedback_source = (blind_result_path.parent / "feedback.json").read_text(
+            encoding="utf-8"
+        )
+        with TemporaryDirectory(prefix="novel-blind-reader-") as temporary:
+            isolated = Path(temporary)
+            (isolated / "chapter.md").write_text(chapter_source, encoding="utf-8")
+            (isolated / "feedback.json").write_text(feedback_source, encoding="utf-8")
+            isolated_result = isolated / "result.json"
+            blind_command = [
+                resolve_codex(), "exec", "--ephemeral", "--skip-git-repo-check",
+                "-C", str(isolated),
+                "--sandbox", "read-only", "--config", 'approval_policy="never"',
+                "--output-last-message", str(isolated_result), "-",
+            ]
+            blind_process = subprocess.run(
+                blind_command,
+                cwd=isolated,
+                input=blind_prompt.read_text(encoding="utf-8"),
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if blind_process.returncode:
+                raise RuntimeError(f"陌生读者试读进程退出码 {blind_process.returncode}")
+            blind_result_text = isolated_result.read_text(encoding="utf-8")
+        service.atomic_text(blind_result_path, blind_result_text)
+        blind = parse_blind_reader_result(blind_result_text)
+        if not blind["evidence"] or not all(
+            evidence.strip() in chapter_text for evidence in blind["evidence"]
+        ):
+            raise ValueError("陌生读者报告的 evidence 必须逐字存在于当前正文")
+        folder = blind_result_path.parent
+        service.atomic_json(folder / "blind_reader_analysis.json", {
+            "schema_version": 1,
+            **blind,
+            "reviewed_at": datetime.now().astimezone().isoformat(),
+            "context_policy": "只读当前章节与原始反馈，不读取作者设定或相邻章节",
+        })
+        if review_mode == "blind":
+            service.update_status(
+                ROOT, book_id, feedback_id, status="blind_reviewed",
+                message="陌生读者试读完成；本次未进入作者审稿",
+            )
+            return
     service.update_status(
-        ROOT, book_id, feedback_id, status="analyzing", message="陌生读者报告完成，作者正在结合连续性审稿"
+        ROOT, book_id, feedback_id, status="analyzing",
+        message=(
+            "陌生读者报告完成，作者正在结合连续性审稿"
+            if review_mode == "combined" else "作者正在结合设定与连续性审稿"
+        ),
     )
     prompt, result_path = build_prompt(book_id, feedback_id)
     command = [
@@ -299,11 +328,11 @@ def main() -> int:
                 args.book,
                 args.feedback_id,
                 status="failed",
-                message=f"作者分析失败：{exc}",
+                message=f"审稿任务失败：{exc}",
             )
         except Exception:
             pass
-        print(f"真实读者反馈分析失败：{exc}", file=sys.stderr)
+        print(f"真实读者反馈审稿失败：{exc}", file=sys.stderr)
         return 1
 
 

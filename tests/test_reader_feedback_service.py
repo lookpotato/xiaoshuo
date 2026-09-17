@@ -62,7 +62,26 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         })
         self.assertEqual(item["status"], "queued")
         self.assertEqual(item["category_label"], "人物不像本人")
+        self.assertEqual(item["review_mode"], "combined")
+        self.assertEqual(item["review_mode_label"], "双重审稿")
         self.assertEqual(len(service.list_feedback(self.root, "demo", 1)), 1)
+
+    def test_feedback_accepts_explicit_review_mode(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "confusing",
+            "comment": "我只想先确认陌生读者能看到什么。",
+            "review_mode": "blind",
+        })
+        self.assertEqual(item["review_mode"], "blind")
+        self.assertEqual(item["review_mode_label"], "陌生读者试读")
+        self.assertIn("陌生读者试读", item["status_message"])
+
+    def test_feedback_rejects_unknown_review_mode(self) -> None:
+        with self.assertRaisesRegex(ValueError, "审稿方式无效"):
+            service.create_feedback(self.root, {
+                "book_id": "demo", "chapter": 1, "category": "confusing",
+                "comment": "测试无效审稿方式。", "review_mode": "pretend",
+            })
 
     def test_feedback_rejects_quote_not_in_chapter(self) -> None:
         with self.assertRaisesRegex(ValueError, "不属于当前章节"):

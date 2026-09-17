@@ -505,10 +505,11 @@ def launch_reader_feedback(payload: dict) -> dict:
         item["id"],
     ]
     try:
+        review_label = str(item.get("review_mode_label", "双重审稿"))
         run = launch_command(
             command,
             "reader_feedback",
-            f"《{item['book_title']}》第 {item['chapter']} 章读者反馈分析",
+            f"《{item['book_title']}》第 {item['chapter']} 章{review_label}",
         )
     except Exception as exc:
         reader_feedback_service.update_status(
@@ -516,7 +517,7 @@ def launch_reader_feedback(payload: dict) -> dict:
             item["book_id"],
             item["id"],
             status="failed",
-            message=f"无法启动作者分析：{exc}",
+            message=f"无法启动{item.get('review_mode_label', '审稿')}：{exc}",
         )
         raise
     reader_feedback_service.update_status(
@@ -524,7 +525,7 @@ def launch_reader_feedback(payload: dict) -> dict:
         item["book_id"],
         item["id"],
         status="queued",
-        message="反馈已保存，作者分析任务已启动",
+        message=f"反馈已保存，{item.get('review_mode_label', '审稿')}任务已启动",
         run_id=run["id"],
     )
     return {
