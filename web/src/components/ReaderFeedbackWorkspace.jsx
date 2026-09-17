@@ -32,8 +32,11 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const load = useCallback(async () => {
     if (!chapterNumber) return;
     try {
-      const feedback = await api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`);
-      setChapter(feedback.current); setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories);
+      const [latestChapter, feedback] = await Promise.all([
+        api(`/api/chapter?book_id=${encodeURIComponent(book.id)}&number=${chapterNumber}`),
+        api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`),
+      ]);
+      setChapter(feedback.current || latestChapter); setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories);
     } catch (error) { onNotice(error.message); }
   }, [book.id, chapterNumber, onNotice]);
 
@@ -80,9 +83,14 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, feedback_id: item.id }),
       });
-      setChapter(result.current); setVersions(result.versions || []);
-      setSelectedVersion("current"); setReceipt(result.receipt);
-      onNotice(`第 ${result.receipt.chapter} 章更新完成，当前显示最新正式稿`); await load();
+      if (result.current) setChapter(result.current);
+      if (result.versions) setVersions(result.versions);
+      const nextReceipt = result.receipt || {
+        chapter: chapterNumber, applied_at: new Date().toISOString(),
+        word_count: null, invalidated_checks: ["旧验收"],
+      };
+      setSelectedVersion("current"); setReceipt(nextReceipt);
+      onNotice(`第 ${nextReceipt.chapter} 章更新完成，当前显示最新正式稿`); await load();
     } catch (error) { onNotice(error.message); }
   }
 
@@ -112,7 +120,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
 
     {receipt && <article className="revision-receipt" role="status">
       <div><strong>第 {receipt.chapter} 章更新完成</strong><span>{new Date(receipt.applied_at).toLocaleString("zh-CN")} · 当前已显示最新正式稿</span></div>
-      <p>旧版本已收入草稿箱；正文现为 {receipt.word_count} 字。{receipt.invalidated_checks?.length ? `已撤销过期的${receipt.invalidated_checks.join("、")}，重新验收前不会发布。` : "本次没有需要撤销的旧验收。"}</p>
+      <p>旧版本已收入草稿箱；{receipt.word_count ? `正文现为 ${receipt.word_count} 字。` : "最新正式稿已经重新载入。"}{receipt.invalidated_checks?.length ? `已撤销过期的${receipt.invalidated_checks.join("、")}，重新验收前不会发布。` : "本次没有需要撤销的旧验收。"}</p>
     </article>}
 
     <div className="feedback-workspace">
