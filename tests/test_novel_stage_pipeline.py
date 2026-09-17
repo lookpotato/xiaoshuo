@@ -211,6 +211,51 @@ class NovelStagePipelineTests(unittest.TestCase):
         )
         self.assertEqual(pipeline.literary_review_errors(self.root, self.project, 2), [])
 
+    def test_review_quotes_are_canonicalized_only_from_unique_body_text(self) -> None:
+        self.chapter.write_text(
+            "# 第 2 章 留下谁\n\n"
+            "“我知道。你再试，它就不只是你的响应了。”\n\n"
+            "“查谁碰过它。”\n\n“还有？”\n\n“什么时候碰的。”\n\n"
+            "文件名只剩下半个字母：\n\n`L_`\n",
+            encoding="utf-8",
+        )
+        review = self.valid_review()
+        review["dimensions"]["dialogue_in_context"]["evidence"] = [
+            "“你再试，它就不只是你的响应了。”"
+        ]
+        review["dimensions"]["narrative_progress"]["evidence"] = [
+            "“查谁碰过它。”“还有？”“什么时候碰的。”"
+        ]
+        review["dimensions"]["next_chapter_pull"]["evidence"] = [
+            "文件名只剩下半个字母：`L_`"
+        ]
+        body = pipeline.chapter_narrative_text(self.chapter)
+        normalized = pipeline.canonicalize_literary_review_quotes(review, body)
+        self.assertEqual(
+            normalized["dimensions"]["dialogue_in_context"]["evidence"][0],
+            "“我知道。你再试，它就不只是你的响应了。”",
+        )
+        self.assertEqual(
+            normalized["dimensions"]["narrative_progress"]["evidence"][0],
+            "“查谁碰过它。”\n\n“还有？”\n\n“什么时候碰的。”",
+        )
+        self.assertEqual(
+            normalized["dimensions"]["next_chapter_pull"]["evidence"][0],
+            "文件名只剩下半个字母：\n\n`L_`",
+        )
+
+    def test_review_quote_normalizer_does_not_guess_missing_prose(self) -> None:
+        review = self.valid_review()
+        review["dimensions"]["dialogue_in_context"]["evidence"] = [
+            "正文里不存在的概括"
+        ]
+        body = pipeline.chapter_narrative_text(self.chapter)
+        normalized = pipeline.canonicalize_literary_review_quotes(review, body)
+        self.assertEqual(
+            normalized["dimensions"]["dialogue_in_context"]["evidence"][0],
+            "正文里不存在的概括",
+        )
+
     def test_contextually_wrong_dialogue_can_block_even_when_causality_is_clear(self) -> None:
         review = self.valid_review()
         review["decision"] = "revise"

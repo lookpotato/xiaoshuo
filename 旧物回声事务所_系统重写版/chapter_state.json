@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 1,
-  "next_chapter_number": 2,
+  "last_completed_chapter": 3,
+  "next_chapter_number": 4,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "唐栀已带旧《夜航故事》离开修理间，准备归还孟阿婆；林默确认七号两次异常回应不在预设语音和现有离线日志中，日志存在四十六秒空白，七号已低电量停机。第2章应从归还旧书、征得核查许可和复核声源条件继续，不得继承已删除章节的事件。",
-  "status": "chapter_0001_archived"
+  "notes_for_next_chapter": "隔离复测已排除旧书、网络和正常外放路径，异常波形仍出现；七号预设语音和现有离线日志无法解释，日志存在覆盖或重排痕迹。林默没有接回播放线，七号已耗尽电量停机；L_21-18仍不得指向具体姓名。下一步由唐栀核对阅览室夜间值班，林默核查七号自演示事故后的接触记录。",
+  "status": "chapter_0003_archived"
 }

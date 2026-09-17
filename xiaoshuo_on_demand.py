@@ -587,6 +587,15 @@ def run_independent_literary_review(
     base_prompt = stage_pipeline.reviewer_prompt(ROOT, project, chapter_number)
     result_file = manager.JOB_DIR / f"{job['id']}-literary-{chapter_number:04d}.md"
     review_path = stage_pipeline.review_path(ROOT, project, chapter_number)
+    try:
+        stage_pipeline.validate_literary_review(ROOT, project, chapter_number)
+        print(
+            f"第 {chapter_number} 章已有与当前正文一致的文学终审，直接复用。",
+            flush=True,
+        )
+        return
+    except stage_pipeline.PipelineValidationError:
+        pass
     previous_review = review_path.read_bytes() if review_path.is_file() else None
     print(f"正在由独立读者终审第 {chapter_number} 章……", flush=True)
     last_error = "尚未生成有效审稿结果"
@@ -638,6 +647,12 @@ def run_independent_literary_review(
                     payload = json.loads(fenced.group(1) if fenced else raw)
                     if not isinstance(payload, dict):
                         raise ValueError("审稿结果必须是 JSON 对象")
+                    chapter_body = stage_pipeline.chapter_narrative_text(
+                        stage_pipeline.current_chapter_path(project, chapter_number)
+                    )
+                    payload = stage_pipeline.canonicalize_literary_review_quotes(
+                        payload, chapter_body
+                    )
                     result_file.parent.mkdir(parents=True, exist_ok=True)
                     result_file.write_text(raw, encoding="utf-8")
                     manager.write_json(review_path, payload)

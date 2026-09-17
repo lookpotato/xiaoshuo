@@ -70,6 +70,69 @@ def _text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
+def _canonical_body_quote(body: str, value: object) -> object:
+    """Resolve a near-verbatim model quote to one unique literal body excerpt."""
+    if not isinstance(value, str) or not value.strip():
+        return value
+    quote = value.strip()
+    if quote in body:
+        return quote
+
+    compact_body_chars: list[str] = []
+    compact_body_positions: list[int] = []
+    for index, character in enumerate(body):
+        if not character.isspace():
+            compact_body_chars.append(character)
+            compact_body_positions.append(index)
+    compact_body = "".join(compact_body_chars)
+    compact_quote = re.sub(r"\s+", "", quote)
+    compact_at = compact_body.find(compact_quote)
+    if (
+        compact_quote
+        and compact_at >= 0
+        and compact_body.rfind(compact_quote) == compact_at
+    ):
+        start = compact_body_positions[compact_at]
+        end = compact_body_positions[compact_at + len(compact_quote) - 1] + 1
+        return body[start:end].strip()
+
+    core = quote
+    for opening, closing in (("“", "”"), ("‘", "’"), ('"', '"'), ("'", "'"), ("`", "`")):
+        if core.startswith(opening) and core.endswith(closing) and len(core) > 2:
+            core = core[len(opening):-len(closing)].strip()
+            break
+    core_at = body.find(core)
+    if core and core_at >= 0 and body.rfind(core) == core_at:
+        line_start = body.rfind("\n", 0, core_at) + 1
+        line_end = body.find("\n", core_at + len(core))
+        if line_end < 0:
+            line_end = len(body)
+        literal_line = body[line_start:line_end].strip()
+        if literal_line and literal_line in body:
+            return literal_line
+    return value
+
+
+def canonicalize_literary_review_quotes(payload: dict, body: str) -> dict:
+    """Replace only uniquely locatable near-quotes with literal prose excerpts."""
+    dimensions = payload.get("dimensions")
+    if isinstance(dimensions, dict):
+        for item in dimensions.values():
+            if isinstance(item, dict) and isinstance(item.get("evidence"), list):
+                item["evidence"] = [
+                    _canonical_body_quote(body, quote) for quote in item["evidence"]
+                ]
+    blockers = payload.get("blocking_issues")
+    if isinstance(blockers, list):
+        for issue in blockers:
+            if isinstance(issue, dict):
+                issue["quote"] = _canonical_body_quote(body, issue.get("quote"))
+    fragile = payload.get("most_fragile_passage")
+    if isinstance(fragile, dict):
+        fragile["quote"] = _canonical_body_quote(body, fragile.get("quote"))
+    return payload
+
+
 def load_config(root: Path) -> dict:
     path = Path(root) / CONFIG_NAME
     data = _read_object(path)
@@ -335,6 +398,8 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
 - 小范围措辞问题用 revise；中心冲突、情绪峰值或整章任务不成立用 redesign 和
   chapter_plan。任何 revise 维度都必须进入 blocking_issues。
 - 所有 evidence 与 quote 必须逐字来自当前正文；pass 时 blocking_issues 必须为空。
+- 每条 evidence 只能引用一段连续正文；复制整句或整行，保留句首、引号、标点和原始换行，
+  不得省略句首词语，也不得把相隔多行的对白自行拼成一行。
 """
 
 

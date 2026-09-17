@@ -10,6 +10,50 @@ from novel_reader_gate import narrative_sha256
 
 
 class IndependentReviewRunnerTests(TestCase):
+    def test_runner_reuses_existing_review_for_unchanged_chapter(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root / "book"
+            (project / "chapters").mkdir(parents=True)
+            chapter = project / "chapters" / "0002-second.md"
+            sentence = "林澄合上账册，决定先查清来源。"
+            chapter.write_text(f"# 第 2 章 查证\n\n{sentence}\n", encoding="utf-8")
+            (root / pipeline.CONFIG_NAME).write_text(json.dumps({
+                "schema_version": 1, "enabled": True,
+                "recent_chapters_for_director": 5,
+                "recent_chapters_for_reviewer": 2,
+                "max_new_questions_per_chapter": 1,
+                "plan_directory": "chapter_plans",
+                "review_directory": "literary_reviews",
+            }), encoding="utf-8")
+            review = {
+                "schema_version": 1, "chapter_number": 2,
+                "mode": pipeline.REVIEW_MODE,
+                "narrative_sha256": narrative_sha256(chapter),
+                "decision": "pass",
+                "dimensions": {
+                    key: {"verdict": "pass", "assessment": "判断具体且有依据。", "evidence": [sentence]}
+                    for key in pipeline.REVIEW_DIMENSIONS
+                },
+                "blocking_issues": [],
+                "most_fragile_passage": {
+                    "quote": sentence, "risk": "推进较快。",
+                    "why_acceptable": "人物行动和目标仍然清楚。",
+                },
+                "strengths_to_preserve": ["人物主动核验来源。"],
+            }
+            review_path = pipeline.review_path(root, project, 2)
+            review_path.parent.mkdir()
+            review_path.write_text(json.dumps(review, ensure_ascii=False), encoding="utf-8")
+            with (
+                mock.patch.object(xiaoshuo_on_demand, "ROOT", root),
+                mock.patch.object(xiaoshuo_on_demand.subprocess, "run") as run,
+            ):
+                xiaoshuo_on_demand.run_independent_literary_review(
+                    "codex", project, 2, {"id": "job-reuse-123"}
+                )
+            run.assert_not_called()
+
     def test_runner_retries_invalid_review_without_rewriting_the_chapter(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
