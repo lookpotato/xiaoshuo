@@ -595,12 +595,17 @@ class AppHandler(BaseHTTPRequestHandler):
                 book_id = query.get("book_id", [""])[0]
                 chapter_text = query.get("chapter", [""])[0]
                 chapter = int(chapter_text) if chapter_text else None
-                self.send_json({
+                payload = {
                     "items": reader_feedback_service.list_feedback(
                         ROOT, book_id, chapter
                     ),
                     "categories": reader_feedback_service.CATEGORIES,
-                })
+                }
+                if chapter is not None:
+                    payload.update(reader_feedback_service.chapter_versions(
+                        ROOT, book_id, chapter
+                    ))
+                self.send_json(payload)
                 return
             self.serve_static(parsed.path)
         except (ValueError, KeyError) as exc:

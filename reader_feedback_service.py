@@ -213,6 +213,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
+        "receipt": status.get("receipt") if isinstance(status.get("receipt"), dict) else None,
     }
 
 
@@ -234,6 +235,71 @@ def list_feedback(root: Path, book_id: str, chapter: int | None = None) -> list[
         if len(rows) >= 100:
             break
     return rows
+
+
+def _version_payload(path: Path, *, version_id: str, kind: str, label: str,
+                     created_at: str | None = None) -> dict:
+    text = path.read_text(encoding="utf-8")
+    return {
+        "id": version_id,
+        "kind": kind,
+        "label": label,
+        "created_at": created_at or datetime.fromtimestamp(
+            path.stat().st_mtime
+        ).astimezone().isoformat(),
+        "content": _narrative(text),
+    }
+
+
+def chapter_versions(root: Path, book_id: str, chapter: int) -> dict:
+    """Return the live chapter plus read-only drafts and feedback snapshots."""
+    _, project = _book(root, book_id)
+    chapter_path = _chapter(project, chapter)
+    current_text = chapter_path.read_text(encoding="utf-8")
+    versions = []
+
+    draft_pattern = f"*-chapter-{chapter:04d}.md"
+    for path in sorted((project / "drafts").glob(draft_pattern), reverse=True):
+        versions.append(_version_payload(
+            path,
+            version_id=f"draft:{path.name}",
+            kind="generated_draft",
+            label=f"生成草稿 · {path.stem.split('-chapter-')[0]}",
+        ))
+
+    for item in list_feedback(root, book_id, chapter):
+        folder = _feedback_dir(root, book_id, str(item["id"]))
+        applied_at = item.get("applied_at") or item.get("created_at")
+        original = folder / "original_before_apply.md"
+        if original.is_file():
+            versions.append(_version_payload(
+                original,
+                version_id=f"before:{item['id']}",
+                kind="before_apply",
+                label=f"应用前备份 · {item['category_label']}",
+                created_at=applied_at,
+            ))
+        proposal = folder / "proposed_revision.md"
+        if proposal.is_file():
+            versions.append(_version_payload(
+                proposal,
+                version_id=f"proposal:{item['id']}",
+                kind="proposal",
+                label=f"候选修订 · {item['category_label']}",
+                created_at=item.get("created_at"),
+            ))
+
+    versions.sort(key=lambda value: str(value.get("created_at", "")), reverse=True)
+    return {
+        "current": {
+            "book_id": book_id,
+            "number": chapter,
+            "filename": chapter_path.name,
+            "content": _narrative(current_text),
+            "sha256": hashlib.sha256(current_text.encode("utf-8")).hexdigest(),
+        },
+        "versions": versions[:60],
+    }
 
 
 def _learning_candidate(analysis: dict) -> dict:
@@ -461,18 +527,45 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
     if not backup.exists():
         atomic_text(backup, current)
     atomic_text(chapter_path, revision)
-    reader_check = project / "reader_checks" / f"{number:04d}.json"
-    if reader_check.is_file():
-        check_backup = folder / "reader_check_before_apply.json"
-        if not check_backup.exists():
-            atomic_text(check_backup, reader_check.read_text(encoding="utf-8"))
-        reader_check.unlink()
+    invalidated = []
+    stale_artifacts = (
+        (project / "reader_checks" / f"{number:04d}.json", "reader_check_before_apply.json", "读者验收"),
+        (project / "literary_reviews" / f"{number:04d}.json", "literary_review_before_apply.json", "文学终审"),
+        (project / "module_reports" / f"{number:04d}.json", "module_report_before_apply.json", "创作能力报告"),
+    )
+    for artifact, backup_name, label in stale_artifacts:
+        if not artifact.is_file():
+            continue
+        artifact_backup = folder / backup_name
+        if not artifact_backup.exists():
+            atomic_text(artifact_backup, artifact.read_text(encoding="utf-8"))
+        artifact.unlink()
+        invalidated.append(label)
+    applied_at = datetime.now().astimezone().isoformat()
+    current_hash = hashlib.sha256(revision.encode("utf-8")).hexdigest()
+    receipt = {
+        "chapter": number,
+        "filename": chapter_path.name,
+        "applied_at": applied_at,
+        "word_count": revision_count,
+        "previous_sha256": hashlib.sha256(current.encode("utf-8")).hexdigest(),
+        "current_sha256": current_hash,
+        "backup": str(backup.relative_to(project)),
+        "invalidated_checks": invalidated,
+        "message": "最新正式稿已更新，页面已切回新正文；旧版本已收入草稿箱。",
+    }
     status = update_status(
         root,
         book_id,
         feedback_id,
         status="applied",
-        message="候选修订已应用并重算字数；旧读者验收已撤销，重新验收前不得发布",
-        applied_at=datetime.now().astimezone().isoformat(),
+        message="最新正式稿已更新；旧版本已收入草稿箱，过期验收已撤销，重新验收前不得发布",
+        applied_at=applied_at,
+        receipt=receipt,
     )
-    return {"item": feedback_item(root, book_id, feedback_id), "status": status}
+    return {
+        "item": feedback_item(root, book_id, feedback_id),
+        "status": status,
+        "receipt": receipt,
+        **chapter_versions(root, book_id, number),
+    }

@@ -88,8 +88,35 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         service.atomic_text(folder / "proposed_revision.md", revised)
         result = service.apply_revision(self.root, "demo", item["id"])
         self.assertEqual(result["item"]["status"], "applied")
+        self.assertEqual(result["receipt"]["chapter"], 1)
+        self.assertIn("甲停了一下", result["current"]["content"])
         self.assertTrue((folder / "original_before_apply.md").is_file())
         self.assertIn("甲停了一下", self.chapter.read_text(encoding="utf-8"))
+
+    def test_chapter_versions_keeps_generated_draft_candidate_and_backup(self) -> None:
+        (self.project / "drafts").mkdir()
+        draft = self.project / "drafts" / "2026-09-17-chapter-0001.md"
+        draft.write_text(self.chapter.read_text(encoding="utf-8"), encoding="utf-8")
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "这里太快。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "partial", "author_judgment": "问题成立。",
+            "valid_observations": ["动作缺反应"], "misdiagnoses": [],
+            "revision_strategy": ["补一个反应"],
+        })
+        revised = self.chapter.read_text(encoding="utf-8").replace(
+            "甲把门推开。", "甲停了一下，再把门推开。"
+        ) + "\n---\n\n## Metadata\n\n- word_count: 9999\n"
+        service.atomic_text(folder / "proposed_revision.md", revised)
+        service.apply_revision(self.root, "demo", item["id"])
+
+        result = service.chapter_versions(self.root, "demo", 1)
+        kinds = {version["kind"] for version in result["versions"]}
+        self.assertEqual(kinds, {"generated_draft", "proposal", "before_apply"})
+        self.assertIn("甲停了一下", result["current"]["content"])
 
     def test_worker_result_requires_revision_only_when_author_accepts(self) -> None:
         parsed = parse_result(json.dumps({
@@ -158,13 +185,25 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         service.atomic_text(folder / "proposed_revision.md", revised)
         check = self.project / "reader_checks" / "0001.json"
         service.atomic_json(check, {"narrative_sha256": "old"})
-        service.apply_revision(self.root, "demo", item["id"])
+        literary = self.project / "literary_reviews" / "0001.json"
+        report = self.project / "module_reports" / "0001.json"
+        service.atomic_json(literary, {"narrative_sha256": "old"})
+        service.atomic_json(report, {"narrative_sha256": "old"})
+        result = service.apply_revision(self.root, "demo", item["id"])
         expected = len(service._compact(service._body_text(revised)))
         self.assertIn(
             f"- word_count: {expected}", self.chapter.read_text(encoding="utf-8")
         )
         self.assertFalse(check.exists())
         self.assertTrue((folder / "reader_check_before_apply.json").is_file())
+        self.assertFalse(literary.exists())
+        self.assertFalse(report.exists())
+        self.assertTrue((folder / "literary_review_before_apply.json").is_file())
+        self.assertTrue((folder / "module_report_before_apply.json").is_file())
+        self.assertEqual(
+            result["receipt"]["invalidated_checks"],
+            ["读者验收", "文学终审", "创作能力报告"],
+        )
 
     def _feedback_with_learning(self, category: str = "character_voice") -> dict:
         item = service.create_feedback(self.root, {
