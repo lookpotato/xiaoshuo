@@ -10,6 +10,30 @@ from novel_reader_gate import narrative_sha256
 
 
 class IndependentReviewRunnerTests(TestCase):
+    def test_dialogue_runner_reuses_pass_for_unchanged_chapter(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root / "book"
+            (project / "chapters").mkdir(parents=True)
+            chapter = project / "chapters" / "0002-second.md"
+            chapter.write_text("# 第 2 章 查证\n\n“先别碰，等人来。”\n", encoding="utf-8")
+            review = {
+                "schema_version": 1, "chapter_number": 2,
+                "mode": pipeline.DIALOGUE_REVIEW_MODE,
+                "narrative_sha256": narrative_sha256(chapter),
+                "decision": "pass", "assessment": "台词指向现场动作。",
+                "issues": [], "strengths_to_preserve": ["先拦动作再给条件。"],
+            }
+            path = pipeline.dialogue_review_path(project, 2)
+            path.parent.mkdir()
+            path.write_text(json.dumps(review, ensure_ascii=False), encoding="utf-8")
+            with mock.patch.object(xiaoshuo_on_demand.subprocess, "run") as run:
+                result = xiaoshuo_on_demand.run_independent_dialogue_review(
+                    "codex", project, 2, {"id": "job-dialogue"}
+                )
+            self.assertEqual(result["decision"], "pass")
+            run.assert_not_called()
+
     def test_runner_reuses_existing_review_for_unchanged_chapter(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

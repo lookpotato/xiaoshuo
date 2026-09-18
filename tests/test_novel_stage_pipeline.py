@@ -131,6 +131,18 @@ class NovelStagePipelineTests(unittest.TestCase):
         path.parent.mkdir()
         path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
 
+    def valid_dialogue_review(self) -> dict:
+        return {
+            "schema_version": 1,
+            "chapter_number": 2,
+            "mode": pipeline.DIALOGUE_REVIEW_MODE,
+            "narrative_sha256": narrative_sha256(self.chapter),
+            "decision": "pass",
+            "assessment": "本章没有直接对白，人物选择主要通过动作呈现。",
+            "issues": [],
+            "strengths_to_preserve": ["交还钥匙的动作保留了人物犹豫"],
+        }
+
     def test_director_is_generic_and_reads_only_existing_book_sources(self) -> None:
         prompt = pipeline.director_prompt(self.root, self.project, 2, "作者约束")
         self.assertIn("outline.md", prompt)
@@ -210,6 +222,41 @@ class NovelStagePipelineTests(unittest.TestCase):
             "pass",
         )
         self.assertEqual(pipeline.literary_review_errors(self.root, self.project, 2), [])
+
+    def test_dialogue_reviewer_has_only_current_prose_and_reality_test(self) -> None:
+        prompt = pipeline.dialogue_reviewer_prompt(self.project, 2)
+        self.assertIn("`chapter.md`", prompt)
+        self.assertIn("人物目的正确", prompt)
+        self.assertIn("作者概括", prompt)
+        self.assertNotIn("style_guide.md", prompt)
+        self.assertNotIn(str(self.chapter.resolve()), prompt)
+
+    def test_valid_dialogue_review_passes(self) -> None:
+        path = pipeline.dialogue_review_path(self.project, 2)
+        path.parent.mkdir()
+        path.write_text(
+            json.dumps(self.valid_dialogue_review(), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        self.assertEqual(
+            pipeline.validate_dialogue_review(self.project, 2)["decision"], "pass"
+        )
+        self.assertEqual(pipeline.dialogue_review_errors(self.project, 2), [])
+
+    def test_dialogue_review_requires_literal_problem_quote(self) -> None:
+        review = self.valid_dialogue_review()
+        review["decision"] = "revise"
+        review["issues"] = [{
+            "quote": "不存在的台词",
+            "speaker_intent": "阻止对方",
+            "diagnosis": "像作者概括",
+            "natural_direction": "指向眼前动作",
+        }]
+        path = pipeline.dialogue_review_path(self.project, 2)
+        path.parent.mkdir()
+        path.write_text(json.dumps(review, ensure_ascii=False), encoding="utf-8")
+        with self.assertRaisesRegex(pipeline.PipelineValidationError, "引用不在正文"):
+            pipeline.validate_dialogue_review(self.project, 2)
 
     def test_review_quotes_are_canonicalized_only_from_unique_body_text(self) -> None:
         self.chapter.write_text(

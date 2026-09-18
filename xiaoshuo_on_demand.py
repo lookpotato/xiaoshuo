@@ -32,6 +32,8 @@ ROOT = Path(__file__).resolve().parent
 MAX_AUTOMATIC_REPAIRS = 2
 MAX_CODEX_PROCESS_RETRIES = 2
 MAX_LITERARY_REVIEW_ATTEMPTS = 3
+MAX_DIALOGUE_REVIEW_ATTEMPTS = 3
+MAX_DIALOGUE_REVISIONS = 2
 
 
 class ArchiveGateFailure(RuntimeError):
@@ -342,7 +344,7 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
 读取 AGENTS.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及下列实际存在的本书资料和最近三章正文。不要读取其他书，也不要猜测不存在的资料：
 {book_sources}
 
-正文与流程文件分两步处理：先专心完成场景和正文，再补人物线、验收与归档；不得一边写台词一边用门禁字段、章节合同或人物标签拼句子。对白开写前只确定每对人物的关系、共同经历、当下场合、权力差和各自想藏什么。完稿后单独做一次真人开口复核：逐句问“现实里这个人现在会不会这么说”，而不是问“这句话是否符合人设或能否推进剧情”。删掉人物不会主动说出的作者概括、并列清单、书面抽象词和过分完整的说明；尤其不能因为目的正确、关系熟悉，就保留一句现实中不会这样组织的话。称呼与省略由关系决定，不用方言、脏话或网络词机械冒充口语。
+正文与流程文件分两步处理：先专心完成场景和正文，再补人物线、验收与归档；不得一边写台词一边用门禁字段、章节合同或人物标签拼句子。对白开写前只确定每对人物的关系、共同经历、当下场合、权力差和各自想藏什么。完稿后单独执行口语逆翻译与真人开口复核：逐句问“现实里这个人现在会不会这么说”，而不是问“这句话是否符合人设或能否推进剧情”。删掉人物不会主动说出的作者概括、并列清单、书面抽象词和过分完整的说明；尤其不能因为目的正确、关系熟悉，就保留一句现实中不会这样组织的话。称呼与省略由关系决定，不能全书固定替换，也不用方言、脏话或网络词机械冒充口语。
 
 严格按人物线流程：先为每个实际出场人物记录独立目标、误解、底线、行动、代价和下一步，再写 interaction_map.md 和 state_update.md。interaction_map.md 可以使用 Markdown 表格，也可以使用带人物相互影响、行动与结果的编号交织记录。00-cast.md 只列真实人物，必须使用“## 角色名单”及逐人一行的“- 人物名：...”格式；不要把“主要视角/出场人物/当章目标/当章小胜负/主要钩子”写成角色列表项。人物数量、资源变化和冲突形式服从本章实际内容，不为满足固定数量强塞人物、损耗或钩子。
 
@@ -386,6 +388,34 @@ def local_repair_prompt(
 6. 章节第一行必须严格写成 `# 第 {chapter_number} 章 标题`，不得残留 `+`、`-` 等补丁标记。
 
 结束时只报告修复项和校验结果，不得粘贴正文。""" + creative_modules.prompt(project, chapter_number) + "\n\n" + length_instruction
+
+
+def dialogue_repair_prompt(book_id: str, project: Path, chapter_number: int) -> str:
+    review = stage_pipeline.dialogue_review_path(project, chapter_number).resolve()
+    chapter = stage_pipeline.current_chapter_path(project, chapter_number)
+    length_instruction = chapter_length_instruction(
+        manager.find_book(manager.config(), book_id), chapter_number
+    )
+    return f"""# 中文对白专项返修
+
+只修订书籍 `{book_id}` 第 {chapter_number} 章的真人对白及其不可分割的相邻动作，不处理情节规划、
+图片、发布、Git 或下一章。当前正文：`{chapter}`；独立对白试读：`{review}`。
+
+{author_prompt_context(book_id, project)}
+
+读取本书 style_guide.md、character_voice_bible.md（如有）、最近三章和共享中文口语基础，
+但不得用“符合人设”“人物目的成立”否定试读指出的现实语用问题。逐项处理 review.issues：
+先确认说话人此刻想让对方做什么，再把作者概括、抽象标签、并列清单或完整推理还原成
+现场动作与双方共享语境。保留 review.strengths_to_preserve，不机械增加方言、脏话、网络词或残句。
+
+只允许修改当前章节、对应 drafts、reader_checks/{chapter_number:04d}.json 以及正文改动后必须同步的
+chapter_state/continuity 记录；不得改变章节合同的中心选择、事件结果、线索边界和章末钩子。
+正文改动后重算 Metadata word_count，重新生成 reader_checks 并确保引用逐字存在。删除已经过期的
+literary_reviews/{chapter_number:04d}.json，让后续独立文学终审重新执行。完成后停止，不得自行填写
+dialogue_reviews 或 literary_reviews。
+
+{length_instruction}
+"""
 
 
 def _codex_result_detail(result_file: Path) -> str:
@@ -461,6 +491,7 @@ def collect_local_archive_errors(
     errors.extend(manager.validate_reader_checks(project, reader_gate_from))
     if stage_pipeline.enabled_for(ROOT, project):
         errors.extend(stage_pipeline.chapter_plan_errors(ROOT, project, chapter_number))
+        errors.extend(stage_pipeline.dialogue_review_errors(project, chapter_number))
         errors.extend(
             stage_pipeline.literary_review_errors(ROOT, project, chapter_number)
         )
@@ -676,6 +707,108 @@ def run_independent_literary_review(
     )
 
 
+def run_independent_dialogue_review(
+    codex: str, project: Path, chapter_number: int, job: dict
+) -> dict:
+    """Use a fresh, prose-only context to audit spoken Chinese."""
+    try:
+        return stage_pipeline.validate_dialogue_review(project, chapter_number)
+    except stage_pipeline.PipelineValidationError:
+        pass
+    prompt = stage_pipeline.dialogue_reviewer_prompt(project, chapter_number)
+    output = stage_pipeline.dialogue_review_path(project, chapter_number)
+    result_file = manager.JOB_DIR / f"{job['id']}-dialogue-{chapter_number:04d}.md"
+    last_error = "尚未生成有效对白试读"
+    with TemporaryDirectory(prefix="novel-dialogue-reader-") as temporary:
+        isolated = Path(temporary)
+        shutil.copyfile(
+            stage_pipeline.current_chapter_path(project, chapter_number),
+            isolated / "chapter.md",
+        )
+        isolated_result = isolated / "dialogue-review.json"
+        for attempt in range(MAX_DIALOGUE_REVIEW_ATTEMPTS):
+            isolated_result.unlink(missing_ok=True)
+            current_prompt = prompt
+            if attempt:
+                current_prompt += (
+                    "\n\n上一份 JSON 未通过机械校验：" + last_error
+                    + "\n请重新读取 chapter.md；quote 必须逐字复制当前正文。"
+                )
+            print(
+                f"独立中文对白试读（{attempt + 1}/{MAX_DIALOGUE_REVIEW_ATTEMPTS}）……",
+                flush=True,
+            )
+            process = subprocess.run(
+                [
+                    codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                    "-C", str(isolated), "--sandbox", "read-only",
+                    "--config", 'approval_policy="never"',
+                    "--output-last-message", str(isolated_result), "-",
+                ],
+                cwd=isolated, input=current_prompt, text=True,
+                encoding="utf-8", errors="replace",
+            )
+            if process.returncode or not isolated_result.is_file():
+                last_error = f"Codex 退出码 {process.returncode}，未形成对白试读 JSON"
+                continue
+            try:
+                raw = isolated_result.read_text(encoding="utf-8")
+                fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", raw.strip(), re.S | re.I)
+                payload = json.loads(fenced.group(1) if fenced else raw)
+                if not isinstance(payload, dict):
+                    raise ValueError("对白试读必须是 JSON 对象")
+                body = stage_pipeline.chapter_narrative_text(
+                    stage_pipeline.current_chapter_path(project, chapter_number)
+                )
+                payload = stage_pipeline.canonicalize_dialogue_review_quotes(payload, body)
+                manager.write_json(output, payload)
+                result_file.parent.mkdir(parents=True, exist_ok=True)
+                result_file.write_text(raw, encoding="utf-8")
+                return stage_pipeline.validate_dialogue_review(project, chapter_number)
+            except (ValueError, json.JSONDecodeError, stage_pipeline.PipelineValidationError) as exc:
+                last_error = str(exc)
+    output.unlink(missing_ok=True)
+    raise RuntimeError(
+        f"第 {chapter_number} 章独立中文对白试读连续 {MAX_DIALOGUE_REVIEW_ATTEMPTS} 次无效：{last_error}"
+    )
+
+
+def run_dialogue_quality_cycle(
+    codex: str, book_id: str, project: Path, chapter_number: int, job: dict
+) -> None:
+    """Review and, when needed, revise dialogue in separate model calls."""
+    for revision in range(MAX_DIALOGUE_REVISIONS + 1):
+        review = run_independent_dialogue_review(codex, project, chapter_number, job)
+        if review["decision"] == "pass":
+            print(f"第 {chapter_number} 章中文对白独立试读通过。", flush=True)
+            return
+        if revision >= MAX_DIALOGUE_REVISIONS:
+            details = "；".join(item["diagnosis"] for item in review["issues"])
+            raise RuntimeError(
+                f"第 {chapter_number} 章对白专项返修 {revision} 次后仍未通过：{details}"
+            )
+        print(
+            f"第 {chapter_number} 章对白存在 {len(review['issues'])} 项真人口语问题，"
+            f"正在启动独立专项返修（{revision + 1}/{MAX_DIALOGUE_REVISIONS}）。",
+            flush=True,
+        )
+        result_file = manager.JOB_DIR / (
+            f"{job['id']}-dialogue-repair-{chapter_number:04d}-{revision + 1}.md"
+        )
+        process = subprocess.run(
+            _stage_command(codex, result_file), cwd=ROOT,
+            input=dialogue_repair_prompt(book_id, project, chapter_number),
+            text=True, encoding="utf-8", errors="replace",
+        )
+        if process.returncode:
+            raise RuntimeError(
+                f"第 {chapter_number} 章对白专项返修进程退出码 {process.returncode}"
+            )
+        # The old report is bound to the pre-revision prose hash.
+        stage_pipeline.dialogue_review_path(project, chapter_number).unlink(missing_ok=True)
+    raise AssertionError("unreachable")
+
+
 def write_one(book_id: str, job: dict) -> None:
     codex = resolve_codex()
     data = manager.config()
@@ -720,6 +853,9 @@ def write_one(book_id: str, job: dict) -> None:
             )
             if staged and len(archived) == 1:
                 try:
+                    run_dialogue_quality_cycle(
+                        codex, book_id, project, expected_chapter, job
+                    )
                     run_independent_literary_review(
                         codex, project, expected_chapter, job
                     )

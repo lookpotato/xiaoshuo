@@ -16,6 +16,8 @@ SCHEMA_VERSION = 1
 PLAN_SCHEMA_VERSION = 1
 REVIEW_SCHEMA_VERSION = 1
 REVIEW_MODE = "independent-literary-reader"
+DIALOGUE_REVIEW_SCHEMA_VERSION = 1
+DIALOGUE_REVIEW_MODE = "independent-spoken-chinese-reader"
 
 BOOK_SOURCE_NAMES = (
     "novel_config.md",
@@ -204,6 +206,10 @@ def review_path(root: Path, project: Path, number: int) -> Path:
     return Path(project) / config["review_directory"] / f"{number:04d}.json"
 
 
+def dialogue_review_path(project: Path, number: int) -> Path:
+    return Path(project) / "dialogue_reviews" / f"{number:04d}.json"
+
+
 def _path_list(paths: list[Path]) -> str:
     return "\n".join(f"- `{path}`" for path in paths) or "- 无"
 
@@ -347,7 +353,8 @@ def writer_contract(root: Path, project: Path, number: int) -> str:
 动笔前必须读取并执行 `{plan_path(root, project, number).resolve()}`。这份合同负责本章的
 人物诉求、情绪推进、旧期待兑现和新增悬念上限。正文可以寻找更自然的场面表达，但不得
 悄悄替换中心选择、情绪最高点或不可逆结果；发现合同与既有正文事实冲突时停止归档并报告。
-作者阶段不得创建或填写 literary_reviews；文学审稿必须由后续独立上下文完成。
+作者阶段不得创建或填写 dialogue_reviews 与 literary_reviews；中文对白试读和文学审稿必须由
+后续两个彼此独立的新上下文完成。
 """
 
 
@@ -403,6 +410,101 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
 - 每条 evidence 只能引用一段连续正文；复制整句或整行，保留句首、引号、标点和原始换行，
   不得省略句首词语，也不得把相隔多行的对白自行拼成一行。
 """
+
+
+def dialogue_reviewer_prompt(project: Path, number: int) -> str:
+    chapter = current_chapter_path(project, number)
+    digest = narrative_sha256(chapter)
+    return f"""# 独立中文对白试读
+
+你只负责判断当前章节里真人对白是否像中国人在具体现场自然开口。只读取 `chapter.md`；
+不得读取人设、大纲、作者说明、审稿记录或其他章节，也不得修改任何文件。
+
+先逐句还原说话人此刻究竟想让对方做什么，再检查原句是否把作者概括、人物标签、
+提纲条件或完整推理硬塞进嘴里。人物目的正确、关系熟悉、情节需要、句子通顺，都不能
+替不自然的说法免责。不要为了“口语化”机械添加方言、脏话、网络词、停顿或残句。
+
+最终只输出一个合法 JSON 对象，不要代码围栏：
+{{
+  "schema_version": 1,
+  "chapter_number": {number},
+  "mode": "{DIALOGUE_REVIEW_MODE}",
+  "narrative_sha256": "{digest}",
+  "decision": "pass 或 revise",
+  "assessment": "全章真人对白的具体读感；不能只写通顺或符合人设",
+  "issues": [
+    {{
+      "quote": "逐字复制的一段连续正文对白",
+      "speaker_intent": "这句话在现场真正要对方做什么",
+      "diagnosis": "为何不像真人当场会说的话",
+      "natural_direction": "只说明改写方向，不替所有人物套固定口语模板"
+    }}
+  ],
+  "strengths_to_preserve": ["对白中应保留的具体关系动作或现场反应"]
+}}
+
+规则：
+- 出现作者概括、抽象人物倾向、并列功能清单、合同摘要、系统提示或翻译腔时判 revise。
+- 一句虽然信息正确，但现实中需要先指眼前物件、先拦动作或等对方追问才会说，也判 revise。
+- pass 时 issues 必须为空；revise 时至少列一项。
+- quote 必须逐字来自当前正文，保留引号与标点；strengths_to_preserve 至少一项。
+"""
+
+
+def validate_dialogue_review(project: Path, number: int) -> dict:
+    chapter = current_chapter_path(project, number)
+    body = chapter_narrative_text(chapter)
+    data = _read_object(dialogue_review_path(project, number))
+    if data.get("schema_version") != DIALOGUE_REVIEW_SCHEMA_VERSION:
+        raise PipelineValidationError(f"第 {number} 章对白试读版本错误")
+    if data.get("chapter_number") != number or data.get("mode") != DIALOGUE_REVIEW_MODE:
+        raise PipelineValidationError(f"第 {number} 章对白试读身份或章号错误")
+    if data.get("narrative_sha256") != narrative_sha256(chapter):
+        raise PipelineValidationError(f"第 {number} 章对白试读正文哈希不一致")
+    decision = data.get("decision")
+    if decision not in {"pass", "revise"} or not _text(data.get("assessment")):
+        raise PipelineValidationError(f"第 {number} 章对白试读结论无效")
+    issues = data.get("issues")
+    if not isinstance(issues, list):
+        raise PipelineValidationError(f"第 {number} 章对白试读 issues 必须为数组")
+    for issue in issues:
+        if not isinstance(issue, dict) or not all(
+            _text(issue.get(key))
+            for key in ("quote", "speaker_intent", "diagnosis", "natural_direction")
+        ):
+            raise PipelineValidationError(f"第 {number} 章对白试读问题说明不完整")
+        if issue["quote"].strip() not in body:
+            raise PipelineValidationError(f"第 {number} 章对白试读引用不在正文")
+    strengths = data.get("strengths_to_preserve")
+    if not isinstance(strengths, list) or not strengths or not all(_text(x) for x in strengths):
+        raise PipelineValidationError(f"第 {number} 章对白试读缺少保留项")
+    if decision == "pass" and issues:
+        raise PipelineValidationError(f"第 {number} 章对白试读通过但仍有问题")
+    if decision == "revise" and not issues:
+        raise PipelineValidationError(f"第 {number} 章对白试读要求修订但没有问题")
+    return data
+
+
+def canonicalize_dialogue_review_quotes(payload: dict, body: str) -> dict:
+    issues = payload.get("issues")
+    if isinstance(issues, list):
+        for issue in issues:
+            if isinstance(issue, dict):
+                issue["quote"] = _canonical_body_quote(body, issue.get("quote"))
+    return payload
+
+
+def dialogue_review_errors(project: Path, number: int) -> list[str]:
+    try:
+        review = validate_dialogue_review(project, number)
+    except PipelineValidationError as exc:
+        return [str(exc)]
+    if review["decision"] == "pass":
+        return []
+    return [
+        f"第 {number} 章中文对白试读：{item['diagnosis']}｜原句：{item['quote']}"
+        for item in review["issues"]
+    ]
 
 
 def validate_literary_review(root: Path, project: Path, number: int) -> dict:
