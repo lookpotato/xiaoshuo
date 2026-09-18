@@ -10,6 +10,133 @@ from novel_reader_gate import narrative_sha256
 
 
 class IndependentReviewRunnerTests(TestCase):
+    def test_dialogue_repair_uses_isolated_full_chapter_candidate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root / "book"
+            for folder in ("chapters", "drafts", "dialogue_reviews", "reader_checks", "literary_reviews", "chapter_plans"):
+                (project / folder).mkdir(parents=True, exist_ok=True)
+            (root / pipeline.CONFIG_NAME).write_text(json.dumps({
+                "schema_version": 1, "enabled": True,
+                "recent_chapters_for_director": 5,
+                "recent_chapters_for_reviewer": 2,
+                "max_new_questions_per_chapter": 1,
+                "plan_directory": "chapter_plans",
+                "review_directory": "literary_reviews",
+            }), encoding="utf-8")
+            filler = "他守在门边等人回来。" * 120
+            old_line = "“你别看，别摸，别临时起意。”"
+            new_line = "“先别碰，等她回来再说。”"
+            original = (
+                f"# 第 2 章 查证\n\n{filler}\n\n{old_line}\n\n"
+                "---\n\n## Metadata\n\n- chapter_number: 2\n"
+                "- word_count: 1200\n- generated_at: 2026-09-18 12:00\n"
+                "- upload_status: not_uploaded\n"
+            )
+            revised = original.replace(old_line, new_line)
+            chapter = project / "chapters" / "0002-second.md"
+            chapter.write_text(original, encoding="utf-8")
+            draft = project / "drafts" / "2026-09-18-chapter-0002.md"
+            draft.write_text(original, encoding="utf-8")
+            review = {
+                "issues": [{"quote": old_line, "diagnosis": "像规则清单"}],
+                "strengths_to_preserve": ["动作明确"],
+            }
+            (project / "dialogue_reviews" / "0002.json").write_text(
+                json.dumps(review, ensure_ascii=False), encoding="utf-8"
+            )
+            (project / "reader_checks" / "0002.json").write_text("{}", encoding="utf-8")
+            (project / "literary_reviews" / "0002.json").write_text("{}", encoding="utf-8")
+
+            def fake_codex_run(*args, **kwargs):
+                command = args[0]
+                self.assertIn("read-only", command)
+                self.assertNotEqual(Path(kwargs["cwd"]).resolve(), project.resolve())
+                output = Path(command[command.index("--output-last-message") + 1])
+                output.write_text(revised, encoding="utf-8")
+                return SimpleNamespace(returncode=0)
+
+            with (
+                mock.patch.object(xiaoshuo_on_demand, "ROOT", root),
+                mock.patch.object(
+                    xiaoshuo_on_demand.manager, "JOB_DIR", root / ".manager_jobs"
+                ),
+                mock.patch.object(
+                    xiaoshuo_on_demand.author_registry,
+                    "book_author",
+                    side_effect=xiaoshuo_on_demand.author_registry.AuthorConfigError("none"),
+                ),
+                mock.patch.object(
+                    xiaoshuo_on_demand.subprocess, "run", side_effect=fake_codex_run
+                ),
+            ):
+                xiaoshuo_on_demand.run_isolated_dialogue_repair(
+                    "codex", "demo", project, 2, {"id": "job-repair"}, 1, review
+                )
+
+            self.assertIn(new_line, chapter.read_text(encoding="utf-8"))
+            self.assertEqual(chapter.read_text(encoding="utf-8"), draft.read_text(encoding="utf-8"))
+            self.assertFalse((project / "dialogue_reviews" / "0002.json").exists())
+            self.assertFalse((project / "reader_checks" / "0002.json").exists())
+            self.assertFalse((project / "literary_reviews" / "0002.json").exists())
+
+    def test_dialogue_repair_retries_connection_without_consuming_revision(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root / "book"
+            (project / "chapters").mkdir(parents=True)
+            (project / "dialogue_reviews").mkdir()
+            (root / pipeline.CONFIG_NAME).write_text(json.dumps({
+                "schema_version": 1, "enabled": True,
+                "recent_chapters_for_director": 5,
+                "recent_chapters_for_reviewer": 2,
+                "max_new_questions_per_chapter": 1,
+                "plan_directory": "chapter_plans",
+                "review_directory": "literary_reviews",
+            }), encoding="utf-8")
+            filler = "他守在门边等人回来。" * 120
+            old_line = "“不许动，不许问。”"
+            new_line = "“先放下。”"
+            original = (
+                f"# 第 2 章 查证\n\n{filler}\n\n{old_line}\n\n---\n\n"
+                "## Metadata\n\n- chapter_number: 2\n- word_count: 1200\n"
+            )
+            chapter = project / "chapters" / "0002-second.md"
+            chapter.write_text(original, encoding="utf-8")
+            review = {"issues": [{"quote": old_line}], "strengths_to_preserve": []}
+            (project / "dialogue_reviews" / "0002.json").write_text(
+                json.dumps(review, ensure_ascii=False), encoding="utf-8"
+            )
+            calls = 0
+
+            def flaky_run(*args, **kwargs):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    return SimpleNamespace(returncode=1)
+                command = args[0]
+                output = Path(command[command.index("--output-last-message") + 1])
+                output.write_text(original.replace(old_line, new_line), encoding="utf-8")
+                return SimpleNamespace(returncode=0)
+
+            with (
+                mock.patch.object(xiaoshuo_on_demand, "ROOT", root),
+                mock.patch.object(
+                    xiaoshuo_on_demand.manager, "JOB_DIR", root / ".manager_jobs"
+                ),
+                mock.patch.object(
+                    xiaoshuo_on_demand.author_registry,
+                    "book_author",
+                    side_effect=xiaoshuo_on_demand.author_registry.AuthorConfigError("none"),
+                ),
+                mock.patch.object(xiaoshuo_on_demand.subprocess, "run", side_effect=flaky_run),
+            ):
+                xiaoshuo_on_demand.run_isolated_dialogue_repair(
+                    "codex", "demo", project, 2, {"id": "job-retry"}, 1, review
+                )
+            self.assertEqual(calls, 2)
+            self.assertIn(new_line, chapter.read_text(encoding="utf-8"))
+
     def test_dialogue_runner_reuses_pass_for_unchanged_chapter(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -121,7 +248,7 @@ class IndependentReviewRunnerTests(TestCase):
                     "schema_version": 1,
                     "chapter_number": 2,
                     "mode": pipeline.REVIEW_MODE,
-                    "narrative_sha256": original_chapter_hash,
+                    "narrative_sha256": "whole-markdown-hash-from-model",
                     "decision": "pass",
                     "dimensions": {
                         key: {

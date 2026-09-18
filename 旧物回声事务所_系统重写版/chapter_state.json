@@ -1,9 +1,9 @@
 {
-  "last_completed_chapter": 3,
-  "next_chapter_number": 4,
+  "last_completed_chapter": 2,
+  "next_chapter_number": 3,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "隔离复测已排除旧书、网络和正常外放路径，异常波形仍出现；七号预设语音和现有离线日志无法解释，日志存在覆盖或重排痕迹。林默没有接回播放线，七号已耗尽电量停机；L_21-18仍不得指向具体姓名。下一步由唐栀核对阅览室夜间值班，林默核查七号自演示事故后的接触记录。",
-  "status": "chapter_0003_archived"
+  "notes_for_next_chapter": "《夜航故事》已归还孟阿婆；书曾在九月十六日闭馆后被放到阅览室台灯下，登记写到一半被擦除，墙上钟停在九点二十分。孟阿婆只允许查值班与借阅记录，不许翻书、外放原声或替人判断身份。下一章应从晚间进入阅览室的人或值班记录查起。",
+  "status": "chapter_0002_archived"
 }

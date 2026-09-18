@@ -33,7 +33,7 @@ MAX_AUTOMATIC_REPAIRS = 2
 MAX_CODEX_PROCESS_RETRIES = 2
 MAX_LITERARY_REVIEW_ATTEMPTS = 3
 MAX_DIALOGUE_REVIEW_ATTEMPTS = 3
-MAX_DIALOGUE_REVISIONS = 2
+MAX_DIALOGUE_REVISIONS = 3
 
 
 class ArchiveGateFailure(RuntimeError):
@@ -390,32 +390,193 @@ def local_repair_prompt(
 结束时只报告修复项和校验结果，不得粘贴正文。""" + creative_modules.prompt(project, chapter_number) + "\n\n" + length_instruction
 
 
-def dialogue_repair_prompt(book_id: str, project: Path, chapter_number: int) -> str:
-    review = stage_pipeline.dialogue_review_path(project, chapter_number).resolve()
-    chapter = stage_pipeline.current_chapter_path(project, chapter_number)
-    length_instruction = chapter_length_instruction(
-        manager.find_book(manager.config(), book_id), chapter_number
-    )
+def dialogue_repair_prompt(chapter_number: int) -> str:
     return f"""# 中文对白专项返修
 
-只修订书籍 `{book_id}` 第 {chapter_number} 章的真人对白及其不可分割的相邻动作，不处理情节规划、
-图片、发布、Git 或下一章。当前正文：`{chapter}`；独立对白试读：`{review}`。
+你在一个与正式项目隔离的只读目录里工作。只修订 `chapter.md` 中第 {chapter_number} 章的真人对白
+及其不可分割的相邻动作，不处理图片、发布、Git 或下一章。`dialogue-review.json` 是本轮必须解决的
+问题清单；`chapter-plan.json` 只用于保护中心选择、事件结果、线索边界和章末钩子。其他可见文件
+仅用于人物声音、前文连续性和中文口语参照。
 
-{author_prompt_context(book_id, project)}
-
-读取本书 style_guide.md、character_voice_bible.md（如有）、最近三章和共享中文口语基础，
-但不得用“符合人设”“人物目的成立”否定试读指出的现实语用问题。逐项处理 review.issues：
+不得用“符合人设”“人物目的成立”否定试读指出的现实语用问题。逐项处理 review.issues：
 先确认说话人此刻想让对方做什么，再把作者概括、抽象标签、并列清单或完整推理还原成
 现场动作与双方共享语境。保留 review.strengths_to_preserve，不机械增加方言、脏话、网络词或残句。
 
-只允许修改当前章节、对应 drafts、reader_checks/{chapter_number:04d}.json 以及正文改动后必须同步的
-chapter_state/continuity 记录；不得改变章节合同的中心选择、事件结果、线索边界和章末钩子。
-正文改动后重算 Metadata word_count，重新生成 reader_checks 并确保引用逐字存在。删除已经过期的
-literary_reviews/{chapter_number:04d}.json，让后续独立文学终审重新执行。完成后停止，不得自行填写
-dialogue_reviews 或 literary_reviews。
-
-{length_instruction}
+必须重写每条 issue.quote 所在的完整对话回合，不能只在原句前后补解释；候选稿中不得原样保留任何
+issue.quote。不要改动章节编号，不要删减 Metadata。最终只输出修订后的完整章节 Markdown：从
+`# 第 {chapter_number} 章` 开始，到 Metadata 最后一行结束。不要代码围栏、解释、差异、JSON 或总结。
 """
+
+
+def _copy_dialogue_repair_context(
+    book_id: str, project: Path, chapter_number: int, isolated: Path
+) -> None:
+    """Copy only dialogue-repair inputs into a non-repository directory."""
+    shutil.copyfile(
+        stage_pipeline.current_chapter_path(project, chapter_number),
+        isolated / "chapter.md",
+    )
+    shutil.copyfile(
+        stage_pipeline.dialogue_review_path(project, chapter_number),
+        isolated / "dialogue-review.json",
+    )
+    plan = stage_pipeline.plan_path(ROOT, project, chapter_number)
+    if plan.is_file():
+        shutil.copyfile(plan, isolated / "chapter-plan.json")
+    for name in (
+        "style_guide.md", "character_voice_bible.md", "characters.md",
+        "feedback_learning.json",
+    ):
+        source = project / name
+        if source.is_file():
+            shutil.copyfile(source, isolated / name)
+    shared = ROOT / "shared" / "chinese_dialogue_foundation.md"
+    if shared.is_file():
+        shutil.copyfile(shared, isolated / "chinese-dialogue-foundation.md")
+    try:
+        author = author_registry.book_author(ROOT, book_id)
+        author_path = (ROOT / author["document_id"]).resolve()
+        if author_path.is_file():
+            shutil.copyfile(author_path, isolated / "author-profile.json")
+    except (KeyError, ValueError, author_registry.AuthorConfigError):
+        pass
+    previous = []
+    for path in (project / "chapters").glob("*.md"):
+        match = re.match(r"^(\d+)-", path.name)
+        if match and int(match.group(1)) < chapter_number:
+            previous.append((int(match.group(1)), path))
+    previous_dir = isolated / "previous-chapters"
+    for number, path in sorted(previous)[-3:]:
+        previous_dir.mkdir(exist_ok=True)
+        shutil.copyfile(path, previous_dir / f"{number:04d}.md")
+
+
+def _extract_revised_chapter(raw: str, chapter_number: int) -> str:
+    text = raw.strip().replace("\r\n", "\n")
+    fenced = re.fullmatch(r"```(?:markdown|md)?\s*(.*?)\s*```", text, re.S | re.I)
+    if fenced:
+        text = fenced.group(1).strip()
+    heading = re.match(rf"^#\s*第\s*{chapter_number}\s*章\s+.+$", text, re.M)
+    if not heading or heading.start() != 0:
+        raise ValueError(f"对白返修结果没有从第 {chapter_number} 章标题开始")
+    if not re.search(r"\n---\s*\n+\s*##\s+Metadata\b", text, re.I):
+        raise ValueError("对白返修结果缺少 Metadata")
+    if not re.search(
+        r"(?m)^\s*-\s*chapter_number\s*:\s*" + str(chapter_number) + r"\s*$",
+        text,
+    ):
+        raise ValueError("对白返修结果 Metadata 章号不一致")
+    return text.rstrip() + "\n"
+
+
+def _refresh_chapter_word_count(text: str) -> str:
+    metadata = re.search(r"\n---\s*\n+\s*##\s+Metadata\b", text, re.I)
+    narrative = text[: metadata.start()] if metadata else text
+    title_end = narrative.find("\n")
+    body = narrative[title_end + 1:] if title_end >= 0 else ""
+    count = len(re.findall(r"[\u4e00-\u9fff]", body))
+    pattern = r"(?m)^(\s*-\s*word_count\s*:\s*).*$"
+    if not re.search(pattern, text):
+        raise ValueError("对白返修结果缺少 Metadata word_count")
+    return re.sub(pattern, rf"\g<1>{count}", text, count=1)
+
+
+def run_isolated_dialogue_repair(
+    codex: str,
+    book_id: str,
+    project: Path,
+    chapter_number: int,
+    job: dict,
+    revision: int,
+    review: dict,
+) -> None:
+    """Generate a full candidate without granting the model project writes."""
+    chapter = stage_pipeline.current_chapter_path(project, chapter_number)
+    original_hash = stage_pipeline.narrative_sha256(chapter)
+    last_error = "尚未形成候选稿"
+    with TemporaryDirectory(prefix="novel-dialogue-repair-") as temporary:
+        isolated = Path(temporary)
+        _copy_dialogue_repair_context(book_id, project, chapter_number, isolated)
+        isolated_result = isolated / "revised-chapter.md"
+        for attempt in range(MAX_CODEX_PROCESS_RETRIES + 1):
+            isolated_result.unlink(missing_ok=True)
+            process = subprocess.run(
+                [
+                    codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                    "-C", str(isolated), "--sandbox", "read-only",
+                    "--config", 'approval_policy="never"',
+                    "--output-last-message", str(isolated_result), "-",
+                ],
+                cwd=isolated,
+                input=dialogue_repair_prompt(chapter_number),
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if process.returncode or not isolated_result.is_file():
+                last_error = f"Codex 退出码 {process.returncode}，未形成对白候选稿"
+                if attempt < MAX_CODEX_PROCESS_RETRIES:
+                    print(
+                        "对白返修连接中断，正在重试；本次不消耗内容返修次数。",
+                        flush=True,
+                    )
+                    continue
+                raise RuntimeError(last_error)
+            try:
+                candidate = _refresh_chapter_word_count(
+                    _extract_revised_chapter(
+                        isolated_result.read_text(encoding="utf-8"), chapter_number
+                    )
+                )
+                candidate_path = isolated / "candidate.md"
+                candidate_path.write_text(candidate, encoding="utf-8")
+                parse_chapter(candidate_path)
+                if stage_pipeline.narrative_sha256(candidate_path) == original_hash:
+                    raise ValueError("对白返修没有改变正文")
+                candidate_body = stage_pipeline.chapter_narrative_text(candidate_path)
+                unresolved = [
+                    item.get("quote", "")
+                    for item in review.get("issues", [])
+                    if item.get("quote", "").strip() in candidate_body
+                ]
+                if unresolved:
+                    raise ValueError(
+                        "对白返修仍原样保留问题句：" + "；".join(unresolved)
+                    )
+            except ValueError as exc:
+                last_error = str(exc)
+                if attempt < MAX_CODEX_PROCESS_RETRIES:
+                    print(
+                        f"对白候选稿未通过机械校验：{last_error}；正在重试。",
+                        flush=True,
+                    )
+                    continue
+                raise RuntimeError(last_error) from exc
+
+            temporary_target = chapter.with_name(
+                f".{chapter.name}.dialogue-{revision}.tmp"
+            )
+            temporary_target.write_text(candidate, encoding="utf-8")
+            os.replace(temporary_target, chapter)
+            for draft in (project / "drafts").glob(
+                f"*chapter-{chapter_number:04d}*.md"
+            ):
+                draft.write_text(candidate, encoding="utf-8")
+            for stale in (
+                project / "reader_checks" / f"{chapter_number:04d}.json",
+                stage_pipeline.dialogue_review_path(project, chapter_number),
+                stage_pipeline.review_path(ROOT, project, chapter_number),
+            ):
+                stale.unlink(missing_ok=True)
+            result_file = manager.JOB_DIR / (
+                f"{job['id']}-dialogue-repair-{chapter_number:04d}-{revision}.md"
+            )
+            result_file.parent.mkdir(parents=True, exist_ok=True)
+            result_file.write_text(
+                "对白候选稿已通过机械校验并原子替换。\n", encoding="utf-8"
+            )
+            return
+    raise RuntimeError(last_error)
 
 
 def _codex_result_detail(result_file: Path) -> str:
@@ -678,6 +839,12 @@ def run_independent_literary_review(
                     payload = json.loads(fenced.group(1) if fenced else raw)
                     if not isinstance(payload, dict):
                         raise ValueError("审稿结果必须是 JSON 对象")
+                    # The model sometimes hashes the whole Markdown file even
+                    # though the contract uses reader-visible prose only. This
+                    # field is deterministic, so never spend review retries on it.
+                    payload["narrative_sha256"] = stage_pipeline.narrative_sha256(
+                        stage_pipeline.current_chapter_path(project, chapter_number)
+                    )
                     chapter_body = stage_pipeline.chapter_narrative_text(
                         stage_pipeline.current_chapter_path(project, chapter_number)
                     )
@@ -757,6 +924,9 @@ def run_independent_dialogue_review(
                 payload = json.loads(fenced.group(1) if fenced else raw)
                 if not isinstance(payload, dict):
                     raise ValueError("对白试读必须是 JSON 对象")
+                payload["narrative_sha256"] = stage_pipeline.narrative_sha256(
+                    stage_pipeline.current_chapter_path(project, chapter_number)
+                )
                 body = stage_pipeline.chapter_narrative_text(
                     stage_pipeline.current_chapter_path(project, chapter_number)
                 )
@@ -792,20 +962,9 @@ def run_dialogue_quality_cycle(
             f"正在启动独立专项返修（{revision + 1}/{MAX_DIALOGUE_REVISIONS}）。",
             flush=True,
         )
-        result_file = manager.JOB_DIR / (
-            f"{job['id']}-dialogue-repair-{chapter_number:04d}-{revision + 1}.md"
+        run_isolated_dialogue_repair(
+            codex, book_id, project, chapter_number, job, revision + 1, review
         )
-        process = subprocess.run(
-            _stage_command(codex, result_file), cwd=ROOT,
-            input=dialogue_repair_prompt(book_id, project, chapter_number),
-            text=True, encoding="utf-8", errors="replace",
-        )
-        if process.returncode:
-            raise RuntimeError(
-                f"第 {chapter_number} 章对白专项返修进程退出码 {process.returncode}"
-            )
-        # The old report is bound to the pre-revision prose hash.
-        stage_pipeline.dialogue_review_path(project, chapter_number).unlink(missing_ok=True)
     raise AssertionError("unreachable")
 
 
