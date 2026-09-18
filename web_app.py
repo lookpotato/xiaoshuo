@@ -24,6 +24,7 @@ import character_story_service
 import settings_service
 import author_registry
 import reader_feedback_service
+import chapter_admin_service
 
 
 ROOT = Path(__file__).resolve().parent
@@ -35,7 +36,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 5
+API_VERSION = 6
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -566,6 +567,18 @@ def launch_author_dialogue(payload: dict) -> dict:
     return {"dialogue": queued["dialogue"], "run": run}
 
 
+def delete_chapter_tail(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    chapter = int(payload.get("from_chapter", 0) or 0)
+    confirmed = int(payload.get("confirm_from_chapter", 0) or 0)
+    book = registered_book(book_id)
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待任务结束后再删除章节")
+    return chapter_admin_service.delete_chapter_tail(
+        project_for(book), book_id, chapter, confirmed_chapter=confirmed
+    )
+
+
 class AppHandler(BaseHTTPRequestHandler):
     server_version = "FanqieWorkbench/1.0"
 
@@ -662,6 +675,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/apply": 16 * 1024,
                 "/api/reader-feedback/promote": 16 * 1024,
                 "/api/reader-feedback/dialogue": 16 * 1024,
+                "/api/chapter/delete-tail": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -716,6 +730,9 @@ class AppHandler(BaseHTTPRequestHandler):
                     {"ok": True, **launch_author_dialogue(payload)},
                     HTTPStatus.ACCEPTED,
                 )
+                return
+            if parsed.path == "/api/chapter/delete-tail":
+                self.send_json({"ok": True, "deletion": delete_chapter_tail(payload)})
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

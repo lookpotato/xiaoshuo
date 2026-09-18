@@ -72,10 +72,11 @@ function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted 
   </article>;
 }
 
-function ChapterList({ book, onOpen }) {
+function ChapterList({ book, onOpen, onDelete }) {
   return <article className="panel chapter-panel">
     <div className="panel-head"><div><p className="eyebrow">ARCHIVE</p><h2>章节归档</h2></div><span className="count-label">{book.chapter_count} 章</span></div>
-    <div className="chapter-list">{book.chapters.length ? book.chapters.map((chapter) => <button className="chapter-row" key={chapter.number} onClick={() => onOpen(book.id, chapter.number)}><span className="chapter-number">{String(chapter.number).padStart(4, "0")}</span><span className="chapter-title">{chapter.title}</span><span className="chapter-arrow">↗</span></button>) : <div className="empty">还没有归档章节</div>}</div>
+    <p className="chapter-delete-note">删除某章时会同时移出该章及之后所有本地章节，内容进入可恢复的回收目录。</p>
+    <div className="chapter-list">{book.chapters.length ? book.chapters.map((chapter) => <div className="chapter-row" key={chapter.number}><button className="chapter-open" onClick={() => onOpen(book.id, chapter.number)}><span className="chapter-number">{String(chapter.number).padStart(4, "0")}</span><span className="chapter-title">{chapter.title}</span><span className="chapter-arrow">↗</span></button><button className="chapter-delete" onClick={() => onDelete(book, chapter)} aria-label={`从第 ${chapter.number} 章起删除`}>删除</button></div>) : <div className="empty">还没有归档章节</div>}</div>
   </article>;
 }
 
@@ -163,6 +164,17 @@ export default function App() {
   }, [data?.runs, openLog]);
 
   async function openChapter(bookId, number) { try { setChapter(await api(`/api/chapter?book_id=${encodeURIComponent(bookId)}&number=${number}`)); } catch (error) { setNotice(error.message); } }
+  async function deleteChapterTail(targetBook, targetChapter) {
+    const affected = targetBook.chapters.filter((item) => item.number >= targetChapter.number).sort((a, b) => a.number - b.number);
+    const range = affected.length > 1 ? `第 ${affected[0].number}—${affected[affected.length - 1].number} 章` : `第 ${targetChapter.number} 章`;
+    if (!window.confirm(`确定删除《${targetBook.title}》${range}吗？\n\n相关正文、草稿、审稿与人物线会移入可恢复的回收目录；下一次生成将从第 ${targetChapter.number} 章开始。`)) return;
+    try {
+      const result = await api("/api/chapter/delete-tail", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: targetBook.id, from_chapter: targetChapter.number, confirm_from_chapter: targetChapter.number }) });
+      setChapter(null);
+      await loadOverview();
+      setNotice(`已删除第 ${result.deletion.deleted_chapters.join("、")} 章；下一章恢复为第 ${result.deletion.next_chapter_number} 章`);
+    } catch (error) { setNotice(error.message); }
+  }
   async function resume(jobId) { try { await api("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jobId }) }); setNotice("续跑任务已启动"); loadOverview(); } catch (error) { setNotice(error.message); } }
 
   if (!data || !book) return <div className="loading-screen"><div className="brand-mark">番</div><p>正在连接小说项目……</p></div>;
@@ -174,7 +186,7 @@ export default function App() {
       <Metrics book={book} />
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
       <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
-      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
+      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
       </>}
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />

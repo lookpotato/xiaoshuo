@@ -17,10 +17,15 @@ class WebAppDataTests(unittest.TestCase):
     def test_overview_exposes_registered_books_without_chapter_body(self) -> None:
         payload = web_app.overview()
         ids = {book["id"] for book in payload["books"]}
-        self.assertIn("cosmic-404", ids)
-        self.assertIn("free-sky", ids)
-        self.assertNotIn("content", payload["books"][0])
-        self.assertEqual(payload["books"][0]["author"]["id"], "owner")
+        enabled_ids = {
+            book["id"]
+            for book in web_app.config().get("books", [])
+            if book.get("enabled")
+        }
+        self.assertEqual(ids, enabled_ids)
+        self.assertTrue(payload["books"])
+        self.assertTrue(all("content" not in book for book in payload["books"]))
+        self.assertTrue(all(book["author"] for book in payload["books"]))
 
     def test_chapter_document_is_explicit_and_excludes_metadata(self) -> None:
         document = web_app.chapter_document("cosmic-404", 1)
@@ -151,6 +156,37 @@ class WebAppDataTests(unittest.TestCase):
         command = launch.call_args.args[0]
         self.assertIn("--follow-up", command)
         self.assertEqual(result["run"], run)
+
+    def test_delete_chapter_tail_uses_registered_project(self) -> None:
+        book = {"id": "demo", "path": "demo", "title": "测试书"}
+        expected = {"deleted_chapters": [2, 3], "next_chapter_number": 2}
+        with (
+            patch.object(web_app, "registered_book", return_value=book),
+            patch.object(web_app, "project_for", return_value=Path("C:/demo")),
+            patch.object(web_app, "list_runs", return_value=[]),
+            patch.object(
+                web_app.chapter_admin_service,
+                "delete_chapter_tail",
+                return_value=expected,
+            ) as delete,
+        ):
+            result = web_app.delete_chapter_tail({
+                "book_id": "demo", "from_chapter": 2, "confirm_from_chapter": 2,
+            })
+        self.assertEqual(result, expected)
+        delete.assert_called_once_with(
+            Path("C:/demo"), "demo", 2, confirmed_chapter=2
+        )
+
+    def test_delete_chapter_tail_rejects_while_job_is_running(self) -> None:
+        with (
+            patch.object(web_app, "registered_book", return_value={"id": "demo"}),
+            patch.object(web_app, "list_runs", return_value=[{"status": "running"}]),
+            self.assertRaisesRegex(ValueError, "后台任务正在运行"),
+        ):
+            web_app.delete_chapter_tail({
+                "book_id": "demo", "from_chapter": 2, "confirm_from_chapter": 2,
+            })
 
     def test_run_log_returns_tail_and_redacts_credentials(self) -> None:
         with TemporaryDirectory() as temp, patch.object(

@@ -94,9 +94,13 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .run-summary strong { color: var(--ink); text-align: right; }
 .feedback { min-height: 18px; margin: 10px 0 0; color: var(--muted); font-size: 11px; }
 .next-notes { max-height: 210px; margin-bottom: 0; overflow: auto; color: #4e4a43; font-family: "Microsoft YaHei UI", sans-serif; font-size: 14px; line-height: 1.9; }
+.chapter-delete-note { margin: -4px 0 13px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .chapter-list { display: grid; gap: 4px; max-height: 630px; overflow: auto; padding-right: 5px; }
-.chapter-row { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 13px 10px; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); background: transparent; text-align: left; }
+.chapter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; padding: 0 8px 0 0; border-bottom: 1px solid var(--line); color: var(--ink); background: transparent; }
 .chapter-row:hover { border-radius: 9px; background: #f3eee5; }
+.chapter-open { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 13px 10px; border: 0; color: var(--ink); background: transparent; text-align: left; }
+.chapter-delete { padding: 7px 9px; border: 1px solid rgba(151,51,42,.25); border-radius: 7px; color: var(--red); background: rgba(151,51,42,.04); font-size: 10px; font-weight: 700; }
+.chapter-delete:hover { color: white; background: var(--red); }
 .chapter-number { color: var(--red); font: 800 12px/1 sans-serif; }
 .chapter-title { overflow: hidden; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .chapter-arrow { color: #aaa399; }
