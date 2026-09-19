@@ -162,7 +162,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
 
     <div className="feedback-workspace">
       <article className="panel feedback-reader" onMouseUp={captureSelection} ref={readerRef}>
-        <div className="feedback-reader-head"><span>{isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><small>{isCurrent ? "拖动选中文字，即可带入右侧反馈" : "历史版本仅供对照，不能在旧稿上继续留言"}</small></div>
+        <div className="feedback-reader-head"><span>{isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><small>{isCurrent ? (reviewMode === "chapter_interview" ? "整章阅读，不针对单句圈选" : "拖动选中文字，即可带入右侧反馈") : "历史版本仅供对照，不能在旧稿上继续留言"}</small></div>
         <h2>{lines[0]?.replace(/^#\s*/, "")}</h2>
         {lines.slice(1).filter((line) => line.trim() && !/^---$/.test(line.trim()) && !/^## Metadata/.test(line)).map((line, index) => <p key={index}>{line.replace(/^#+\s*/, "")}</p>)}
       </article>
@@ -180,12 +180,12 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           <div className="panel-head"><div><p className="eyebrow">MARK</p><h2>哪里不舒服</h2></div></div>
           <fieldset className="review-mode-picker">
             <legend>选择怎么审</legend>
-            <div className="review-mode-options">{reviewModes.map((mode) => <button type="button" className={reviewMode === mode.id ? "active" : ""} aria-pressed={reviewMode === mode.id} key={mode.id} onClick={() => setReviewMode(mode.id)}>
+            <div className="review-mode-options">{reviewModes.map((mode) => <button type="button" className={reviewMode === mode.id ? "active" : ""} aria-pressed={reviewMode === mode.id} key={mode.id} onClick={() => { setReviewMode(mode.id); if (mode.id === "chapter_interview") setQuote(""); }}>
               <span>{mode.title}{mode.recommended && <em>推荐</em>}</span><small>{mode.note}</small>
             </button>)}</div>
           </fieldset>
           <label>问题感觉<select value={category} onChange={(event) => setCategory(event.target.value)}>{Object.entries(categories).map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select></label>
-          <label>选中的原文<textarea value={quote} onChange={(event) => setQuote(event.target.value.slice(0, 3000))} placeholder="可直接留言，也可以先在左侧圈选原文" rows="5" /></label>
+          {reviewMode !== "chapter_interview" && <label>选中的原文<textarea value={quote} onChange={(event) => setQuote(event.target.value.slice(0, 3000))} placeholder="可直接留言，也可以先在左侧圈选原文" rows="5" /></label>}
           <label>你的真实感受<textarea value={comment} onChange={(event) => setComment(event.target.value.slice(0, 5000))} placeholder={reviewMode === "chapter_interview" ? "可留空：系统会读完整章后自行生成作者问题。" : "例如：我看到这里突然不相信这个人物了，但我不确定为什么。"} rows="7" required={reviewMode !== "chapter_interview"} /></label>
           <div className="author-boundary"><strong>{reviewModes.find((item) => item.id === reviewMode)?.title}</strong><span>{reviewMode === "blind" ? "这次只报告陌生读感，不生成修改稿。" : reviewMode === "author" ? "这次由作者直接审稿，不会伪装成不知道设定的读者。" : reviewMode === "chapter_interview" ? "系统会先问设计问题，不会直接用修句掩盖底层问题。" : "陌生读者与作者使用不同上下文，报告分开显示。"}</span></div>
           {!isCurrent && <div className="stale-version-warning">你正在查看历史版本。请先切回“最新正式稿”再继续评审。</div>}
