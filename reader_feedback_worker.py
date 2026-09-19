@@ -23,7 +23,20 @@ REVISION_SCOPES = set(service.REVISION_SCOPES)
 
 
 def _evidence_in_text(chapter_text: str, evidence: str) -> bool:
-    return service._compact(evidence) in service._compact(service._narrative(chapter_text))
+    """Accept exact quotations with harmless punctuation/label differences."""
+    def normalize(value: str) -> str:
+        value = re.sub(r"^\s*(?:证据|原文|正文)\s*[:：]\s*", "", value.strip())
+        value = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", value)
+        return value
+
+    source = normalize(service._narrative(chapter_text))
+    candidate = normalize(evidence)
+    if candidate and candidate in source:
+        return True
+    # Models sometimes prepend a speaker label or a short explanation. Accept
+    # a long contiguous Chinese fragment only when it is still verbatim text.
+    fragments = re.findall(r"[\u4e00-\u9fff]{6,}", str(evidence))
+    return any(fragment in source for fragment in fragments)
 
 
 def parse_blind_reader_result(text: str) -> dict:
@@ -264,6 +277,10 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
 5. 如果问题只靠补一句解释就能掩盖，但人物仍不会这样行动，标记为 foundation，而不是 wording。
 6. foundation_risks 只填写有正文证据的底层风险；不要因为作者没有写出所有设定就臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
 7. 不得直接替作者回答。问题要让作者暴露设计前提，帮助后续决定是局部修改、重写场景，还是回到人物/世界观设计重做。
+8. 单独做一次中文语用审问：首次出现的人物，尤其客户、长辈、邻居和陌生人，为什么用现在的称呼和语气对主角说话？如果人物说得很凶，正文是否给了得罪、欠账、权力差或现场压力的依据；如果没有，必须提问这个底层关系问题。
+9. 重点检查对白是否被写成电报或操作口令。类似“行。不播放，不翻书。”的连续短句，不能只因为短就判定有力；要问真人在这个关系和现场里是否会这样说、是否需要主语/对象/语气缓冲，以及前后是否有动作支撑。
+10. 不要为了证明“节奏快”而把所有对白压成两三个字，也不要用“他说”“她说”串起没有情绪变化的问答。中文口语允许省略，但必须保留关系动作、停顿、改口、指代或态度变化。
+11. evidence 必须从当前章节复制原文，不得改写、总结或补充说话人。可以保留原有标点和引号；如果需要说明事件，放在 why_it_matters，不要塞进 evidence。
 
 最终只输出一个 JSON 对象，不要代码围栏：
 {{

@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 
 import reader_feedback_service as service
 from reader_feedback_worker import (
+    _evidence_in_text,
     parse_blind_reader_result,
     parse_chapter_interview_result,
     parse_follow_up_result,
@@ -126,6 +127,12 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             service.feedback_item(self.root, "demo", item["id"])["chapter_interview_answers"]["Q1"],
             "因为人物必须做这个选择。",
         )
+
+    def test_chapter_interview_evidence_allows_punctuation_and_speaker_prefix(self) -> None:
+        self.assertTrue(_evidence_in_text(
+            "孟阿婆把门一关，说：‘行。不播放，不翻书。’",
+            "孟阿婆：行，不播放，不翻书",
+        ))
 
     def test_feedback_rejects_unknown_review_mode(self) -> None:
         with self.assertRaisesRegex(ValueError, "审稿方式无效"):
