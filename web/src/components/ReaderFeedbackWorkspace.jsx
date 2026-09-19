@@ -12,7 +12,7 @@ const reviewModes = [
   { id: "blind", title: "陌生读者试读", note: "只看当前章，不读取设定；诊断真实读感，不改稿" },
   { id: "author", title: "作者审稿", note: "读取设定与连续性；判断反馈并生成候选修改" },
   { id: "combined", title: "双重审稿", note: "先陌生试读，再由作者裁决与改稿", recommended: true },
-  { id: "chapter_interview", title: "整章作者提问", note: "读完整章后提问；专门筛查人物、冲突和底层设计" },
+  { id: "chapter_interview", title: "整章写法审校", note: "读完整章后审校人物说话与行动；给出更自然的中文写法" },
 ];
 
 export default function ReaderFeedbackWorkspace({ book, onNotice }) {
@@ -209,13 +209,13 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           <p className="scope-reason">{item.blind_reader.scope_rationale}</p>
         </div>}
         {item.chapter_interview && <div className="chapter-interview-review">
-          <div className="review-stage-head"><div><small>CHAPTER INTERVIEW</small><h3>整章作者提问</h3></div><span>{item.chapter_interview.foundation_risks?.length ? `${item.chapter_interview.foundation_risks.length} 个底层风险` : "未发现明确底层风险"}</span></div>
+          <div className="review-stage-head"><div><small>CHAPTER LANGUAGE REVIEW</small><h3>整章写法审校</h3></div><span>{item.chapter_interview.foundation_risks?.length ? `${item.chapter_interview.foundation_risks.length} 个底层风险` : "未发现明确底层风险"}</span></div>
           <p><b>本章承诺：</b>{item.chapter_interview.chapter_promise}</p>
           <p><b>整章读感：</b>{item.chapter_interview.reading_summary}</p>
           {!!item.chapter_interview.foundation_risks?.length && <><h4>底层设计风险</h4><ul>{item.chapter_interview.foundation_risks.map((risk, index) => <li key={index}><strong>{risk.severity === "high" ? "高风险" : risk.severity === "medium" ? "中风险" : "低风险"} · {risk.risk}</strong><br />{risk.question}<br /><small>证据：{risk.evidence}</small></li>)}</ul></>}
-          <h4>作者需要回答的问题</h4>
-          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id} className={`interview-question ${question.level}`}><strong>{interviewLevelLabel[question.level]} · {question.question}</strong><p>{question.why_it_matters}</p>{question.evidence?.map((evidence, index) => <blockquote key={index}>{evidence}</blockquote>)}<textarea rows="3" maxLength="5000" value={interviewAnswers[item.id]?.[question.id] ?? item.chapter_interview_answers?.[question.id] ?? ""} onChange={(event) => setInterviewAnswers((current) => ({ ...current, [item.id]: { ...(current[item.id] || item.chapter_interview_answers || {}), [question.id]: event.target.value } }))} placeholder="写下你的设计回答；如果答不出来，可能需要回到底层重新设计。" /></li>)}</ol>
-          <button className="button" onClick={() => saveInterviewAnswers(item)}>保存作者回答</button>
+          <h4>给主作者的审校意见</h4>
+          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id} className={`interview-question ${question.level}`}><strong>{interviewLevelLabel[question.level]} · {question.question}</strong><p>{question.why_it_matters}</p>{question.suggested_fix && <p><b>建议写法：</b>{question.suggested_fix}</p>}{question.evidence?.map((evidence, index) => <blockquote key={index}>{evidence}</blockquote>)}<textarea rows="3" maxLength="5000" value={interviewAnswers[item.id]?.[question.id] ?? item.chapter_interview_answers?.[question.id] ?? ""} onChange={(event) => setInterviewAnswers((current) => ({ ...current, [item.id]: { ...(current[item.id] || item.chapter_interview_answers || {}), [question.id]: event.target.value } }))} placeholder="作者判断：采纳/不采纳；确认后可补充更自然的说法，作为中文经验沉淀。" /></li>)}</ol>
+          <button className="button" onClick={() => saveInterviewAnswers(item)}>保存审校判断</button>
         </div>}
         {item.analysis && <div className="author-review">
           <div className="review-stage-head"><div><small>AUTHOR REVIEW</small><h3>作者判断</h3></div><span>{scopeLabel[item.analysis.revision_scope] || "旧版局部判断"}</span></div>

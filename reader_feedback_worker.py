@@ -67,7 +67,7 @@ def parse_blind_reader_result(text: str) -> dict:
 
 
 def parse_chapter_interview_result(text: str) -> dict:
-    """Validate a whole-chapter author interview, including design-level risks."""
+    """Validate a whole-chapter author-led language review."""
     stripped = text.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
     if fenced:
@@ -104,6 +104,9 @@ def parse_chapter_interview_result(text: str) -> dict:
             "level": level,
             "question": question["question"].strip(),
             "why_it_matters": question["why_it_matters"].strip(),
+            # Keep old interview records readable while requiring the new prompt
+            # to provide a concrete natural-language repair direction.
+            "suggested_fix": str(question.get("suggested_fix") or "请从人物关系、动作和语气出发，给出更自然的写法。").strip(),
             "evidence": evidence,
         })
     risks = value.get("foundation_risks", [])
@@ -262,9 +265,9 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
     prompt = folder / "chapter_interview_prompt.md"
     result = folder / "chapter_interview_model_result.json"
     prompt.write_text(
-        f"""# 整章作者提问
+        f"""# 整章写法审校
 
-你是绑定本书的副作者。请完整阅读第 {chapter_number} 章，再向作者提出一组必须回答的问题。你的任务不是替作者润色，也不是马上给改稿，而是检查这一章的底层承诺是否成立。
+你是绑定本书的副作者和中文语用审校员。主作者已经写完第 {chapter_number} 章，你的任务是审核成稿是否像真实的中国人会说、会做，而不是盘问主作者脑中的隐藏设定。请完整阅读本章，指出不自然、关系依据不足、像提纲或系统提示的地方，并给出可执行的改写方向。
 
 必须读取：
 - 作者档案：`{author_path}`
@@ -272,18 +275,15 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
 - 本书设定与连续性资料：
 {context}
 
-提问原则：
-1. 先用整章回答“读者被承诺了什么、实际看到了什么、哪里可能失去相信”。不要只抓一句台词；问题必须能够指向整章的任务、人物选择、因果链、情绪推进或章末变化。
-2. 每个问题都要真正问作者，而不是把结论伪装成问题。比如“林乔为什么这么做？”可以；“林乔这样做明显不合理”不可以。
-3. 每题标记层级：wording（局部说法）、scene（完整场景推进）、foundation（人物关系、核心冲突、世界规则、目标承诺或结局逻辑的底层设计）。
-4. 优先追问作者必须亲自回答的“为什么”：人物如果不这么做会怎样、信息从哪里来、谁在承担代价、场景结束后什么改变、这个设定是否真的支持整章剧情。
-5. 如果问题只靠补一句解释就能掩盖，但人物仍不会这样行动，标记为 foundation，而不是 wording。
-6. foundation_risks 只填写有正文证据的底层风险；不要因为作者没有写出所有设定就臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
-7. 不得直接替作者回答。问题要让作者暴露设计前提，帮助后续决定是局部修改、重写场景，还是回到人物/世界观设计重做。
-8. 单独做一次中文语用审问：首次出现的人物，尤其客户、长辈、邻居和陌生人，为什么用现在的称呼和语气对主角说话？如果人物说得很凶，正文是否给了得罪、欠账、权力差或现场压力的依据；如果没有，必须提问这个底层关系问题。
-9. 重点检查对白是否被写成电报或操作口令。类似“行。不播放，不翻书。”的连续短句，不能只因为短就判定有力；要问真人在这个关系和现场里是否会这样说、是否需要主语/对象/语气缓冲，以及前后是否有动作支撑。
-10. 不要为了证明“节奏快”而把所有对白压成两三个字，也不要用“他说”“她说”串起没有情绪变化的问答。中文口语允许省略，但必须保留关系动作、停顿、改口、指代或态度变化。
-11. evidence 必须从当前章节复制原文，不得改写、总结或补充说话人。可以保留原有标点和引号；如果需要说明事件，放在 why_it_matters，不要塞进 evidence。
+审校原则：
+1. 先说明整章读感和本章承诺，再列出最值得修改的写法。不要把作者没有写出的幕后设定当成作者必须解释的答案。
+2. 每条都要以“这段成稿是否像真人会这样说/做”为核心，不能只问“作者为什么这样设计”。例如不要只写“孟阿婆为什么强硬”，要写清“正文没有给出关系依据时，陌生长辈这样命令式说话是否自然；若不自然，建议改成怎样的试探、拒绝或提醒”。
+3. 每题标记层级：wording（局部说法）、scene（完整场景推进）、foundation（人物关系、核心冲突、世界规则、目标承诺或结局逻辑）。
+4. 每题必须给出 suggested_fix：可以是更自然的说话动作、语气方向、关系铺垫或一小段示例；不要只说“加强人物感情”。不要替主作者重写整章。
+5. 特别检查首次出现的人物，尤其客户、长辈、邻居和陌生人：称呼、语气、强硬程度是否有得罪、欠账、权力差、熟人默契或现场压力的依据。没有依据时，明确指出这是写法问题，并给出符合中国语用的替代方式。
+6. 重点检查对白是否被写成电报、操作口令、合同摘要或作者替人物总结。中文口语允许省略，但应有关系动作、停顿、改口、指代、回避或态度变化。
+7. foundation_risks 只填写有正文证据的风险；不要臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
+8. evidence 必须从当前章节复制原文，不得改写、总结或补充说话人。需要解释影响时放在 why_it_matters。
 
 最终只输出一个 JSON 对象，不要代码围栏：
 {{
@@ -293,8 +293,9 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
     {{
       "id": "Q1",
       "level": "wording|scene|foundation",
-      "question": "直接问作者的问题",
+      "question": "给主作者的审校问题：这段写法像真实中国人会这样说/做吗？",
       "why_it_matters": "为什么不回答这个问题，就不能判断本章是否成立",
+      "suggested_fix": "如果不自然，建议怎样改写或补足关系动作；可给一到两句示例",
       "evidence": ["当前章节中的原文短句或明确事件"]
     }}
   ],
@@ -302,7 +303,7 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
     {{
       "risk": "可能存在的底层设计风险",
       "severity": "low|medium|high",
-      "question": "必须问作者的设计问题",
+      "question": "这处写法是否自然；如果不自然，建议如何改",
       "evidence": "当前章节证据"
     }}
   ]
@@ -496,7 +497,7 @@ def run(book_id: str, feedback_id: str) -> None:
     if review_mode == "chapter_interview":
         service.update_status(
             ROOT, book_id, feedback_id, status="analyzing",
-            message="正在完整阅读本章，整理需要作者回答的问题",
+            message="正在完整阅读本章，审校人物说话与行动是否自然",
         )
         prompt, result_path = build_chapter_interview_prompt(book_id, feedback_id)
         command = [
@@ -530,12 +531,12 @@ def run(book_id: str, feedback_id: str) -> None:
                 "schema_version": 1,
                 **interview,
                 "reviewed_at": datetime.now().astimezone().isoformat(),
-                "context_policy": "完整阅读当前章节，并结合绑定作者与本书设计资料提问",
+                "context_policy": "完整阅读当前章节，并结合绑定作者与本书设计资料进行写法审校",
             },
         )
         service.update_status(
             ROOT, book_id, feedback_id, status="interview_ready",
-            message="整章提问完成；请作者先回答底层设计问题，再决定是否改稿",
+            message="整章写法审校完成；请作者判断是否采纳建议，并沉淀有效中文经验",
         )
         return
     if review_mode in {"blind", "combined"}:

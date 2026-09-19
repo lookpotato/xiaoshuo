@@ -87,7 +87,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "book_id": "demo", "chapter": 1,
             "review_mode": "chapter_interview",
         })
-        self.assertEqual(item["review_mode_label"], "整章作者提问")
+        self.assertEqual(item["review_mode_label"], "整章写法审校")
         self.assertIn("完整章", item["comment"])
 
     def test_chapter_interview_result_requires_foundation_level_and_evidence(self) -> None:
