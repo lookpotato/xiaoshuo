@@ -109,6 +109,24 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertEqual(parsed["questions"][0]["level"], "foundation")
         self.assertEqual(parsed["foundation_risks"][0]["severity"], "high")
 
+    def test_chapter_interview_answers_are_saved_against_question_ids(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1,
+            "review_mode": "chapter_interview",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "chapter_interview.json", {
+            "questions": [{"id": "Q1", "question": "为什么？"}],
+        })
+        saved = service.save_chapter_interview_answers(
+            self.root, "demo", item["id"], {"Q1": "因为人物必须做这个选择。"}
+        )
+        self.assertEqual(saved["answers"]["Q1"], "因为人物必须做这个选择。")
+        self.assertEqual(
+            service.feedback_item(self.root, "demo", item["id"])["chapter_interview_answers"]["Q1"],
+            "因为人物必须做这个选择。",
+        )
+
     def test_feedback_rejects_unknown_review_mode(self) -> None:
         with self.assertRaisesRegex(ValueError, "审稿方式无效"):
             service.create_feedback(self.root, {

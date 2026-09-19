@@ -675,6 +675,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/apply": 16 * 1024,
                 "/api/reader-feedback/promote": 16 * 1024,
                 "/api/reader-feedback/dialogue": 16 * 1024,
+                "/api/reader-feedback/interview-answers": 64 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
@@ -730,6 +731,15 @@ class AppHandler(BaseHTTPRequestHandler):
                     {"ok": True, **launch_author_dialogue(payload)},
                     HTTPStatus.ACCEPTED,
                 )
+                return
+            if parsed.path == "/api/reader-feedback/interview-answers":
+                book_id = str(payload.get("book_id", ""))
+                feedback_id = str(payload.get("feedback_id", ""))
+                answers = payload.get("answers", {})
+                saved = reader_feedback_service.save_chapter_interview_answers(
+                    ROOT, book_id, feedback_id, answers
+                )
+                self.send_json({"ok": True, "answers": saved})
                 return
             if parsed.path == "/api/chapter/delete-tail":
                 self.send_json({"ok": True, "deletion": delete_chapter_tail(payload)})

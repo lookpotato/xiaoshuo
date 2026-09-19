@@ -29,6 +29,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [comment, setComment] = useState("");
   const [reviewMode, setReviewMode] = useState("combined");
   const [dialogueDrafts, setDialogueDrafts] = useState({});
+  const [interviewAnswers, setInterviewAnswers] = useState({});
   const [busy, setBusy] = useState(false);
   const readerRef = useRef(null);
 
@@ -37,6 +38,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     setChapterNumber(available[0]?.number || 0);
     setChapter(null); setItems([]); setVersions([]); setSelectedVersion("current");
     setReceipt(null); setQuote(""); setComment("");
+    setInterviewAnswers({});
   }, [book.id, book.last_completed_chapter]);
 
   const load = useCallback(async () => {
@@ -130,6 +132,17 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     } catch (error) { onNotice(error.message); }
   }
 
+  async function saveInterviewAnswers(item) {
+    const answers = interviewAnswers[item.id] || item.chapter_interview_answers || {};
+    try {
+      await api("/api/reader-feedback/interview-answers", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, answers }),
+      });
+      onNotice("整章问题回答已保存"); await load();
+    } catch (error) { onNotice(error.message); }
+  }
+
   const archivedVersion = versions.find((item) => item.id === selectedVersion);
   const displayedChapter = selectedVersion === "current" ? chapter : archivedVersion;
   const lines = displayedChapter?.content.split(/\r?\n/) || [];
@@ -201,7 +214,8 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           <p><b>整章读感：</b>{item.chapter_interview.reading_summary}</p>
           {!!item.chapter_interview.foundation_risks?.length && <><h4>底层设计风险</h4><ul>{item.chapter_interview.foundation_risks.map((risk, index) => <li key={index}><strong>{risk.severity === "high" ? "高风险" : risk.severity === "medium" ? "中风险" : "低风险"} · {risk.risk}</strong><br />{risk.question}<br /><small>证据：{risk.evidence}</small></li>)}</ul></>}
           <h4>作者需要回答的问题</h4>
-          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id} className={`interview-question ${question.level}`}><strong>{interviewLevelLabel[question.level]} · {question.question}</strong><p>{question.why_it_matters}</p>{question.evidence?.map((evidence, index) => <blockquote key={index}>{evidence}</blockquote>)}</li>)}</ol>
+          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id} className={`interview-question ${question.level}`}><strong>{interviewLevelLabel[question.level]} · {question.question}</strong><p>{question.why_it_matters}</p>{question.evidence?.map((evidence, index) => <blockquote key={index}>{evidence}</blockquote>)}<textarea rows="3" maxLength="5000" value={interviewAnswers[item.id]?.[question.id] ?? item.chapter_interview_answers?.[question.id] ?? ""} onChange={(event) => setInterviewAnswers((current) => ({ ...current, [item.id]: { ...(current[item.id] || item.chapter_interview_answers || {}), [question.id]: event.target.value } }))} placeholder="写下你的设计回答；如果答不出来，可能需要回到底层重新设计。" /></li>)}</ol>
+          <button className="button" onClick={() => saveInterviewAnswers(item)}>保存作者回答</button>
         </div>}
         {item.analysis && <div className="author-review">
           <div className="review-stage-head"><div><small>AUTHOR REVIEW</small><h3>作者判断</h3></div><span>{scopeLabel[item.analysis.revision_scope] || "旧版局部判断"}</span></div>

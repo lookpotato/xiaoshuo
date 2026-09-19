@@ -36,6 +36,7 @@ SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
 MAX_DIALOGUE_MESSAGE_CHARS = 5000
+MAX_INTERVIEW_ANSWER_CHARS = 5000
 PROMOTION_SCOPES = {"book": "本书", "author": "作者"}
 PROMOTION_LOCK = threading.RLock()
 
@@ -244,6 +245,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
     promotion = read_json(folder / "promotion.json")
     dialogue = read_json(folder / "author_dialogue.json", {}) or {}
     chapter_interview = read_json(folder / "chapter_interview.json")
+    chapter_interview_answers = read_json(folder / "chapter_interview_answers.json", {}) or {}
     return {
         **feedback,
         "status": status.get("status", "queued"),
@@ -253,6 +255,11 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         "blind_reader": blind_reader if isinstance(blind_reader, dict) else None,
         "chapter_interview": (
             chapter_interview if isinstance(chapter_interview, dict) else None
+        ),
+        "chapter_interview_answers": (
+            chapter_interview_answers.get("answers", {})
+            if isinstance(chapter_interview_answers, dict)
+            else {}
         ),
         "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
@@ -267,6 +274,38 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
             dialogue.get("status", "idle") if isinstance(dialogue, dict) else "idle"
         ),
     }
+
+
+def save_chapter_interview_answers(
+    root: Path, book_id: str, feedback_id: str, answers: dict
+) -> dict:
+    folder = _feedback_dir(root, book_id, feedback_id)
+    interview = read_json(folder / "chapter_interview.json")
+    if not isinstance(interview, dict):
+        raise ValueError("整章提问尚未完成，暂时不能保存回答")
+    if not isinstance(answers, dict):
+        raise ValueError("整章提问回答必须为对象")
+    question_ids = {
+        str(item.get("id")) for item in interview.get("questions", [])
+        if isinstance(item, dict) and item.get("id")
+    }
+    cleaned = {}
+    for key, value in answers.items():
+        key = str(key)
+        if key not in question_ids:
+            raise ValueError(f"未知的整章问题：{key}")
+        value = str(value).strip()
+        if len(value) > MAX_INTERVIEW_ANSWER_CHARS:
+            raise ValueError(f"每个整章问题回答不能超过{MAX_INTERVIEW_ANSWER_CHARS}字")
+        if value:
+            cleaned[key] = value
+    payload = {
+        "schema_version": 1,
+        "answers": cleaned,
+        "updated_at": datetime.now().astimezone().isoformat(),
+    }
+    atomic_json(folder / "chapter_interview_answers.json", payload)
+    return payload
 
 
 def append_author_dialogue_message(

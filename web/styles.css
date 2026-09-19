@@ -342,6 +342,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .chapter-interview-review li.foundation strong { color: #9d4d39; }
 .chapter-interview-review blockquote { margin: 5px 0 0; padding-left: 9px; border-left: 2px solid rgba(92,112,180,.35); color: var(--muted); font-size: 11px; }
 .chapter-interview-review small { color: var(--muted); }
+.chapter-interview-review textarea { width: 100%; min-height: 58px; margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.55); color: var(--ink); font: inherit; font-size: 12px; resize: vertical; }
 .review-stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .review-stage-head small { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
 .review-stage-head h3 { margin: 2px 0 0; }
