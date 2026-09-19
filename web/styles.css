@@ -333,6 +333,15 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .blind-reader-review h4 { margin-bottom: 6px; color: var(--muted); font-size: 11px; }
 .blind-reader-review p, .blind-reader-review li { font-size: 12px; line-height: 1.75; }
 .blind-reader-review ul { margin: 0; padding-left: 20px; }
+.chapter-interview-review { margin-top: 16px; padding: 15px; border: 1px solid rgba(92,112,180,.28); border-radius: 10px; background: rgba(92,112,180,.07); }
+.chapter-interview-review h3 { margin: 0 0 8px; font-size: 15px; }
+.chapter-interview-review h4 { margin: 15px 0 6px; color: var(--muted); font-size: 11px; }
+.chapter-interview-review p, .chapter-interview-review li { font-size: 12px; line-height: 1.75; }
+.chapter-interview-review ul, .chapter-interview-review ol { margin: 0; padding-left: 20px; }
+.chapter-interview-review li { margin-bottom: 10px; }
+.chapter-interview-review li.foundation strong { color: #9d4d39; }
+.chapter-interview-review blockquote { margin: 5px 0 0; padding-left: 9px; border-left: 2px solid rgba(92,112,180,.35); color: var(--muted); font-size: 11px; }
+.chapter-interview-review small { color: var(--muted); }
 .review-stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .review-stage-head small { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
 .review-stage-head h3 { margin: 2px 0 0; }

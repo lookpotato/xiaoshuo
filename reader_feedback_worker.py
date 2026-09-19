@@ -22,6 +22,10 @@ ROOT = Path(__file__).resolve().parent
 REVISION_SCOPES = set(service.REVISION_SCOPES)
 
 
+def _evidence_in_text(chapter_text: str, evidence: str) -> bool:
+    return service._compact(evidence) in service._compact(service._narrative(chapter_text))
+
+
 def parse_blind_reader_result(text: str) -> dict:
     stripped = text.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
@@ -44,6 +48,72 @@ def parse_blind_reader_result(text: str) -> dict:
     if value.get("recommended_scope") not in REVISION_SCOPES:
         raise ValueError("陌生读者报告 recommended_scope 无效")
     return value
+
+
+def parse_chapter_interview_result(text: str) -> dict:
+    """Validate a whole-chapter author interview, including design-level risks."""
+    stripped = text.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
+    if fenced:
+        stripped = fenced.group(1)
+    try:
+        value = json.loads(stripped)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"整章提问没有返回有效JSON：{exc}") from exc
+    if not isinstance(value, dict):
+        raise ValueError("整章提问必须返回JSON对象")
+    for key in ("chapter_promise", "reading_summary"):
+        if not isinstance(value.get(key), str) or not value[key].strip():
+            raise ValueError(f"整章提问缺少 {key}")
+    questions = value.get("questions")
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("整章提问 questions 不能为空")
+    cleaned_questions = []
+    for index, question in enumerate(questions, 1):
+        if not isinstance(question, dict):
+            raise ValueError("整章提问 questions 必须为对象数组")
+        for key in ("question", "why_it_matters"):
+            if not isinstance(question.get(key), str) or not question[key].strip():
+                raise ValueError(f"整章提问第{index}题缺少 {key}")
+        level = question.get("level")
+        if level not in {"wording", "scene", "foundation"}:
+            raise ValueError("整章提问 level 必须为 wording、scene 或 foundation")
+        evidence = question.get("evidence", [])
+        if not isinstance(evidence, list) or not all(
+            isinstance(item, str) and item.strip() for item in evidence
+        ):
+            raise ValueError(f"整章提问第{index}题 evidence 必须为文本数组")
+        cleaned_questions.append({
+            "id": str(question.get("id") or f"Q{index}"),
+            "level": level,
+            "question": question["question"].strip(),
+            "why_it_matters": question["why_it_matters"].strip(),
+            "evidence": evidence,
+        })
+    risks = value.get("foundation_risks", [])
+    if not isinstance(risks, list):
+        raise ValueError("整章提问 foundation_risks 必须为数组")
+    cleaned_risks = []
+    for risk in risks:
+        if not isinstance(risk, dict):
+            raise ValueError("整章提问 foundation_risks 必须为对象数组")
+        for key in ("risk", "question", "evidence"):
+            if not isinstance(risk.get(key), str) or not risk[key].strip():
+                raise ValueError(f"底层设计风险缺少 {key}")
+        if risk.get("severity") not in {"low", "medium", "high"}:
+            raise ValueError("底层设计风险 severity 必须为 low、medium 或 high")
+        cleaned_risks.append({
+            "risk": risk["risk"].strip(),
+            "severity": risk["severity"],
+            "question": risk["question"].strip(),
+            "evidence": risk["evidence"].strip(),
+        })
+    return {
+        "chapter_promise": value["chapter_promise"].strip(),
+        "reading_summary": value["reading_summary"].strip(),
+        "questions": cleaned_questions,
+        "foundation_risks": cleaned_risks,
+    }
 
 
 def parse_result(text: str) -> dict:
@@ -155,6 +225,72 @@ def build_blind_reader_prompt(book_id: str, feedback_id: str) -> tuple[Path, Pat
         encoding="utf-8",
     )
     return prompt, folder / "blind_reader_model_result.json"
+
+
+def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
+    item = service.feedback_item(ROOT, book_id, feedback_id)
+    _, project = service._book(ROOT, book_id)
+    folder = project / "reader_feedback" / feedback_id
+    author = author_registry.book_author(ROOT, book_id)
+    author_path = ROOT / author["document_id"]
+    chapter_path = Path(item["chapter_file"])
+    chapter_number = int(item["chapter"])
+    context_paths = [
+        project / "novel_config.md",
+        project / "style_guide.md",
+        project / "characters.md",
+        project / "story_bible.md",
+        project / "continuity_ledger.md",
+    ]
+    context = "\n".join(f"- `{path}`" for path in context_paths if path.is_file())
+    prompt = folder / "chapter_interview_prompt.md"
+    result = folder / "chapter_interview_model_result.json"
+    prompt.write_text(
+        f"""# 整章作者提问
+
+你是绑定本书的副作者。请完整阅读第 {chapter_number} 章，再向作者提出一组必须回答的问题。你的任务不是替作者润色，也不是马上给改稿，而是检查这一章的底层承诺是否成立。
+
+必须读取：
+- 作者档案：`{author_path}`
+- 当前整章：`{chapter_path}`
+- 本书设定与连续性资料：
+{context}
+
+提问原则：
+1. 先用整章回答“读者被承诺了什么、实际看到了什么、哪里可能失去相信”。不要只抓一句台词；问题必须能够指向整章的任务、人物选择、因果链、情绪推进或章末变化。
+2. 每个问题都要真正问作者，而不是把结论伪装成问题。比如“林乔为什么这么做？”可以；“林乔这样做明显不合理”不可以。
+3. 每题标记层级：wording（局部说法）、scene（完整场景推进）、foundation（人物关系、核心冲突、世界规则、目标承诺或结局逻辑的底层设计）。
+4. 优先追问作者必须亲自回答的“为什么”：人物如果不这么做会怎样、信息从哪里来、谁在承担代价、场景结束后什么改变、这个设定是否真的支持整章剧情。
+5. 如果问题只靠补一句解释就能掩盖，但人物仍不会这样行动，标记为 foundation，而不是 wording。
+6. foundation_risks 只填写有正文证据的底层风险；不要因为作者没有写出所有设定就臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
+7. 不得直接替作者回答。问题要让作者暴露设计前提，帮助后续决定是局部修改、重写场景，还是回到人物/世界观设计重做。
+
+最终只输出一个 JSON 对象，不要代码围栏：
+{{
+  "chapter_promise": "本章对读者做出的核心承诺",
+  "reading_summary": "只凭本章读完后的真实阅读结果，指出最清楚和最不稳的地方",
+  "questions": [
+    {{
+      "id": "Q1",
+      "level": "wording|scene|foundation",
+      "question": "直接问作者的问题",
+      "why_it_matters": "为什么不回答这个问题，就不能判断本章是否成立",
+      "evidence": ["当前章节中的原文短句或明确事件"]
+    }}
+  ],
+  "foundation_risks": [
+    {{
+      "risk": "可能存在的底层设计风险",
+      "severity": "low|medium|high",
+      "question": "必须问作者的设计问题",
+      "evidence": "当前章节证据"
+    }}
+  ]
+}}
+""",
+        encoding="utf-8",
+    )
+    return prompt, result
 
 
 def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
@@ -337,6 +473,51 @@ def run(book_id: str, feedback_id: str) -> None:
     review_mode = str(item.get("review_mode", "combined"))
     if review_mode not in service.REVIEW_MODES:
         raise ValueError("审稿方式无效")
+    if review_mode == "chapter_interview":
+        service.update_status(
+            ROOT, book_id, feedback_id, status="analyzing",
+            message="正在完整阅读本章，整理需要作者回答的问题",
+        )
+        prompt, result_path = build_chapter_interview_prompt(book_id, feedback_id)
+        command = [
+            resolve_codex(), "exec", "--ephemeral", "-C", str(ROOT),
+            "--sandbox", "read-only", "--config", 'approval_policy="never"',
+            "--output-last-message", str(result_path), "-",
+        ]
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            input=prompt.read_text(encoding="utf-8"),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if result.returncode:
+            raise RuntimeError(f"整章提问进程退出码 {result.returncode}")
+        interview = parse_chapter_interview_result(
+            result_path.read_text(encoding="utf-8")
+        )
+        chapter_text = Path(item["chapter_file"]).read_text(encoding="utf-8")
+        evidence = [
+            *[e for question in interview["questions"] for e in question["evidence"]],
+            *[risk["evidence"] for risk in interview["foundation_risks"]],
+        ]
+        if not all(_evidence_in_text(chapter_text, text) for text in evidence):
+            raise ValueError("整章提问的 evidence 必须逐字存在于当前正文")
+        service.atomic_json(
+            result_path.parent / "chapter_interview.json",
+            {
+                "schema_version": 1,
+                **interview,
+                "reviewed_at": datetime.now().astimezone().isoformat(),
+                "context_policy": "完整阅读当前章节，并结合绑定作者与本书设计资料提问",
+            },
+        )
+        service.update_status(
+            ROOT, book_id, feedback_id, status="interview_ready",
+            message="整章提问完成；请作者先回答底层设计问题，再决定是否改稿",
+        )
+        return
     if review_mode in {"blind", "combined"}:
         service.update_status(
             ROOT, book_id, feedback_id, status="analyzing", message="陌生读者正在只看正文试读"

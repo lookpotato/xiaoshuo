@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 import reader_feedback_service as service
 from reader_feedback_worker import (
     parse_blind_reader_result,
+    parse_chapter_interview_result,
     parse_follow_up_result,
     parse_result,
 )
@@ -79,6 +80,34 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertEqual(item["review_mode"], "blind")
         self.assertEqual(item["review_mode_label"], "陌生读者试读")
         self.assertIn("陌生读者试读", item["status_message"])
+
+    def test_chapter_interview_is_whole_chapter_author_question_mode(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1,
+            "review_mode": "chapter_interview",
+        })
+        self.assertEqual(item["review_mode_label"], "整章作者提问")
+        self.assertIn("完整章", item["comment"])
+
+    def test_chapter_interview_result_requires_foundation_level_and_evidence(self) -> None:
+        parsed = parse_chapter_interview_result(json.dumps({
+            "chapter_promise": "甲会在这一章做出选择。",
+            "reading_summary": "选择看得见，但代价不清楚。",
+            "questions": [{
+                "id": "Q1", "level": "foundation",
+                "question": "如果甲不这样做，眼前会失去什么？",
+                "why_it_matters": "否则冲突只是作者安排。",
+                "evidence": ["甲把门推开。"],
+            }],
+            "foundation_risks": [{
+                "risk": "中心冲突可能缺少即时代价。",
+                "severity": "high",
+                "question": "作者是否能说明失败的具体后果？",
+                "evidence": "甲把门推开。",
+            }],
+        }, ensure_ascii=False))
+        self.assertEqual(parsed["questions"][0]["level"], "foundation")
+        self.assertEqual(parsed["foundation_risks"][0]["severity"], "high")
 
     def test_feedback_rejects_unknown_review_mode(self) -> None:
         with self.assertRaisesRegex(ValueError, "审稿方式无效"):

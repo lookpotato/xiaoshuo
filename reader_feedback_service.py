@@ -30,6 +30,7 @@ REVIEW_MODES = {
     "blind": "陌生读者试读",
     "author": "作者审稿",
     "combined": "双重审稿",
+    "chapter_interview": "整章作者提问",
 }
 SAFE_ID = re.compile(r"^[0-9A-Za-z_-]{8,80}$")
 MAX_QUOTE_CHARS = 3000
@@ -185,6 +186,8 @@ def create_feedback(root: Path, payload: dict) -> dict:
         raise ValueError("审稿方式无效")
     if not 1 <= chapter <= 100000:
         raise ValueError("章节号无效")
+    if not comment and review_mode == "chapter_interview":
+        comment = "请读完整章后向作者提问，并优先检查人物动机、核心冲突和底层设计是否成立。"
     if not comment or len(comment) > MAX_COMMENT_CHARS:
         raise ValueError(f"读者留言必须为1—{MAX_COMMENT_CHARS}字")
     if len(quote) > MAX_QUOTE_CHARS:
@@ -240,6 +243,7 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
     blind_reader = read_json(folder / "blind_reader_analysis.json")
     promotion = read_json(folder / "promotion.json")
     dialogue = read_json(folder / "author_dialogue.json", {}) or {}
+    chapter_interview = read_json(folder / "chapter_interview.json")
     return {
         **feedback,
         "status": status.get("status", "queued"),
@@ -247,6 +251,9 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
         "run_id": status.get("run_id"),
         "analysis": analysis if isinstance(analysis, dict) else None,
         "blind_reader": blind_reader if isinstance(blind_reader, dict) else None,
+        "chapter_interview": (
+            chapter_interview if isinstance(chapter_interview, dict) else None
+        ),
         "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
