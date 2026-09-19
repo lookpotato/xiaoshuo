@@ -30,12 +30,15 @@ def _evidence_in_text(chapter_text: str, evidence: str) -> bool:
         return value
 
     source = normalize(service._narrative(chapter_text))
-    candidate = normalize(evidence)
-    if candidate and candidate in source:
+    raw = str(evidence).strip()
+    candidates = [normalize(raw)]
+    if "：" in raw or ":" in raw:
+        candidates.append(normalize(re.split(r"[：:]", raw, maxsplit=1)[1]))
+    if any(candidate and candidate in source for candidate in candidates):
         return True
     # Models sometimes prepend a speaker label or a short explanation. Accept
     # a long contiguous Chinese fragment only when it is still verbatim text.
-    fragments = re.findall(r"[\u4e00-\u9fff]{6,}", str(evidence))
+    fragments = re.findall(r"[\u4e00-\u9fff]{3,}", raw)
     return any(fragment in source for fragment in fragments)
 
 
