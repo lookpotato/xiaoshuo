@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import re
 import subprocess
@@ -40,6 +41,37 @@ def _evidence_in_text(chapter_text: str, evidence: str) -> bool:
     # a long contiguous Chinese fragment only when it is still verbatim text.
     fragments = re.findall(r"[\u4e00-\u9fff]{3,}", raw)
     return any(fragment in source for fragment in fragments)
+
+
+def _evidence_segments(chapter_text: str) -> list[str]:
+    """Return short, user-visible source segments suitable for evidence repair."""
+    narrative = service._narrative(chapter_text)
+    return [
+        segment.strip()
+        for segment in re.split(r"(?<=[。！？；\n])", narrative)
+        if len(re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", segment)) >= 3
+    ]
+
+
+def _repair_evidence(chapter_text: str, evidence: str) -> tuple[str, bool]:
+    """Keep exact evidence, or replace a model-composed quote with a close source segment."""
+    raw = str(evidence).strip()
+    if _evidence_in_text(chapter_text, raw):
+        return raw, False
+    compact_raw = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", raw)
+    if len(compact_raw) < 3:
+        return raw, False
+    best: tuple[float, str] | None = None
+    for segment in _evidence_segments(chapter_text):
+        compact_segment = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", segment)
+        matcher = difflib.SequenceMatcher(None, compact_raw, compact_segment)
+        longest = max((block.size for block in matcher.get_matching_blocks()), default=0)
+        if longest < 3:
+            continue
+        score = longest * 2 + matcher.ratio()
+        if best is None or score > best[0]:
+            best = (score, segment)
+    return (best[1], True) if best else (raw, False)
 
 
 def parse_blind_reader_result(text: str) -> dict:
@@ -283,7 +315,7 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
 5. 特别检查首次出现的人物，尤其客户、长辈、邻居和陌生人：称呼、语气、强硬程度是否有得罪、欠账、权力差、熟人默契或现场压力的依据。没有依据时，明确指出这是写法问题，并给出符合中国语用的替代方式。
 6. 重点检查对白是否被写成电报、操作口令、合同摘要或作者替人物总结。中文口语允许省略，但应有关系动作、停顿、改口、指代、回避或态度变化。
 7. foundation_risks 只填写有正文证据的风险；不要臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
-8. evidence 必须从当前章节复制原文，不得改写、总结或补充说话人。需要解释影响时放在 why_it_matters。
+8. evidence 必须从当前章节复制原文，不得改写、总结、拼接两处原文或补充说话人。尤其不能把“先查值班表”和“下一步却已经不在书里了”合并成正文不存在的新句子；需要解释影响时放在 why_it_matters。
 
 最终只输出一个 JSON 对象，不要代码围栏：
 {{
@@ -519,12 +551,27 @@ def run(book_id: str, feedback_id: str) -> None:
             result_path.read_text(encoding="utf-8")
         )
         chapter_text = Path(item["chapter_file"]).read_text(encoding="utf-8")
+        repaired_evidence = []
+        for question in interview["questions"]:
+            repaired = []
+            for original in question["evidence"]:
+                current, changed = _repair_evidence(chapter_text, original)
+                if changed:
+                    repaired_evidence.append({"from": original, "to": current})
+                repaired.append(current)
+            question["evidence"] = repaired
+        for risk in interview["foundation_risks"]:
+            current, changed = _repair_evidence(chapter_text, risk["evidence"])
+            if changed:
+                repaired_evidence.append({"from": risk["evidence"], "to": current})
+            risk["evidence"] = current
         evidence = [
             *[e for question in interview["questions"] for e in question["evidence"]],
             *[risk["evidence"] for risk in interview["foundation_risks"]],
         ]
         if not all(_evidence_in_text(chapter_text, text) for text in evidence):
-            raise ValueError("整章提问的 evidence 必须逐字存在于当前正文")
+            invalid = next(text for text in evidence if not _evidence_in_text(chapter_text, text))
+            raise ValueError(f"整章提问的 evidence 必须逐字存在于当前正文：{invalid}")
         service.atomic_json(
             result_path.parent / "chapter_interview.json",
             {
@@ -532,6 +579,7 @@ def run(book_id: str, feedback_id: str) -> None:
                 **interview,
                 "reviewed_at": datetime.now().astimezone().isoformat(),
                 "context_policy": "完整阅读当前章节，并结合绑定作者与本书设计资料进行写法审校",
+                "evidence_repairs": repaired_evidence,
             },
         )
         service.update_status(

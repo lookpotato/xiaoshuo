@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 import reader_feedback_service as service
 from reader_feedback_worker import (
     _evidence_in_text,
+    _repair_evidence,
     parse_blind_reader_result,
     parse_chapter_interview_result,
     parse_follow_up_result,
@@ -133,6 +134,14 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "孟阿婆把门一关，说：‘行。不播放，不翻书。’",
             "孟阿婆：行，不播放，不翻书",
         ))
+
+    def test_composed_evidence_falls_back_to_an_exact_source_segment(self) -> None:
+        chapter = "孟阿婆说完，林默收起录音笔。\n先查值班表。\n书还在孟阿婆手里，下一步却已经不在书里了。"
+        repaired, changed = _repair_evidence(
+            chapter, "下一步从晚间进入阅览室的人或值班记录查起"
+        )
+        self.assertTrue(changed)
+        self.assertIn(repaired, chapter)
 
     def test_feedback_rejects_unknown_review_mode(self) -> None:
         with self.assertRaisesRegex(ValueError, "审稿方式无效"):
