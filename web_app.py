@@ -567,6 +567,25 @@ def launch_author_dialogue(payload: dict) -> dict:
     return {"dialogue": queued["dialogue"], "run": run}
 
 
+def launch_interview_author_review(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    feedback_id = str(payload.get("feedback_id", "")).strip()
+    item = reader_feedback_service.feedback_item(ROOT, book_id, feedback_id)
+    command = [
+        sys.executable,
+        str(ROOT / "reader_feedback_worker.py"),
+        "--book", book_id,
+        "--feedback-id", feedback_id,
+        "--from-interview",
+    ]
+    run = launch_command(
+        command,
+        "reader_feedback_author_review",
+        f"《{item['book_title']}》第 {item['chapter']} 章理解审校并生成候选修订",
+    )
+    return {"run": run}
+
+
 def delete_chapter_tail(payload: dict) -> dict:
     book_id = str(payload.get("book_id", "")).strip()
     chapter = int(payload.get("from_chapter", 0) or 0)
@@ -739,7 +758,15 @@ class AppHandler(BaseHTTPRequestHandler):
                 saved = reader_feedback_service.save_chapter_interview_answers(
                     ROOT, book_id, feedback_id, answers
                 )
-                self.send_json({"ok": True, "answers": saved})
+                review = launch_interview_author_review({
+                    "book_id": book_id, "feedback_id": feedback_id,
+                })
+                reader_feedback_service.update_status(
+                    ROOT, book_id, feedback_id, status="analyzing",
+                    message="正在理解主作者的审校判断并生成候选修订稿",
+                    run_id=review["run"]["id"],
+                )
+                self.send_json({"ok": True, "answers": saved, "review": review}, HTTPStatus.ACCEPTED)
                 return
             if parsed.path == "/api/chapter/delete-tail":
                 self.send_json({"ok": True, "deletion": delete_chapter_tail(payload)})

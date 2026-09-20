@@ -139,7 +139,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, feedback_id: item.id, answers }),
       });
-      onNotice("整章问题回答已保存"); await load();
+      onNotice("作者正在理解你的判断并生成候选修订稿，请稍候"); await load();
     } catch (error) { onNotice(error.message); }
   }
 

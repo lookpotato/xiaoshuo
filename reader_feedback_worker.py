@@ -369,6 +369,15 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     ]
     context = "\n".join(f"- `{path}`" for path in context_paths if path.is_file())
     blind_report = folder / "blind_reader_analysis.json"
+    interview_answers = folder / "chapter_interview_answers.json"
+    interview_context = ""
+    if interview_answers.is_file():
+        interview_context = (
+            f"- 整章写法审校报告：`{folder / 'chapter_interview.json'}`\n"
+            f"- 主作者对审校意见的判断：`{interview_answers}`\n"
+            "主作者已经逐条填写判断。必须先理解这些判断，再决定采纳、部分采纳或不采纳；"
+            "不要把主作者的回答当成新的问题，也不要要求主作者再次解释。"
+        )
     if blind_report.is_file():
         blind_context = (
             f"- 陌生读者试读报告：`{blind_report}`\n"
@@ -395,6 +404,7 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 - 当前章节：`{source}`
 - 结构化反馈：`{folder / 'feedback.json'}`
 {blind_context}
+{interview_context}
 {context}
 
 判断顺序：
@@ -406,7 +416,8 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 6. 若采纳或部分采纳，只解决被证据支持的问题，保留已经成立的情节、人物选择、信息边界和章节元数据。
 7. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
 8. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
-9. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
+9. 如果存在“主作者对审校意见的判断”，这些回答就是本次修订的创作决策：把采纳的意见落实到正文，把不采纳的意见保留在 misdiagnoses 中。只要 decision 是 accept 或 partial，就必须返回完整候选修订稿，不能只给分析不写文章。
+10. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
 
 最终只输出一个JSON对象，不要代码围栏，不要修改任何文件：
 {{
@@ -521,12 +532,12 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
     )
 
 
-def run(book_id: str, feedback_id: str) -> None:
+def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
     item = service.feedback_item(ROOT, book_id, feedback_id)
     review_mode = str(item.get("review_mode", "combined"))
     if review_mode not in service.REVIEW_MODES:
         raise ValueError("审稿方式无效")
-    if review_mode == "chapter_interview":
+    if review_mode == "chapter_interview" and not from_interview:
         service.update_status(
             ROOT, book_id, feedback_id, status="analyzing",
             message="正在完整阅读本章，审校人物说话与行动是否自然",
@@ -641,8 +652,11 @@ def run(book_id: str, feedback_id: str) -> None:
     service.update_status(
         ROOT, book_id, feedback_id, status="analyzing",
         message=(
-            "陌生读者报告完成，作者正在结合连续性审稿"
-            if review_mode == "combined" else "作者正在结合设定与连续性审稿"
+            "正在理解主作者的审校判断并生成候选修订稿"
+            if from_interview else (
+                "陌生读者报告完成，作者正在结合连续性审稿"
+                if review_mode == "combined" else "作者正在结合设定与连续性审稿"
+            )
         ),
     )
     prompt, result_path = build_prompt(book_id, feedback_id)
@@ -686,12 +700,13 @@ def main() -> int:
     parser.add_argument("--book", required=True)
     parser.add_argument("--feedback-id", required=True)
     parser.add_argument("--follow-up", action="store_true")
+    parser.add_argument("--from-interview", action="store_true")
     args = parser.parse_args()
     try:
         if args.follow_up:
             run_follow_up(args.book, args.feedback_id)
         else:
-            run(args.book, args.feedback_id)
+            run(args.book, args.feedback_id, from_interview=args.from_interview)
         print("真实读者反馈分析完成")
         return 0
     except Exception as exc:
