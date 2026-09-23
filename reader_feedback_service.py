@@ -716,7 +716,13 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
     backup = folder / "original_before_apply.md"
     if not backup.exists():
         atomic_text(backup, current)
+    expected_hash = hashlib.sha256(revision.encode("utf-8")).hexdigest()
     atomic_text(chapter_path, revision)
+    written_hash = hashlib.sha256(
+        chapter_path.read_text(encoding="utf-8").encode("utf-8")
+    ).hexdigest()
+    if written_hash != expected_hash:
+        raise ValueError("正式章节写入校验失败，未确认应用结果")
     invalidated = []
     stale_artifacts = (
         (project / "reader_checks" / f"{number:04d}.json", "reader_check_before_apply.json", "读者验收"),
