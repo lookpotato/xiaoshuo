@@ -257,9 +257,12 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
             <p><b>适用：</b>{item.analysis.learning_candidate.applies_when}</p>
             <p><b>边界：</b>{item.analysis.learning_candidate.avoid}</p>
             <p className="learning-reason">{item.analysis.learning_candidate.rationale}</p>
-            <p className="scope-reason">如果作者提炼错了，请在下面直接写出你的纠正。作者会重新生成这条候选，直到你满意后再沉淀。</p>
-            <textarea rows="3" maxLength="5000" value={learningDrafts[item.id] || ""} onChange={(event) => setLearningDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="例如：这不是所有对白都要变短，而是不能把作者的总结塞进人物嘴里；请按这个边界重新提炼。" />
-            <button className="button" disabled={!learningDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => guideLearningCandidate(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼" : "指导作者重提长期经验"}</button>
+            <div className="learning-candidate-editor">
+              <div className="learning-candidate-editor-head"><strong>不满意这条候选？</strong><span>先指导，再沉淀</span></div>
+              <p>把你认为不准确的地方直接写出来，作者会按你的边界重新提炼。</p>
+              <textarea rows="3" maxLength="5000" value={learningDrafts[item.id] || ""} onChange={(event) => setLearningDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="例如：这不是所有对白都要变短，而是不能把作者的总结塞进人物嘴里；请按这个边界重新提炼。" />
+              <button className="button learning-guide-button" disabled={!learningDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => guideLearningCandidate(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼…" : "指导作者重提长期经验"}</button>
+            </div>
             {item.promotion ? <div className="promoted-note">已沉淀为{item.promotion.scope_label}长期规则 · 证据 {item.promotion.evidence_count} 条</div> : <div className="learning-actions">
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "book" ? "recommended" : ""}`} onClick={() => promote(item, "book")}>用于本书{item.analysis.learning_candidate.recommended_scope === "book" && " · 推荐"}</button>
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>

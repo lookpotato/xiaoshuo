@@ -378,6 +378,16 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .learning-candidate > strong { display: block; margin-bottom: 9px; font-size: 13px; line-height: 1.75; }
 .learning-candidate p { margin: 5px 0; }
 .learning-reason { color: var(--muted); }
+.learning-candidate-editor { display: grid; gap: 8px; margin-top: 15px; padding: 13px; border: 1px solid rgba(31,128,101,.22); border-radius: 9px; background: rgba(255,255,255,.62); }
+.learning-candidate-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.learning-candidate-editor-head strong { color: var(--ink); font-size: 11px; }
+.learning-candidate-editor-head span { color: var(--green); font-size: 9px; font-weight: 800; }
+.learning-candidate-editor p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.learning-candidate-editor textarea { width: 100%; min-height: 78px; margin: 0; padding: 10px 11px; border: 1px solid rgba(31,128,101,.25); border-radius: 8px; color: var(--ink); background: white; font: 12px/1.65 "Microsoft YaHei UI", sans-serif; resize: vertical; }
+.learning-candidate-editor textarea:focus { outline: 2px solid rgba(31,128,101,.2); border-color: var(--green); }
+.learning-guide-button { justify-self: start; padding: 9px 12px; color: white; background: var(--green); }
+.learning-guide-button:hover { background: #256b55; transform: translateY(-1px); }
+.learning-guide-button:disabled { color: #8e9b94; background: #e7ece8; }
 .learning-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
 .learning-actions .button { padding: 8px 11px; border: 1px solid var(--line); color: var(--ink); background: white; }
 .learning-actions .button.recommended { border-color: var(--green); color: white; background: var(--green); }
