@@ -29,6 +29,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [comment, setComment] = useState("");
   const [reviewMode, setReviewMode] = useState("combined");
   const [dialogueDrafts, setDialogueDrafts] = useState({});
+  const [learningDrafts, setLearningDrafts] = useState({});
   const [interviewAnswers, setInterviewAnswers] = useState({});
   const [busy, setBusy] = useState(false);
   const readerRef = useRef(null);
@@ -39,6 +40,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     setChapter(null); setItems([]); setVersions([]); setSelectedVersion("current");
     setReceipt(null); setQuote(""); setComment("");
     setInterviewAnswers({});
+    setLearningDrafts({});
   }, [book.id, book.last_completed_chapter]);
 
   const load = useCallback(async () => {
@@ -129,6 +131,19 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
       });
       setDialogueDrafts((current) => ({ ...current, [item.id]: "" }));
       onNotice("已把纠正意见发给作者，会在同一条记录中继续回复"); await load();
+    } catch (error) { onNotice(error.message); }
+  }
+
+  async function guideLearningCandidate(item) {
+    const content = (learningDrafts[item.id] || "").trim();
+    if (!content || ["queued", "responding"].includes(item.author_dialogue_status)) return;
+    try {
+      await api("/api/reader-feedback/dialogue", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, content: `【请重提炼长期经验候选】${content}` }),
+      });
+      setLearningDrafts((current) => ({ ...current, [item.id]: "" }));
+      onNotice("已要求作者重新提炼长期经验候选"); await load();
     } catch (error) { onNotice(error.message); }
   }
 
@@ -242,8 +257,9 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
             <p><b>适用：</b>{item.analysis.learning_candidate.applies_when}</p>
             <p><b>边界：</b>{item.analysis.learning_candidate.avoid}</p>
             <p className="learning-reason">{item.analysis.learning_candidate.rationale}</p>
-            <p className="scope-reason">如果作者提炼错了，请在上方“继续和作者讨论”输入你的纠正，然后点击下面按钮，作者会重新生成这条长期经验候选。</p>
-            <button className="button" disabled={!dialogueDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => continueAuthorDialogue(item, "learning_candidate")}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼" : "指导作者重提长期经验"}</button>
+            <p className="scope-reason">如果作者提炼错了，请在下面直接写出你的纠正。作者会重新生成这条候选，直到你满意后再沉淀。</p>
+            <textarea rows="3" maxLength="5000" value={learningDrafts[item.id] || ""} onChange={(event) => setLearningDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="例如：这不是所有对白都要变短，而是不能把作者的总结塞进人物嘴里；请按这个边界重新提炼。" />
+            <button className="button" disabled={!learningDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => guideLearningCandidate(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼" : "指导作者重提长期经验"}</button>
             {item.promotion ? <div className="promoted-note">已沉淀为{item.promotion.scope_label}长期规则 · 证据 {item.promotion.evidence_count} 条</div> : <div className="learning-actions">
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "book" ? "recommended" : ""}`} onClick={() => promote(item, "book")}>用于本书{item.analysis.learning_candidate.recommended_scope === "book" && " · 推荐"}</button>
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>
