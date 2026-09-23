@@ -452,6 +452,10 @@ def _learning_candidate(analysis: dict) -> dict:
     confidence = str(candidate.get("confidence", ""))
     if scope not in PROMOTION_SCOPES or confidence not in {"medium", "high"}:
         raise ValueError("长期经验候选的范围或置信度无效")
+    tags = candidate.get("tags", [])
+    if not isinstance(tags, list) or not all(isinstance(item, str) and item.strip() for item in tags):
+        raise ValueError("长期经验 tags 必须为文本数组")
+    cleaned["tags"] = list(dict.fromkeys(item.strip() for item in tags))[:20]
     return {**cleaned, "recommended_scope": scope, "confidence": confidence}
 
 
@@ -629,6 +633,7 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str | No
                         "applies_when": promoted["applies_when"],
                         "avoid": promoted["avoid"],
                         "rationale": promoted["rationale"],
+                        "tags": promoted.get("tags", []),
                         "evidence_feedback_ids": promoted["evidence_feedback_ids"],
                         "evidence_count": promoted["evidence_count"],
                         "status": "user_confirmed",
@@ -645,6 +650,7 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str | No
                     "applies_when": promoted["applies_when"],
                     "avoid": promoted["avoid"],
                     "rationale": promoted["rationale"],
+                    "tags": promoted.get("tags", []),
                     "evidence_feedback_ids": promoted["evidence_feedback_ids"],
                     "evidence_count": promoted["evidence_count"],
                     "status": "user_confirmed",

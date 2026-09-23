@@ -205,6 +205,11 @@ def parse_result(text: str) -> dict:
             raise ValueError("作者分析 learning_candidate.recommended_scope 无效")
         if learning.get("confidence") not in {"medium", "high"}:
             raise ValueError("作者分析 learning_candidate.confidence 必须为 medium 或 high")
+        if "tags" in learning and (
+            not isinstance(learning["tags"], list)
+            or not all(isinstance(item, str) and item.strip() for item in learning["tags"])
+        ):
+            raise ValueError("作者分析 learning_candidate.tags 必须为文本数组")
     if value["decision"] in {"accept", "partial"}:
         if not isinstance(revision, str) or not revision.strip():
             raise ValueError("采纳反馈时必须提供完整候选修订")
@@ -431,7 +436,8 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
   "learning_candidate": null或{{
     "principle": "以后写作时可直接执行的一条正向原则",
     "applies_when": "适用的场景、人物关系或文本条件",
-    "avoid": "不得机械推广到哪些情况",
+  "avoid": "不得机械推广到哪些情况",
+  "tags": ["人物关系", "场合", "可选；用于后续检索"],
   "recommended_scope": "book|author|shared_language",
     "confidence": "medium|high",
     "rationale": "为什么值得长期保留"

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from .chinese_language import render, retrieve
+
 
 class ValidationError(ValueError):
     pass
@@ -166,7 +168,7 @@ class NovelEngine:
             raise ValidationError("本书长期反馈知识库超过 6000 字；请合并重复经验")
         return rendered
 
-    def _compile_writer_guidance(self, book: Book) -> tuple[str, list[str]]:
+    def _compile_writer_guidance(self, book: Book, language_query: str = "") -> tuple[str, list[str]]:
         """Compile language rules into the writer context instead of leaving them on disk."""
         candidates = (
             book.project / "style_guide.md",
@@ -181,7 +183,10 @@ class NovelEngine:
         for path in candidates:
             if not path.is_file():
                 continue
-            text = path.read_text(encoding="utf-8-sig").strip()
+            if path.name == "chinese_dialogue_feedback.jsonl":
+                text = render(retrieve(path, language_query, limit=8)).strip()
+            else:
+                text = path.read_text(encoding="utf-8-sig").strip()
             if not text:
                 continue
             sources.append(str(path.resolve()))
@@ -227,8 +232,8 @@ class NovelEngine:
         selected = sorted(candidates)[:limit]
         return [{"id": module_id, **raw} for _, _, module_id, raw in selected]
 
-    def context_manifest(self, book: Book, number: int) -> dict:
-        _, writer_guidance_sources = self._compile_writer_guidance(book)
+    def context_manifest(self, book: Book, number: int, language_signals: set[str] | None = None) -> dict:
+        _, writer_guidance_sources = self._compile_writer_guidance(book, " ".join(language_signals or ()))
         existing = []
         for name in self.config["legacy_adapter"]["book_sources"]:
             path = (book.project / name).resolve()
@@ -257,6 +262,7 @@ class NovelEngine:
             ),
             "book_sources": existing,
             "writer_guidance_sources": writer_guidance_sources,
+            "language_signals": sorted(language_signals or ()),
             "recent_chapters": [str(path) for path in self.recent_chapters(book, number)],
         }
 
@@ -270,7 +276,7 @@ class NovelEngine:
         run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
         run_dir = self.root / ".novel_runs_v2" / book.id / f"{number:04d}-{run_id}"
         run_dir.mkdir(parents=True, exist_ok=False)
-        manifest = self.context_manifest(book, number)
+        manifest = self.context_manifest(book, number, signals)
         manifest.update({
             "run_id": run_id,
             "run_dir": str(run_dir.resolve()),
@@ -291,7 +297,9 @@ class NovelEngine:
         run = Path(manifest["run_dir"])
         author_text = self._compile_author_context(author)
         book_learning = self._compile_book_learning(book)
-        writer_guidance, _ = self._compile_writer_guidance(book)
+        writer_guidance, _ = self._compile_writer_guidance(
+            book, " ".join(manifest.get("language_signals", []))
+        )
         sources = "\n".join(f"- `{path}`" for path in manifest["book_sources"])
         recent = "\n".join(f"- `{path}`" for path in manifest["recent_chapters"])
         writer_modules = "\n".join(

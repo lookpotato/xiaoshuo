@@ -85,6 +85,23 @@ class NovelEngineV2Tests(unittest.TestCase):
         self.assertIn("对白落笔前硬性执行", writer)
         self.assertEqual(len(manifest["writer_guidance_sources"]), 4)
 
+    def test_language_feedback_is_normalized_and_retrieved_by_query(self) -> None:
+        (self.root / "shared").mkdir()
+        path = self.root / "shared" / "chinese_dialogue_feedback.jsonl"
+        path.write_text(
+            json.dumps({
+                "id": "privacy", "scope": "老板客户隐私", "preferred": "先承认边界，再谈有限授权",
+                "principles": ["先说具体边界", "不要强硬命令"], "status": "user_confirmed",
+            }, ensure_ascii=False) + "\n" + json.dumps({
+                "id": "family", "scope": "母女冲突", "preferred": "先写关系动作",
+            }, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        engine = NovelEngine(self.root)
+        run = engine.prepare("demo", {"老板客户隐私"})
+        writer = (run / "writer.md").read_text(encoding="utf-8")
+        self.assertIn("先承认边界，再谈有限授权", writer)
+        self.assertNotIn("先写关系动作", writer)
+
     def test_author_method_and_book_application_are_separate_and_bounded(self) -> None:
         author_path = self.root / "novel_engine_v2" / "authors" / "owner.json"
         author = json.loads(author_path.read_text(encoding="utf-8"))
