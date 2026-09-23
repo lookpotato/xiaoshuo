@@ -737,7 +737,7 @@ class AppHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/reader-feedback/promote":
                 book_id = str(payload.get("book_id", ""))
                 feedback_id = str(payload.get("feedback_id", ""))
-                scope = str(payload.get("scope", ""))
+                scope = payload.get("scope")
                 self.send_json({
                     "ok": True,
                     **reader_feedback_service.promote_learning(

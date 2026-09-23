@@ -531,11 +531,8 @@ def _author_projects(root: Path, author_id: str) -> list[Path]:
     return projects
 
 
-def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> dict:
+def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str | None = None) -> dict:
     """Promote one author-proposed lesson after explicit co-author confirmation."""
-    scope = str(scope).strip()
-    if scope not in PROMOTION_SCOPES:
-        raise ValueError("长期经验范围必须是本书、作者或中文语言库")
     folder = _feedback_dir(root, book_id, feedback_id)
     feedback = read_json(folder / "feedback.json")
     analysis = read_json(folder / "analysis.json")
@@ -544,6 +541,10 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> 
     if analysis.get("decision") not in {"accept", "partial"}:
         raise ValueError("未采纳的反馈不能升级为长期规则")
     candidate = _learning_candidate(analysis)
+    # 作者候选决定进入哪个模块；保留显式 scope 仅为兼容旧调用方。
+    scope = str(scope or candidate["recommended_scope"]).strip()
+    if scope not in PROMOTION_SCOPES:
+        raise ValueError("长期经验范围必须由作者候选指定为本书、作者或中文语言库")
     _, project = _book(root, book_id)
     now = datetime.now().astimezone().isoformat()
     rule_id = _rule_id(str(feedback.get("category", "other")), candidate["principle"])

@@ -258,6 +258,7 @@ def author_prompt_context(book_id: str, project: Path) -> str:
 - 当前绑定主作者：{profile['name']}（{profile['id']}）。
 - 主作者档案：`{author_path}`，必须在规划和动笔前完整读取；其中创作身份、创作方法、读者承诺、语言原则和已确认反馈高于通用模型习惯。
 {learning_line}
+- 共享中文语言经验：`{root / 'shared' / 'chinese_dialogue_feedback.jsonl'}`；写作和审稿时先按关系、场合、权力距离与隐私边界检索适用规则，不得机械套用。
 - 本书 `style_guide.md` 继续承载书籍独有文风和已同步的长期反馈。作者档案、本书经验和文风指南冲突时，不得猜测；保留现有正文并在结果中报告冲突。
 - 这是一条统一生产流程，不得调用 `novel_v2.py` 或另行启动第二套章节生成器。
 """

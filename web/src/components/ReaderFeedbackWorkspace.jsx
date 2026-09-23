@@ -109,15 +109,14 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     } catch (error) { onNotice(error.message); }
   }
 
-  async function promote(item, scope) {
-    const scopeLabel = scope === "author" ? "这个作者的长期经验（影响其绑定作品）" : scope === "shared_language" ? "中文语言库" : "本书长期规则";
-    if (!window.confirm(`确认把这条经验沉淀为${scopeLabel}吗？后续生成和审稿都会读取。`)) return;
+  async function promote(item) {
+    if (!window.confirm("确认沉淀这条长期经验吗？作者已经判断了它应当影响的范围，后续生成和审稿会自动读取。")) return;
     try {
       await api("/api/reader-feedback/promote", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, scope }),
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id }),
       });
-      onNotice(`经验已沉淀到${scope === "author" ? "作者知识库" : "本书规则"}`); await load();
+      onNotice("长期经验已沉淀，后续生成和审稿会自动读取"); await load();
     } catch (error) { onNotice(error.message); }
   }
 
@@ -264,9 +263,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
               <button className="button learning-guide-button" disabled={!learningDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => guideLearningCandidate(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼…" : "指导作者重提长期经验"}</button>
             </div>
             {item.promotion ? <div className="promoted-note">已沉淀为{item.promotion.scope_label}长期规则 · 证据 {item.promotion.evidence_count} 条</div> : <div className="learning-actions">
-              <button className={`button ${item.analysis.learning_candidate.recommended_scope === "book" ? "recommended" : ""}`} onClick={() => promote(item, "book")}>用于本书{item.analysis.learning_candidate.recommended_scope === "book" && " · 推荐"}</button>
-              <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>
-              <button className={`button ${item.analysis.learning_candidate.recommended_scope === "shared_language" ? "recommended" : ""}`} onClick={() => promote(item, "shared_language")}>加入中文语言库{item.analysis.learning_candidate.recommended_scope === "shared_language" && " · 推荐"}</button>
+              <button className="button recommended" onClick={() => promote(item)}>确认沉淀长期经验</button>
             </div>}
           </div>}
           {item.has_revision && item.status !== "applied" && <button className="button apply-revision" onClick={() => apply(item)}>确认采用{scopeLabel[item.analysis.revision_scope] || "本地"}修订</button>}

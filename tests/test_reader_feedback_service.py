@@ -361,7 +361,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertEqual(result["receipt"]["revision_scope"], "chapter")
         self.assertIn("新的完整场景", self.chapter.read_text(encoding="utf-8"))
 
-    def _feedback_with_learning(self, category: str = "character_voice") -> dict:
+    def _feedback_with_learning(self, category: str = "character_voice", scope: str = "author") -> dict:
         item = service.create_feedback(self.root, {
             "book_id": "demo", "chapter": 1, "category": category,
             "quote": "甲把门推开。", "comment": "这句不像人物在现场会说的话。",
@@ -375,7 +375,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
                 "principle": "人物先回应眼前的人和事，再补必要背景。",
                 "applies_when": "熟人正在共同处理紧急事件时",
                 "avoid": "不能删除读者理解行动所必需的信息",
-                "recommended_scope": "author", "confidence": "high",
+                "recommended_scope": scope, "confidence": "high",
                 "rationale": "可以避免跨章节反复出现的说明腔。",
             },
         })
@@ -412,8 +412,8 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertIn("人物先回应眼前的人和事", (self.project / "style_guide.md").read_text(encoding="utf-8"))
 
     def test_shared_language_promotion_updates_confirmed_chinese_corpus(self) -> None:
-        item = self._feedback_with_learning()
-        result = service.promote_learning(self.root, "demo", item["id"], "shared_language")
+        item = self._feedback_with_learning(scope="shared_language")
+        result = service.promote_learning(self.root, "demo", item["id"])
         corpus = (self.root / "shared" / "chinese_dialogue_feedback.jsonl").read_text(encoding="utf-8")
         self.assertIn("人物先回应眼前的人和事", corpus)
         self.assertEqual(result["promotion"]["scope"], "shared_language")
