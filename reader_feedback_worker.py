@@ -201,7 +201,7 @@ def parse_result(text: str) -> dict:
         for key in ("principle", "applies_when", "avoid", "rationale"):
             if not isinstance(learning.get(key), str) or not learning[key].strip():
                 raise ValueError(f"作者分析 learning_candidate.{key} 缺少文本")
-        if learning.get("recommended_scope") not in {"book", "author"}:
+        if learning.get("recommended_scope") not in {"book", "author", "shared_language"}:
             raise ValueError("作者分析 learning_candidate.recommended_scope 无效")
         if learning.get("confidence") not in {"medium", "high"}:
             raise ValueError("作者分析 learning_candidate.confidence 必须为 medium 或 high")
@@ -432,7 +432,7 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     "principle": "以后写作时可直接执行的一条正向原则",
     "applies_when": "适用的场景、人物关系或文本条件",
     "avoid": "不得机械推广到哪些情况",
-    "recommended_scope": "book|author",
+  "recommended_scope": "book|author|shared_language",
     "confidence": "medium|high",
     "rationale": "为什么值得长期保留"
   }},

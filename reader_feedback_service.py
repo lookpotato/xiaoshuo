@@ -37,7 +37,7 @@ MAX_QUOTE_CHARS = 3000
 MAX_COMMENT_CHARS = 5000
 MAX_DIALOGUE_MESSAGE_CHARS = 5000
 MAX_INTERVIEW_ANSWER_CHARS = 5000
-PROMOTION_SCOPES = {"book": "本书", "author": "作者"}
+PROMOTION_SCOPES = {"book": "本书", "author": "作者", "shared_language": "中文语言库"}
 PROMOTION_LOCK = threading.RLock()
 
 
@@ -535,7 +535,7 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> 
     """Promote one author-proposed lesson after explicit co-author confirmation."""
     scope = str(scope).strip()
     if scope not in PROMOTION_SCOPES:
-        raise ValueError("长期经验范围必须是本书或作者")
+        raise ValueError("长期经验范围必须是本书、作者或中文语言库")
     folder = _feedback_dir(root, book_id, feedback_id)
     feedback = read_json(folder / "feedback.json")
     analysis = read_json(folder / "analysis.json")
@@ -576,7 +576,7 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> 
             )
             atomic_json(registry_path, registry)
             destinations = [str(registry_path), str(project / "style_guide.md")]
-        else:
+        elif scope == "author":
             import author_registry
             from novel_engine_v2.engine import NovelEngine
 
@@ -608,6 +608,50 @@ def promote_learning(root: Path, book_id: str, feedback_id: str, scope: str) -> 
                 style_path = bound_project / "style_guide.md"
                 _append_markdown_rule(style_path, f"author-feedback-learning:{rule_id}", promoted)
                 destinations.append(str(style_path))
+        else:
+            promoted = dict(record)
+            language_path = root / "shared" / "chinese_dialogue_feedback.jsonl"
+            language_path.parent.mkdir(parents=True, exist_ok=True)
+            existing_lines = language_path.read_text(encoding="utf-8").splitlines() if language_path.exists() else []
+            language_records = []
+            found = False
+            for line in existing_lines:
+                try:
+                    item = json.loads(line)
+                except json.JSONDecodeError:
+                    language_records.append(line)
+                    continue
+                if isinstance(item, dict) and item.get("id") == rule_id:
+                    item.update({
+                        "scope": "shared_language",
+                        "principle": promoted["principle"],
+                        "applies_when": promoted["applies_when"],
+                        "avoid": promoted["avoid"],
+                        "rationale": promoted["rationale"],
+                        "evidence_feedback_ids": promoted["evidence_feedback_ids"],
+                        "evidence_count": promoted["evidence_count"],
+                        "status": "user_confirmed",
+                        "updated_at": now,
+                    })
+                    found = True
+                language_records.append(json.dumps(item, ensure_ascii=False))
+            if not found:
+                language_records.append(json.dumps({
+                    "id": rule_id,
+                    "scope": "shared_language",
+                    "category": record["category"],
+                    "principle": promoted["principle"],
+                    "applies_when": promoted["applies_when"],
+                    "avoid": promoted["avoid"],
+                    "rationale": promoted["rationale"],
+                    "evidence_feedback_ids": promoted["evidence_feedback_ids"],
+                    "evidence_count": promoted["evidence_count"],
+                    "status": "user_confirmed",
+                    "confirmed_at": now,
+                    "updated_at": now,
+                }, ensure_ascii=False))
+            atomic_text(language_path, "\n".join(language_records).rstrip() + "\n")
+            destinations = [str(language_path)]
 
         promotion = {
             "rule_id": rule_id,

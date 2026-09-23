@@ -411,6 +411,13 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertTrue(any("人物先回应眼前的人和事" in rule for rule in profile["language_principles"]))
         self.assertIn("人物先回应眼前的人和事", (self.project / "style_guide.md").read_text(encoding="utf-8"))
 
+    def test_shared_language_promotion_updates_confirmed_chinese_corpus(self) -> None:
+        item = self._feedback_with_learning()
+        result = service.promote_learning(self.root, "demo", item["id"], "shared_language")
+        corpus = (self.root / "shared" / "chinese_dialogue_feedback.jsonl").read_text(encoding="utf-8")
+        self.assertIn("人物先回应眼前的人和事", corpus)
+        self.assertEqual(result["promotion"]["scope"], "shared_language")
+
     def test_worker_accepts_bounded_learning_candidate(self) -> None:
         parsed = parse_result(json.dumps({
             "decision": "reject", "author_judgment": "本章有意这样处理。",

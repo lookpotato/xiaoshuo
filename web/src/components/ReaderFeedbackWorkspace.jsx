@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
 const decisionLabel = { accept: "采纳", partial: "部分采纳", reject: "不采纳" };
-const scopeLabel = { wording: "措辞级", scene: "场景级", chapter: "整章结构级" };
+const scopeLabel = { wording: "措辞级", scene: "场景级", chapter: "整章结构级", shared_language: "中文语言库" };
 const statusLabel = {
   queued: "已排队", analyzing: "分析中", reviewed: "作者已判断",
   blind_reviewed: "试读完成", interview_ready: "提问完成", applied: "已采用", failed: "分析失败",
@@ -110,7 +110,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   }
 
   async function promote(item, scope) {
-    const scopeLabel = scope === "author" ? "这个作者的长期经验（影响其绑定作品）" : "本书长期规则";
+    const scopeLabel = scope === "author" ? "这个作者的长期经验（影响其绑定作品）" : scope === "shared_language" ? "中文语言库" : "本书长期规则";
     if (!window.confirm(`确认把这条经验沉淀为${scopeLabel}吗？后续生成和审稿都会读取。`)) return;
     try {
       await api("/api/reader-feedback/promote", {
@@ -266,6 +266,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
             {item.promotion ? <div className="promoted-note">已沉淀为{item.promotion.scope_label}长期规则 · 证据 {item.promotion.evidence_count} 条</div> : <div className="learning-actions">
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "book" ? "recommended" : ""}`} onClick={() => promote(item, "book")}>用于本书{item.analysis.learning_candidate.recommended_scope === "book" && " · 推荐"}</button>
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>
+              <button className={`button ${item.analysis.learning_candidate.recommended_scope === "shared_language" ? "recommended" : ""}`} onClick={() => promote(item, "shared_language")}>加入中文语言库{item.analysis.learning_candidate.recommended_scope === "shared_language" && " · 推荐"}</button>
             </div>}
           </div>}
           {item.has_revision && item.status !== "applied" && <button className="button apply-revision" onClick={() => apply(item)}>确认采用{scopeLabel[item.analysis.revision_scope] || "本地"}修订</button>}
