@@ -119,13 +119,13 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     } catch (error) { onNotice(error.message); }
   }
 
-  async function continueAuthorDialogue(item) {
+  async function continueAuthorDialogue(item, target = "analysis") {
     const content = (dialogueDrafts[item.id] || "").trim();
     if (!content || item.author_dialogue_status === "queued" || item.author_dialogue_status === "responding") return;
     try {
       await api("/api/reader-feedback/dialogue", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, content }),
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, content: target === "learning_candidate" ? `【请重提炼长期经验候选】${content}` : content }),
       });
       setDialogueDrafts((current) => ({ ...current, [item.id]: "" }));
       onNotice("已把纠正意见发给作者，会在同一条记录中继续回复"); await load();
@@ -242,6 +242,8 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
             <p><b>适用：</b>{item.analysis.learning_candidate.applies_when}</p>
             <p><b>边界：</b>{item.analysis.learning_candidate.avoid}</p>
             <p className="learning-reason">{item.analysis.learning_candidate.rationale}</p>
+            <p className="scope-reason">如果作者提炼错了，请在上方“继续和作者讨论”输入你的纠正，然后点击下面按钮，作者会重新生成这条长期经验候选。</p>
+            <button className="button" disabled={!dialogueDrafts[item.id]?.trim() || ["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => continueAuthorDialogue(item, "learning_candidate")}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重提炼" : "指导作者重提长期经验"}</button>
             {item.promotion ? <div className="promoted-note">已沉淀为{item.promotion.scope_label}长期规则 · 证据 {item.promotion.evidence_count} 条</div> : <div className="learning-actions">
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "book" ? "recommended" : ""}`} onClick={() => promote(item, "book")}>用于本书{item.analysis.learning_candidate.recommended_scope === "book" && " · 推荐"}</button>
               <button className={`button ${item.analysis.learning_candidate.recommended_scope === "author" ? "recommended" : ""}`} onClick={() => promote(item, "author")}>教给作者{item.analysis.learning_candidate.recommended_scope === "author" && " · 推荐"}</button>
