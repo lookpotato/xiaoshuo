@@ -8,6 +8,7 @@ const statusLabel = {
   blind_reviewed: "试读完成", interview_ready: "提问完成", applied: "已采用", failed: "分析失败",
 };
 const interviewLevelLabel = { wording: "措辞层", scene: "场景层", foundation: "底层设计" };
+const runStatusLabel = { running: "运行中", success: "已完成", finished: "已结束", failed: "失败" };
 const reviewModes = [
   { id: "blind", title: "陌生读者试读", note: "只看当前章，不读取设定；诊断真实读感，不改稿" },
   { id: "author", title: "作者审稿", note: "读取设定与连续性；判断反馈并生成候选修改" },
@@ -23,6 +24,9 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [versions, setVersions] = useState([]);
   const [selectedVersion, setSelectedVersion] = useState("current");
   const [receipt, setReceipt] = useState(null);
+  const [feedbackRuns, setFeedbackRuns] = useState([]);
+  const [selectedFeedbackRun, setSelectedFeedbackRun] = useState(null);
+  const [feedbackRunLog, setFeedbackRunLog] = useState(null);
   const [categories, setCategories] = useState({});
   const [category, setCategory] = useState("uncomfortable");
   const [quote, setQuote] = useState("");
@@ -39,7 +43,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     const available = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
     setChapterNumber(available[0]?.number || 0);
     setChapter(null); setItems([]); setVersions([]); setSelectedVersion("current");
-    setReceipt(null); setQuote(""); setComment("");
+    setReceipt(null); setQuote(""); setComment(""); setFeedbackRuns([]); setSelectedFeedbackRun(null); setFeedbackRunLog(null);
     setInterviewAnswers({});
     setLearningDrafts({});
   }, [book.id, book.last_completed_chapter]);
@@ -51,7 +55,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         api(`/api/chapter?book_id=${encodeURIComponent(book.id)}&number=${chapterNumber}`),
         api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`),
       ]);
-      setChapter(feedback.current || latestChapter); setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories);
+      setChapter(feedback.current || latestChapter); setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
     } catch (error) { onNotice(error.message); }
   }, [book.id, chapterNumber, onNotice]);
 
@@ -61,12 +65,31 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     const timer = window.setInterval(async () => {
       try {
         const feedback = await api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`);
-        setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories);
+        setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
         if (selectedVersion === "current") setChapter(feedback.current);
       } catch { /* 下一次轮询继续 */ }
     }, 3000);
     return () => window.clearInterval(timer);
   }, [book.id, chapterNumber, selectedVersion]);
+
+  const openFeedbackRun = useCallback(async (run) => {
+    setSelectedFeedbackRun(run);
+    try {
+      setFeedbackRunLog(await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=120`));
+    } catch (error) { onNotice(error.message); }
+  }, [onNotice]);
+
+  useEffect(() => {
+    if (!selectedFeedbackRun) return undefined;
+    const timer = window.setInterval(async () => {
+      try {
+        const next = await api(`/api/run-log?run_id=${encodeURIComponent(selectedFeedbackRun.id)}&tail=120`);
+        setFeedbackRunLog(next);
+        setFeedbackRuns((current) => current.map((item) => item.id === next.id ? { ...item, status: next.status } : item));
+      } catch { /* 下次刷新继续 */ }
+    }, selectedFeedbackRun.status === "running" ? 2000 : 5000);
+    return () => window.clearInterval(timer);
+  }, [selectedFeedbackRun, onNotice]);
 
   function captureSelection() {
     const selection = window.getSelection();
@@ -204,6 +227,16 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
       </article>
 
       <aside className="feedback-side">
+        <section className="panel feedback-runs">
+          <div className="panel-head"><div><p className="eyebrow">FEEDBACK RUNS</p><h2>读者反馈运行记录</h2></div><span className="count-label">{feedbackRuns.length} 条</span></div>
+          <p className="panel-copy">这里显示本章的整章提问、作者判断和连续对话正在运行什么。</p>
+          <div className="feedback-run-list">{feedbackRuns.length ? feedbackRuns.map((run) => <div className={`feedback-run-row ${run.id === selectedFeedbackRun?.id ? "active" : ""}`} key={run.id}>
+            <div className="feedback-run-top"><strong>{run.kind === "reader_feedback" ? "首次审稿" : run.kind === "reader_feedback_dialogue" ? "作者连续对话" : "作者生成修订"}</strong><span className={`status ${run.status}`}>{runStatusLabel[run.status] || run.status}</span></div>
+            <small>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</small>
+            <button className="log-button" onClick={() => openFeedbackRun(run)}>{run.id === selectedFeedbackRun?.id ? "刷新日志" : "查看日志"}</button>
+          </div>) : <div className="empty">本章暂无后台运行记录</div>}</div>
+          {feedbackRunLog && <pre className="feedback-run-log">{feedbackRunLog.content || feedbackRunLog.error_summary || "暂无日志输出"}</pre>}
+        </section>
         <section className="panel draft-vault">
           <div className="panel-head"><div><p className="eyebrow">VERSIONS</p><h2>草稿箱</h2></div><span className="count-label">{versions.length} 份</span></div>
           <p>正式稿永远优先显示；生成草稿、候选稿和每次应用前的原文留在这里对照。</p>

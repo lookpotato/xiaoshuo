@@ -658,11 +658,20 @@ class AppHandler(BaseHTTPRequestHandler):
                 book_id = query.get("book_id", [""])[0]
                 chapter_text = query.get("chapter", [""])[0]
                 chapter = int(chapter_text) if chapter_text else None
+                book = registered_book(book_id)
+                title = str(book.get("title", book_id))
+                feedback_runs = [
+                    run for run in list_runs(60)
+                    if str(run.get("kind", "")).startswith("reader_feedback")
+                    and title in str(run.get("label", ""))
+                    and (chapter is None or f"第 {chapter} 章" in str(run.get("label", "")))
+                ]
                 payload = {
                     "items": reader_feedback_service.list_feedback(
                         ROOT, book_id, chapter
                     ),
                     "categories": reader_feedback_service.CATEGORIES,
+                    "runs": feedback_runs,
                 }
                 if chapter is not None:
                     payload.update(reader_feedback_service.chapter_versions(
