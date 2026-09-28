@@ -31,6 +31,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [dialogueDrafts, setDialogueDrafts] = useState({});
   const [learningDrafts, setLearningDrafts] = useState({});
   const [interviewAnswers, setInterviewAnswers] = useState({});
+  const [applyErrors, setApplyErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const readerRef = useRef(null);
 
@@ -105,7 +106,28 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         word_count: null, invalidated_checks: ["旧验收"],
       };
       setSelectedVersion("current"); setReceipt(nextReceipt);
+      setApplyErrors((current) => ({ ...current, [item.id]: "" }));
       onNotice(`第 ${nextReceipt.chapter} 章更新完成，当前显示最新正式稿`); await load();
+    } catch (error) {
+      setApplyErrors((current) => ({ ...current, [item.id]: error.message }));
+      onNotice(error.message);
+    }
+  }
+
+  async function requestChapterRewrite(item) {
+    const error = applyErrors[item.id] || "当前候选修订不符合整章要求";
+    if (["queued", "responding"].includes(item.author_dialogue_status)) return;
+    try {
+      await api("/api/reader-feedback/dialogue", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          book_id: book.id,
+          feedback_id: item.id,
+          content: `【请按整章重写候选修订】应用时校验失败：${error}。请保留已经成立的情节、人物选择和章节标题，按整章结构级重写完整候选稿，恢复本书正常章长，并返回可直接应用的完整正文。`,
+        }),
+      });
+      setApplyErrors((current) => ({ ...current, [item.id]: "" }));
+      onNotice("已要求作者按整章重写候选修订，请等待作者回复"); await load();
     } catch (error) { onNotice(error.message); }
   }
 
@@ -266,6 +288,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
               <button className="button recommended" onClick={() => promote(item)}>确认沉淀长期经验</button>
             </div>}
           </div>}
+          {applyErrors[item.id] && <div className="apply-error-actions"><p className="feedback-error">{applyErrors[item.id]}</p><button className="button" disabled={["queued", "responding"].includes(item.author_dialogue_status)} onClick={() => requestChapterRewrite(item)}>{["queued", "responding"].includes(item.author_dialogue_status) ? "作者正在重写…" : "要求作者整章重写"}</button></div>}
           {item.has_revision && item.status !== "applied" && <button className="button apply-revision" onClick={() => apply(item)}>确认采用{scopeLabel[item.analysis.revision_scope] || "本地"}修订</button>}
           {item.status === "applied" && <div className="applied-note"><strong>更新完成</strong>{item.applied_at && <> · {new Date(item.applied_at).toLocaleString("zh-CN")}</>}<br />正式稿已更新，应用前原文可在草稿箱查看；重新验收前不会发布。</div>}
         </div>}

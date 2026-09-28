@@ -476,6 +476,9 @@ def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     learning_only = str(messages[-1].get("content", "")).startswith(
         "【请重提炼长期经验候选】"
     )
+    chapter_rewrite = str(messages[-1].get("content", "")).startswith(
+        "【请按整章重写候选修订】"
+    )
     prompt = folder / "author_follow_up_prompt.md"
     result = folder / "author_follow_up_model_result.json"
     prompt.write_text(f"""# 作者判断连续对话
@@ -493,7 +496,7 @@ def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 
 先直接回应副作者最新一句，再判断原结论是否需要改。若副作者纠正的是“现实中不会这样说”，先把台词还原成它在现场真正想完成的动作，检查抽象概括、清单结构、书面词和过度完整；不得用“符合人设”“目的成立”“其余部分没问题”回避该句本身。
 
-{"本次只重提炼长期经验候选；不要修改正文判断，不要改变 revision_scope，不要返回 proposed_revision，只需完整返回 analysis 并替换 learning_candidate。" if learning_only else "本次涉及正文判断时，必须完整返回原分析所需字段和候选修订稿。"}
+{"本次只重提炼长期经验候选；不要修改正文判断，不要改变 revision_scope，不要返回 proposed_revision，只需完整返回 analysis 并替换 learning_candidate。" if learning_only else "本次要求整章重写候选修订；必须将 revision_scope 设为 chapter，并返回符合本书正常章长、含正确标题和 Metadata 的完整 proposed_revision。" if chapter_rewrite else "本次涉及正文判断时，必须完整返回原分析所需字段和候选修订稿。"}
 
 如果最新消息明确指出“长期经验候选/learning_candidate理解错了、范围不对、表述不对或不该沉淀”，这不是普通解释问题，必须将 changed_judgment 设为 true，并重新生成完整的 learning_candidate。重新生成时要准确吸收副作者给出的原则、适用边界和反例；如果副作者认为这条意见不值得长期沉淀，learning_candidate 可以改为 null。不能只回复“明白了”而保留原候选。
 
