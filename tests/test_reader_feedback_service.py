@@ -445,6 +445,30 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertTrue(parsed["changed_judgment"])
         self.assertEqual(parsed["analysis"]["decision"], "partial")
 
+    def test_learning_only_follow_up_keeps_revision_context(self) -> None:
+        parsed = parse_follow_up_result(json.dumps({
+            "reply": "这条经验应进入共享中文语言库。",
+            "changed_judgment": True,
+            "analysis": {
+                "author_judgment": "按副作者补充的中国式客户交流边界重提炼经验。",
+                "learning_candidate": {
+                    "principle": "面对客户自己的物品，先用亲和的现场说法承接，再说明下一步怎么做。",
+                    "applies_when": "老板与客户当面处理客户自己的物品时",
+                    "avoid": "不要写成命令清单或把旧物等书面概念硬塞进对白。",
+                    "recommended_scope": "中文语言库", "confidence": "high",
+                    "rationale": "这是可迁移的中国式现场交流经验。",
+                },
+            },
+            "proposed_revision": None,
+        }, ensure_ascii=False), previous_analysis={
+            "decision": "partial", "revision_scope": "chapter",
+            "scope_rationale": "整章对白需要统一调整。",
+            "valid_observations": [], "misdiagnoses": [], "revision_strategy": [],
+        }, learning_only=True)
+        self.assertEqual(parsed["analysis"]["revision_scope"], "chapter")
+        self.assertEqual(parsed["analysis"]["learning_candidate"]["recommended_scope"], "shared_language")
+        self.assertIsNone(parsed["revision"])
+
     def test_blind_reader_result_requires_explicit_scope(self) -> None:
         parsed = parse_blind_reader_result(json.dumps({
             "reader_experience": "读者不知道人物为什么此刻进门。",

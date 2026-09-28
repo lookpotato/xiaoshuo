@@ -167,7 +167,7 @@ def parse_chapter_interview_result(text: str) -> dict:
     }
 
 
-def parse_result(text: str) -> dict:
+def parse_result(text: str, require_revision: bool = True) -> dict:
     stripped = text.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
     if fenced:
@@ -201,6 +201,14 @@ def parse_result(text: str) -> dict:
         for key in ("principle", "applies_when", "avoid", "rationale"):
             if not isinstance(learning.get(key), str) or not learning[key].strip():
                 raise ValueError(f"作者分析 learning_candidate.{key} 缺少文本")
+        scope_aliases = {
+            "中文语言库": "shared_language", "共享中文语言库": "shared_language",
+            "shared": "shared_language", "language": "shared_language",
+            "本书": "book", "作者": "author",
+        }
+        learning["recommended_scope"] = scope_aliases.get(
+            learning.get("recommended_scope"), learning.get("recommended_scope")
+        )
         if learning.get("recommended_scope") not in {"book", "author", "shared_language"}:
             raise ValueError("作者分析 learning_candidate.recommended_scope 无效")
         if learning.get("confidence") not in {"medium", "high"}:
@@ -210,7 +218,7 @@ def parse_result(text: str) -> dict:
             or not all(isinstance(item, str) and item.strip() for item in learning["tags"])
         ):
             raise ValueError("作者分析 learning_candidate.tags 必须为文本数组")
-    if value["decision"] in {"accept", "partial"}:
+    if require_revision and value["decision"] in {"accept", "partial"}:
         if not isinstance(revision, str) or not revision.strip():
             raise ValueError("采纳反馈时必须提供完整候选修订")
     else:
@@ -218,7 +226,9 @@ def parse_result(text: str) -> dict:
     return {"analysis": value, "revision": revision}
 
 
-def parse_follow_up_result(text: str) -> dict:
+def parse_follow_up_result(
+    text: str, previous_analysis: dict | None = None, learning_only: bool = False
+) -> dict:
     stripped = text.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.S | re.I)
     if fenced:
@@ -237,9 +247,12 @@ def parse_follow_up_result(text: str) -> dict:
     analysis_value = value.get("analysis")
     if not isinstance(analysis_value, dict):
         raise ValueError("修改判断时必须返回完整 analysis")
-    analysis_value = dict(analysis_value)
+    analysis_value = dict(previous_analysis or {}, **analysis_value)
     analysis_value["proposed_revision"] = value.get("proposed_revision")
-    parsed = parse_result(json.dumps(analysis_value, ensure_ascii=False))
+    parsed = parse_result(
+        json.dumps(analysis_value, ensure_ascii=False),
+        require_revision=not learning_only,
+    )
     return {
         "reply": value["reply"].strip(),
         "changed_judgment": True,
@@ -460,6 +473,9 @@ def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     messages = dialogue.get("messages", [])
     if not isinstance(messages, list) or not messages or messages[-1].get("role") != "user":
         raise ValueError("没有等待作者回复的追问")
+    learning_only = str(messages[-1].get("content", "")).startswith(
+        "【请重提炼长期经验候选】"
+    )
     prompt = folder / "author_follow_up_prompt.md"
     result = folder / "author_follow_up_model_result.json"
     prompt.write_text(f"""# 作者判断连续对话
@@ -476,6 +492,8 @@ def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 - 中国口语基础：`{ROOT / 'shared' / 'chinese_dialogue_foundation.md'}`
 
 先直接回应副作者最新一句，再判断原结论是否需要改。若副作者纠正的是“现实中不会这样说”，先把台词还原成它在现场真正想完成的动作，检查抽象概括、清单结构、书面词和过度完整；不得用“符合人设”“目的成立”“其余部分没问题”回避该句本身。
+
+{"本次只重提炼长期经验候选；不要修改正文判断，不要改变 revision_scope，不要返回 proposed_revision，只需完整返回 analysis 并替换 learning_candidate。" if learning_only else "本次涉及正文判断时，必须完整返回原分析所需字段和候选修订稿。"}
 
 如果最新消息明确指出“长期经验候选/learning_candidate理解错了、范围不对、表述不对或不该沉淀”，这不是普通解释问题，必须将 changed_judgment 设为 true，并重新生成完整的 learning_candidate。重新生成时要准确吸收副作者给出的原则、适用边界和反例；如果副作者认为这条意见不值得长期沉淀，learning_candidate 可以改为 null。不能只回复“明白了”而保留原候选。
 
@@ -509,7 +527,16 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
                             text=True, encoding="utf-8", errors="replace")
     if result.returncode:
         raise RuntimeError(f"作者连续对话进程退出码 {result.returncode}")
-    parsed = parse_follow_up_result(result_path.read_text(encoding="utf-8"))
+    latest_messages = service.read_json(folder / "author_dialogue.json", {}).get("messages", [])
+    latest_user = latest_messages[-1] if latest_messages else {}
+    learning_only = str(latest_user.get("content", "")).startswith(
+        "【请重提炼长期经验候选】"
+    )
+    parsed = parse_follow_up_result(
+        result_path.read_text(encoding="utf-8"),
+        previous_analysis=service.read_json(folder / "analysis.json", {}) or {},
+        learning_only=learning_only,
+    )
     changed = bool(parsed["changed_judgment"])
     if changed:
         previous = service.read_json(folder / "analysis.json")
@@ -522,11 +549,12 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
             "policy": "副作者可通过连续对话纠正作者判断；现实中文语用优先于事后人设辩护",
         }
         service.atomic_json(folder / "analysis.json", analysis)
-        proposal = folder / "proposed_revision.md"
-        if parsed["revision"] is None:
-            proposal.unlink(missing_ok=True)
-        else:
-            service.atomic_text(proposal, parsed["revision"].strip() + "\n")
+        if not learning_only:
+            proposal = folder / "proposed_revision.md"
+            if parsed["revision"] is None:
+                proposal.unlink(missing_ok=True)
+            else:
+                service.atomic_text(proposal, parsed["revision"].strip() + "\n")
     latest = service.read_json(folder / "author_dialogue.json", {}) or {}
     messages = latest.get("messages", [])
     messages.append({
