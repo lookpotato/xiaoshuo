@@ -223,24 +223,30 @@ def main() -> int:
         parser.error("--resume 只能续跑一个 job，请同时使用 --book")
     commands = []
     for book in books:
-        command = [sys.executable, str(ON_DEMAND)]
+        # V3 is now the default local writing pipeline.  The legacy manager
+        # remains available for historical repair/resume jobs only.
+        command = [
+            sys.executable,
+            str(ROOT / "novel_v3.py"),
+            "run",
+            "--book",
+            book["id"],
+            "--count",
+            str(target_count(book, args.count)),
+        ]
         if not args.resume:
-            command.append(str(target_count(book, args.count)))
-        command.extend(["--book", book["id"]])
+            pass
         if args.resume:
-            command.extend(["--resume", args.resume])
+            parser.error("V3 新生成链不支持旧任务续跑，请重新启动章节任务")
         if args.dry_run:
-            command.append("--dry-run")
+            command[command.index("run")] = "prepare"
         if args.debug_browser:
             command.append("--debug-browser")
         if args.sync_git is not None:
             command.append("--sync-git" if args.sync_git else "--no-sync-git")
         if args.publish_fanqie is not None:
-            command.append(
-                "--publish-fanqie"
-                if args.publish_fanqie
-                else "--no-publish-fanqie"
-            )
+            if args.publish_fanqie:
+                parser.error("V3 新生成链当前只归档本地正文，暂不上传番茄")
         commands.append((book, command))
     return run_commands(commands)
 

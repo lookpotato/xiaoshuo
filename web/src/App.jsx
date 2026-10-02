@@ -11,8 +11,8 @@ const statusLabel = (status, result) => ({
 function Sidebar({ books, selected, onSelect, view, onView }) {
   return <aside className="sidebar">
     <div className="brand"><div className="brand-mark">番</div><div><strong>小说工作台</strong><span>REACT STUDIO</span></div></div>
-    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>创作工作台</button><button className={view === "reader-feedback" ? "active" : ""} onClick={() => onView("reader-feedback")}>读者反馈</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
-    <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : "道友"}</strong><small>{book.author ? `作者 ${book.author.name} · ` : "未配置作者 · "}完成 {book.last_completed_chapter} 章</small></button>)}</nav>
+    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>写文章</button><button className={view === "reader-feedback" ? "active" : ""} onClick={() => onView("reader-feedback")}>读者反馈</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
+    <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : book.id.includes("old-object") ? "旧物" : "道友"}</strong><small>{book.author ? `作者 ${book.author.name} · ` : "未配置作者 · "}完成 {book.last_completed_chapter} 章</small></button>)}</nav>
     <div className="sidebar-foot"><span className="live-dot" /><div><strong>本地服务</strong><small>React 前端 · Python 后端</small></div></div>
   </aside>;
 }
@@ -30,44 +30,35 @@ function Metrics({ book }) {
 function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted }) {
   const [count, setCount] = useState(1);
   const [scope, setScope] = useState(selectedBookId);
-  const [syncGit, setSyncGit] = useState(false);
-  const [publishFanqie, setPublishFanqie] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
   useEffect(() => setScope(selectedBookId), [selectedBookId]);
-  const selectedBooks = scope === "all" ? books : books.filter((book) => book.id === scope);
-  const fanqieReady = selectedBooks.length > 0 && selectedBooks.every((book) => book.fanqie_ready);
-  useEffect(() => { if (!fanqieReady) setPublishFanqie(false); }, [fanqieReady]);
 
   async function start() {
     if (busy) return;
     setBusy(true); setFeedback("正在创建后台任务……");
     try {
-      const result = await api("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: scope, count, sync_git: syncGit, publish_fanqie: publishFanqie }) });
+      const result = await api("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: scope, count, sync_git: false, publish_fanqie: false }) });
       setFeedback(`已启动：${result.run.label}`); onNotice("任务已启动，后端控制台已切换到本次运行"); onRunStarted(result.run); onRefresh();
     } catch (error) { setFeedback(error.message); onNotice(error.message); }
     finally { setBusy(false); }
   }
 
   return <article className="panel action-panel">
-    <div className="panel-head"><div><p className="eyebrow">CREATE</p><h2>运行配置</h2></div><span className="local-badge">API 任务</span></div>
-    <p className="panel-copy">一次配置本批章数和交付位置。正文始终先通过本地门禁，再按开关处理 Git 与番茄正式环境。</p>
+    <div className="panel-head"><div><p className="eyebrow">V3 AUTHOR ROOM</p><h2>写文章</h2></div><span className="local-badge">新生成链</span></div>
+    <p className="panel-copy">人物先带着自己的生活进入场景，再经过作者房间、初稿、深层编辑和中国读者检查，最后归档本地正文。</p>
     <div className="run-controls">
       <label>本次章数<div className="stepper"><button aria-label="减少章数" onClick={() => setCount(Math.max(1, count - 1))}>−</button><input aria-label="本次章数" type="number" min="1" max="20" value={count} onChange={(e) => setCount(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /><button aria-label="增加章数" onClick={() => setCount(Math.min(20, count + 1))}>＋</button></div></label>
       <label>执行范围<select aria-label="执行范围" value={scope} onChange={(e) => setScope(e.target.value)}>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}<option value="all">全部作品（各自生成）</option></select></label>
     </div>
     <div className="delivery-options">
-      <label className={`delivery-option ${syncGit ? "selected" : ""}`}>
-        <span><strong>同步 Git</strong><small>本批完成后提交并推送本批改动</small></span>
-        <input aria-label="同步 Git" type="checkbox" checked={syncGit} onChange={(event) => setSyncGit(event.target.checked)} />
-      </label>
-      <label className={`delivery-option production ${publishFanqie ? "selected" : ""} ${!fanqieReady ? "disabled" : ""}`}>
-        <span><strong>更新番茄正式环境</strong><small>{fanqieReady ? "上传并按现有发布规则提交" : "所选作品尚未绑定番茄账号或书号"}</small></span>
-        <input aria-label="更新番茄正式环境" type="checkbox" checked={publishFanqie} disabled={!fanqieReady} onChange={(event) => setPublishFanqie(event.target.checked)} />
-      </label>
+      <div className="delivery-option selected">
+        <span><strong>本地归档（V3）</strong><small>自动完成作者房间、初稿、深层编辑和中国读者检查；当前不上传番茄、不执行 Git</small></span>
+        <span aria-label="已选择">✓</span>
+      </div>
     </div>
-    <div className="run-summary"><span>本批结果</span><strong>本地 {count} 章{publishFanqie ? " + 番茄正式环境" : ""}{syncGit ? " + Git" : ""}</strong></div>
-    <button className="button primary" disabled={busy} onClick={start}><span>{busy ? "正在启动" : "启动生成"}</span><b>→</b></button>
+    <div className="run-summary"><span>本批结果</span><strong>本地归档 {count} 章</strong></div>
+    <button className="button primary" disabled={busy} onClick={start}><span>{busy ? "正在写文章" : "写文章"}</span><b>→</b></button>
     <p className="feedback">{feedback}</p>
   </article>;
 }

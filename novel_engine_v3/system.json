@@ -3,6 +3,31 @@
   "name": "author-room-long-story",
   "principle": "先让人物作为中国现实中的人行动，再让故事从行动和关系中长出来；规则只保护判断，不代替判断。",
   "books": {
+    "cosmic-404": {
+      "title": "404修理站",
+      "project": "404修理站_重启版",
+      "sources": ["novel_config.md", "story_bible.md", "outline.md", "characters.md", "world.md", "continuity_ledger.md", "style_guide.md"]
+    },
+    "free-sky": {
+      "title": "道友你这天命与我有缘",
+      "project": "道友你这天命与我有缘",
+      "sources": ["novel_config.md", "story_bible.md", "outline.md", "characters.md", "world.md", "style_guide.md"]
+    },
+    "free-sky-rewrite": {
+      "title": "道友你这天命与我有缘（重写版）",
+      "project": "道友你这天命与我有缘_重写版",
+      "sources": ["novel_config.md", "story_bible.md", "outline.md", "characters.md", "world.md", "continuity_ledger.md", "style_guide.md"]
+    },
+    "h-ip-product-test": {
+      "title": "潮汐造物铺（暂定）",
+      "project": "H_IP产品化测试版",
+      "sources": ["novel_config.md", "story_bible.md", "outline.md", "characters.md", "world.md", "style_guide.md"]
+    },
+    "old-object-echo-sample": {
+      "title": "旧物回声事务所（试读版）",
+      "project": "旧物回声事务所_试读版",
+      "sources": ["novel_config.md", "outline.md", "characters.md", "world.md", "style_guide.md"]
+    },
     "old-object-echo-rewrite": {
       "title": "旧物回声事务所（新生成链）",
       "project": "旧物回声事务所_系统重写版",
