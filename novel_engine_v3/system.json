@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "name": "author-room-long-story",
+  "principle": "先让人物作为中国现实中的人行动，再让故事从行动和关系中长出来；规则只保护判断，不代替判断。",
+  "books": {
+    "old-object-echo-rewrite": {
+      "title": "旧物回声事务所（新生成链）",
+      "project": "旧物回声事务所_系统重写版",
+      "sources": [
+        "novel_config.md",
+        "opening_contract.md",
+        "story_bible.md",
+        "outline.md",
+        "characters.md",
+        "world.md",
+        "continuity_ledger.md",
+        "style_guide.md",
+        "feedback_learning.json"
+      ]
+    }
+  }
+}
