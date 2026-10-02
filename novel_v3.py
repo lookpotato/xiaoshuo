@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
@@ -23,20 +24,24 @@ def execute(prompt: Path, output: Path, run_dir: Path) -> None:
     codex = shutil.which("codex")
     if not codex:
         raise V3ValidationError("找不到 codex CLI；请先安装并登录")
-    result = subprocess.run(
-        # Run each internal stage from its isolated run directory.  This keeps
-        # repository-level production instructions (Fanqie upload/Git/archive)
-        # out of the creative context; only the project root is an additional
-        # readable/writable data directory.
-        [codex, "exec", "--ephemeral", "-C", str(run_dir), "--add-dir", str(ROOT),
-         "--sandbox", "workspace-write",
-         "--config", 'approval_policy="never"', "--output-last-message", str(output), "-"],
-        cwd=ROOT,
-        input=prompt.read_text(encoding="utf-8"),
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    # Keep the subprocess outside the repository.  It can read/write only the
+    # explicitly added project and run directories, so project-level Git and
+    # publishing instructions cannot hijack an internal creative stage.
+    isolated_cwd = Path(tempfile.mkdtemp(prefix="xiaoshuo-v3-"))
+    try:
+        result = subprocess.run(
+            [codex, "exec", "--ephemeral", "-C", str(isolated_cwd),
+             "--add-dir", str(ROOT), "--add-dir", str(run_dir),
+             "--sandbox", "workspace-write", "--config", 'approval_policy="never"',
+             "--output-last-message", str(output), "-"],
+            cwd=isolated_cwd,
+            input=prompt.read_text(encoding="utf-8"),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    finally:
+        shutil.rmtree(isolated_cwd, ignore_errors=True)
     if result.returncode:
         raise V3ValidationError(f"阶段失败：{prompt.name}，退出码 {result.returncode}")
 
