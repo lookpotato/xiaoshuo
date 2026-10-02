@@ -30,7 +30,8 @@ def execute(prompt: Path, output: Path, run_dir: Path) -> None:
     isolated_cwd = Path(tempfile.mkdtemp(prefix="xiaoshuo-v3-"))
     try:
         result = subprocess.run(
-            [codex, "exec", "--ephemeral", "-C", str(isolated_cwd),
+            [codex, "exec", "--ephemeral", "--skip-git-repo-check",
+             "-C", str(isolated_cwd),
              "--add-dir", str(ROOT), "--add-dir", str(run_dir),
              "--sandbox", "workspace-write", "--config", 'approval_policy="never"',
              "--output-last-message", str(output), "-"],
