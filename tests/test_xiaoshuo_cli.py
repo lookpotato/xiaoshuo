@@ -113,11 +113,24 @@ class SequentialRunTests(unittest.TestCase):
                 return_value=({"default_book_id": "first"}, BOOKS),
             ),
             patch.object(xiaoshuo, "run_commands", return_value=0) as run_commands,
+            patch.object(xiaoshuo.generation_version, "selected", return_value="v2"),
         ):
             self.assertEqual(xiaoshuo.main(), 0)
         command = run_commands.call_args.args[0][0][1]
         self.assertIn("--sync-git", command)
         self.assertIn("--no-publish-fanqie", command)
+
+    def test_v3_routes_to_author_room_without_legacy_flags(self) -> None:
+        with (
+            patch.object(sys, "argv", ["xiaoshuo", "2", "--book", "first", "--generation-version", "v3", "--no-sync-git", "--no-publish-fanqie"]),
+            patch.object(xiaoshuo, "load_books", return_value=({"default_book_id": "first"}, BOOKS)),
+            patch.object(xiaoshuo, "run_commands", return_value=0) as run_commands,
+        ):
+            self.assertEqual(xiaoshuo.main(), 0)
+        command = run_commands.call_args.args[0][0][1]
+        self.assertTrue(command[1].endswith("novel_v3.py"))
+        self.assertIn("--count", command)
+        self.assertNotIn("--no-sync-git", command)
 
 
 if __name__ == "__main__":

@@ -119,6 +119,8 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
         config_revision: draft.config_revision,
         author_config_revision: draft.author_config_revision,
         general: draft.general,
+        generation_version: scope === "system" ? draft.generation_version : undefined,
+        generation_version_revision: scope === "system" ? draft.generation_version_revision : undefined,
         registry: draft.registry,
         writing_policy: writingPolicy,
         documents: draft.documents.filter((item) => item.exists || item.content.trim()).map(({ id, revision, content }) => ({ id, revision, content })),
@@ -142,6 +144,13 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
     {scope === "book" && draft.author_binding_error && <div className="settings-error"><strong>作者未绑定</strong><span>{draft.author_binding_error}。请选择作者并保存后才能启动生成。</span></div>}
     {error && <div className="settings-error">{error}</div>}
     {scope === "book" && <div className="book-settings-switch"><label>当前小说<select value={bookId} onChange={(event) => onBookChange(event.target.value)}>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select></label><code>{draft.registry.id} · {draft.registry.path}</code></div>}
+    {scope === "system" && <article className="panel settings-section">
+      <div className="panel-head"><div><p className="eyebrow">GENERATION VERSION</p><h2>生成版本</h2><p className="section-description">当前使用 {draft.generation_version.toUpperCase()}。保存后，下一次章节任务按所选版本运行。</p></div></div>
+      <div className="module-grid">{draft.generation_versions.map((version) => <label className="module-card" key={version.id}>
+        <input type="radio" name="generation-version" value={version.id} checked={draft.generation_version === version.id} onChange={() => setDraft({ ...draft, generation_version: version.id })} />
+        <div><strong>{version.name}</strong><p>{version.description}</p></div>
+      </label>)}</div>
+    </article>}
     <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">BASICS</p><h2>{scope === "system" ? "运行底座" : "作品运行参数"}</h2></div></div>
       {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} authors={draft.authors} onChange={(registry) => setDraft({ ...draft, registry })} />}

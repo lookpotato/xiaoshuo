@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 import fanqie_novel_manager as manager
 import character_story_service
 import settings_service
+import generation_version
 import author_registry
 import reader_feedback_service
 import chapter_admin_service
@@ -213,6 +214,7 @@ def overview() -> dict:
         "name": "番茄小说工作台",
         "generated_at": datetime.now().astimezone().isoformat(),
         "default_book_id": data.get("default_book_id"),
+        "generation_version": generation_version.selected(),
         "books": books,
         "jobs": recent_jobs(),
         "runs": list_runs(),
@@ -436,7 +438,8 @@ def launch_generation(payload: dict) -> dict:
     publish_fanqie = payload.get("publish_fanqie", False)
     if not isinstance(sync_git, bool) or not isinstance(publish_fanqie, bool):
         raise ValueError("sync_git 和 publish_fanqie 必须是布尔值")
-    if sync_git or publish_fanqie:
+    version = generation_version.selected()
+    if version == "v3" and (sync_git or publish_fanqie):
         raise ValueError("V3 新生成链当前只支持本地归档，请关闭 Git/番茄同步选项")
     selected_books: list[dict]
     if scope == "all":
@@ -459,17 +462,18 @@ def launch_generation(payload: dict) -> dict:
                 "以下作品尚未绑定番茄正式环境：" + "、".join(unbound)
             )
     command = [sys.executable, str(ROOT / "xiaoshuo.py"), str(count)]
+    command.extend(["--generation-version", version])
     command.append("--sync-git" if sync_git else "--no-sync-git")
     command.append(
         "--publish-fanqie" if publish_fanqie else "--no-publish-fanqie"
     )
     if scope == "all":
         command.append("--all")
-        label = f"V3 写文章：全部作品各生成 {count} 章"
+        label = f"{version.upper()} 全部作品各生成 {count} 章"
     else:
         book = selected_books[0]
         command.extend(["--book", book["id"]])
-        label = f"V3 写文章：《{book.get('title', book['id'])}》生成 {count} 章"
+        label = f"{version.upper()}《{book.get('title', book['id'])}》生成 {count} 章"
     deliveries = ["本地归档"]
     if publish_fanqie:
         deliveries.append("番茄正式环境")

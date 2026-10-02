@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest import TestCase, mock
 
 import settings_service
+import generation_version
 
 
 class SettingsServiceTest(TestCase):
@@ -85,6 +86,7 @@ class SettingsServiceTest(TestCase):
         )
         self.enterContext(mock.patch.object(settings_service, "ROOT", self.root))
         self.enterContext(mock.patch.object(settings_service, "CONFIG_PATH", self.config_path))
+        self.enterContext(mock.patch.object(generation_version, "PATH", self.root / "generation_version.json"))
         self.enterContext(mock.patch.object(settings_service, "settings_lock", return_value=None))
 
     def test_book_settings_expose_only_whitelisted_modules(self):
@@ -106,12 +108,27 @@ class SettingsServiceTest(TestCase):
 
     def test_system_settings_expose_registry_and_shared_modules(self):
         result = settings_service.get_system_settings()
+        self.assertEqual(result["generation_version"], "v3")
         self.assertEqual(result["modules"][0]["id"], "character_engine")
         ids = {item["id"] for item in result["documents"]}
         self.assertIn("shared/character_engine.md", ids)
         self.assertIn("shared/chinese_dialogue_foundation.md", ids)
         self.assertIn("novel_engine_v2/authors/owner.json", ids)
         self.assertEqual(result["authors"][0]["id"], "owner")
+
+    def test_system_settings_switch_generation_version(self):
+        current = settings_service.get_system_settings()
+        saved = settings_service.save_settings({
+            "scope": "system",
+            "config_revision": current["config_revision"],
+            "generation_version_revision": current["generation_version_revision"],
+            "generation_version": "v2",
+            "general": current["general"],
+            "writing_policy": current["writing_policy"],
+            "documents": [],
+        })
+        self.assertEqual(saved["generation_version"], "v2")
+        self.assertEqual(generation_version.selected(), "v2")
 
     def test_save_book_updates_registry_and_document_without_losing_unknown_fields(self):
         current = settings_service.get_book_settings("book-one")

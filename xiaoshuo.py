@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import generation_version
+
 
 ROOT = Path(__file__).resolve().parent
 MANAGER = ROOT / "fanqie_novel_manager.py"
@@ -87,6 +89,7 @@ def main() -> int:
         description="调用 Codex 严格串行完成指定数量的小说章节并发布到番茄。",
     )
     parser.add_argument("count", type=int, nargs="?", help="本批要完成的章节数，例如 5")
+    parser.add_argument("--generation-version", choices=("v2", "v3"), help=argparse.SUPPRESS)
     parser.add_argument(
         "--reward",
         type=int,
@@ -222,31 +225,31 @@ def main() -> int:
     if args.resume and args.all:
         parser.error("--resume 只能续跑一个 job，请同时使用 --book")
     commands = []
+    version = args.generation_version or generation_version.selected()
     for book in books:
-        # V3 is now the default local writing pipeline.  The legacy manager
-        # remains available for historical repair/resume jobs only.
-        command = [
-            sys.executable,
-            str(ROOT / "novel_v3.py"),
-            "run",
-            "--book",
-            book["id"],
-            "--count",
-            str(target_count(book, args.count)),
-        ]
-        if not args.resume:
-            pass
-        if args.resume:
-            parser.error("V3 新生成链不支持旧任务续跑，请重新启动章节任务")
-        if args.dry_run:
-            command[command.index("run")] = "prepare"
-        if args.debug_browser:
-            command.append("--debug-browser")
-        if args.sync_git is not None:
-            command.append("--sync-git" if args.sync_git else "--no-sync-git")
-        if args.publish_fanqie is not None:
-            if args.publish_fanqie:
-                parser.error("V3 新生成链当前只归档本地正文，暂不上传番茄")
+        if version == "v3":
+            if args.resume:
+                parser.error("V3 不支持旧任务续跑，请在系统设置中切回 V2")
+            if args.publish_fanqie or args.sync_git:
+                parser.error("V3 当前只支持本地归档；请关闭 Git 和番茄同步")
+            command = [sys.executable, str(ROOT / "novel_v3.py"),
+                       "prepare" if args.dry_run else "run", "--book", book["id"],
+                       "--count", str(target_count(book, args.count))]
+        else:
+            command = [sys.executable, str(ON_DEMAND)]
+            if not args.resume:
+                command.append(str(target_count(book, args.count)))
+            command.extend(["--book", book["id"]])
+            if args.resume:
+                command.extend(["--resume", args.resume])
+            if args.dry_run:
+                command.append("--dry-run")
+            if args.debug_browser:
+                command.append("--debug-browser")
+            if args.sync_git is not None:
+                command.append("--sync-git" if args.sync_git else "--no-sync-git")
+            if args.publish_fanqie is not None:
+                command.append("--publish-fanqie" if args.publish_fanqie else "--no-publish-fanqie")
         commands.append((book, command))
     return run_commands(commands)
 

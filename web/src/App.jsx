@@ -11,7 +11,7 @@ const statusLabel = (status, result) => ({
 function Sidebar({ books, selected, onSelect, view, onView }) {
   return <aside className="sidebar">
     <div className="brand"><div className="brand-mark">番</div><div><strong>小说工作台</strong><span>REACT STUDIO</span></div></div>
-    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>写文章</button><button className={view === "reader-feedback" ? "active" : ""} onClick={() => onView("reader-feedback")}>读者反馈</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
+    <nav className="section-nav"><button className={view === "workbench" ? "active" : ""} onClick={() => onView("workbench")}>创作工作台</button><button className={view === "reader-feedback" ? "active" : ""} onClick={() => onView("reader-feedback")}>读者反馈</button><button className={view === "book-settings" ? "active" : ""} onClick={() => onView("book-settings")}>小说设置</button><button className={view === "system-settings" ? "active" : ""} onClick={() => onView("system-settings")}>系统设置</button></nav>
     <nav className="book-nav">{books.map((book) => <button className={`book-link ${book.id === selected ? "active" : ""}`} key={book.id} title={book.title} onClick={() => { onSelect(book.id); if (view === "system-settings") onView("book-settings"); }}><strong className="book-full-title">{book.title}</strong><strong className="book-abbr">{book.id === "cosmic-404" ? "404" : book.id.includes("old-object") ? "旧物" : "道友"}</strong><small>{book.author ? `作者 ${book.author.name} · ` : "未配置作者 · "}完成 {book.last_completed_chapter} 章</small></button>)}</nav>
     <div className="sidebar-foot"><span className="live-dot" /><div><strong>本地服务</strong><small>React 前端 · Python 后端</small></div></div>
   </aside>;
@@ -27,7 +27,7 @@ function Metrics({ book }) {
   </section>;
 }
 
-function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted }) {
+function CreatePanel({ books, selectedBookId, generationVersion, onNotice, onRefresh, onRunStarted }) {
   const [count, setCount] = useState(1);
   const [scope, setScope] = useState(selectedBookId);
   const [busy, setBusy] = useState(false);
@@ -45,20 +45,20 @@ function CreatePanel({ books, selectedBookId, onNotice, onRefresh, onRunStarted 
   }
 
   return <article className="panel action-panel">
-    <div className="panel-head"><div><p className="eyebrow">V3 AUTHOR ROOM</p><h2>写文章</h2></div><span className="local-badge">新生成链</span></div>
-    <p className="panel-copy">人物先带着自己的生活进入场景，再经过作者房间、初稿、深层编辑和中国读者检查，最后归档本地正文。</p>
+    <div className="panel-head"><div><p className="eyebrow">CREATE</p><h2>章节生成</h2></div><span className="local-badge">当前 {generationVersion.toUpperCase()}</span></div>
+    <p className="panel-copy">从系统设置选择生成版本；本次按当前版本写作并归档章节。</p>
     <div className="run-controls">
       <label>本次章数<div className="stepper"><button aria-label="减少章数" onClick={() => setCount(Math.max(1, count - 1))}>−</button><input aria-label="本次章数" type="number" min="1" max="20" value={count} onChange={(e) => setCount(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /><button aria-label="增加章数" onClick={() => setCount(Math.min(20, count + 1))}>＋</button></div></label>
       <label>执行范围<select aria-label="执行范围" value={scope} onChange={(e) => setScope(e.target.value)}>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}<option value="all">全部作品（各自生成）</option></select></label>
     </div>
     <div className="delivery-options">
       <div className="delivery-option selected">
-        <span><strong>本地归档（V3）</strong><small>自动完成作者房间、初稿、深层编辑和中国读者检查；当前不上传番茄、不执行 Git</small></span>
+        <span><strong>本地归档</strong><small>当前生成版本：{generationVersion.toUpperCase()}</small></span>
         <span aria-label="已选择">✓</span>
       </div>
     </div>
     <div className="run-summary"><span>本批结果</span><strong>本地归档 {count} 章</strong></div>
-    <button className="button primary" disabled={busy} onClick={start}><span>{busy ? "正在写文章" : "写文章"}</span><b>→</b></button>
+    <button className="button primary" disabled={busy} onClick={start}><span>{busy ? "正在生成" : "启动生成"}</span><b>→</b></button>
     <p className="feedback">{feedback}</p>
   </article>;
 }
@@ -175,7 +175,7 @@ export default function App() {
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{view === "system-settings" ? "番茄系统" : book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
       {view === "reader-feedback" ? <ReaderFeedbackWorkspace book={book} onNotice={setNotice} /> : view !== "workbench" ? <SettingsWorkspace scope={view === "system-settings" ? "system" : "book"} books={data.books} bookId={book.id} onBookChange={setSelectedBookId} onNotice={setNotice} onSaved={() => loadOverview()} /> : <>
       <Metrics book={book} />
-      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
+      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
       <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
       <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
       </>}

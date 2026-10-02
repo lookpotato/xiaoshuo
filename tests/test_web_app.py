@@ -57,7 +57,7 @@ class WebAppDataTests(unittest.TestCase):
 
     def test_generation_passes_delivery_options_to_worker(self) -> None:
         fake = {"id": "run-id", "status": "running"}
-        with patch.object(web_app, "launch_command", return_value=fake) as launch:
+        with patch.object(web_app, "launch_command", return_value=fake) as launch, patch.object(web_app.generation_version, "selected", return_value="v2"):
             web_app.launch_generation(
                 {
                     "book_id": "free-sky",
@@ -79,7 +79,7 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("--no-publish-fanqie", command)
 
     def test_generation_rejects_unbound_fanqie_production(self) -> None:
-        with self.assertRaisesRegex(ValueError, "尚未绑定番茄正式环境"):
+        with patch.object(web_app.generation_version, "selected", return_value="v2"), self.assertRaisesRegex(ValueError, "尚未绑定番茄正式环境"):
             web_app.launch_generation(
                 {
                     "book_id": "cosmic-404",

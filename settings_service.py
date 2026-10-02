@@ -12,6 +12,7 @@ from pathlib import Path
 import fanqie_novel_manager as manager
 import creative_modules
 import author_registry
+import generation_version
 
 
 ROOT = Path(__file__).resolve().parent
@@ -180,6 +181,9 @@ def get_system_settings() -> dict:
         "config_revision": _revision(CONFIG_PATH),
         "locked": settings_lock(),
         "general": {key: data.get(key) for key in SYSTEM_GENERAL_FIELDS},
+        "generation_version": generation_version.selected(),
+        "generation_version_revision": _revision(generation_version.PATH),
+        "generation_versions": generation_version.VERSIONS,
         "writing_policy": policy,
         "modules": modules,
         "authors": authors,
@@ -388,6 +392,11 @@ def save_settings(payload: dict) -> dict:
         raise SettingsConflict("系统配置已被其他进程修改，请刷新后再保存")
     scope = payload.get("scope")
     if scope == "system":
+        version = payload.get("generation_version", generation_version.selected())
+        if version not in {item["id"] for item in generation_version.VERSIONS}:
+            raise ValueError("生成版本只能选择 V2 或 V3")
+        if payload.get("generation_version_revision") != _revision(generation_version.PATH):
+            raise SettingsConflict("生成版本已被其他进程修改，请刷新后再保存")
         general = _validated_general(payload.get("general"), data)
         policy = payload.get("writing_policy")
         if not isinstance(policy, dict):
@@ -396,6 +405,7 @@ def save_settings(payload: dict) -> dict:
         updated.update(general)
         updated["writing_policy"] = policy
         writes = _validate_document_updates(payload.get("documents", []), _system_document_path)
+        writes[generation_version.PATH] = json.dumps({"version": version}, ensure_ascii=False, indent=2) + "\n"
     elif scope == "book":
         book_id = str(payload.get("book_id", ""))
         current_book = manager.find_book(data, book_id)
