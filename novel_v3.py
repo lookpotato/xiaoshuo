@@ -19,12 +19,17 @@ from novel_engine_v3 import AuthorEngine, V3ValidationError
 ROOT = Path(__file__).resolve().parent
 
 
-def execute(prompt: Path, output: Path) -> None:
+def execute(prompt: Path, output: Path, run_dir: Path) -> None:
     codex = shutil.which("codex")
     if not codex:
         raise V3ValidationError("找不到 codex CLI；请先安装并登录")
     result = subprocess.run(
-        [codex, "exec", "--ephemeral", "-C", str(ROOT), "--sandbox", "workspace-write",
+        # Run each internal stage from its isolated run directory.  This keeps
+        # repository-level production instructions (Fanqie upload/Git/archive)
+        # out of the creative context; only the project root is an additional
+        # readable/writable data directory.
+        [codex, "exec", "--ephemeral", "-C", str(run_dir), "--add-dir", str(ROOT),
+         "--sandbox", "workspace-write",
          "--config", 'approval_policy="never"', "--output-last-message", str(output), "-"],
         cwd=ROOT,
         input=prompt.read_text(encoding="utf-8"),
@@ -48,7 +53,7 @@ def main() -> int:
     if args.command == "prepare":
         return 0
     for stage in ("author_room", "draft", "deep_edit", "reader"):
-        execute(run / f"{stage}.md", run / f"{stage}.result.md")
+        execute(run / f"{stage}.md", run / f"{stage}.result.md", run)
     print("V3 已完成作者房间、初稿、深层编辑和读者检查；未自动覆盖正文。")
     print("请先阅读 candidate.md 与 reader_review.json，再决定是否接入归档流程。")
     return 0
