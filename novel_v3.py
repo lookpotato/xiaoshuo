@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""V3 author-room workflow entry point.
-
-This command intentionally writes to .novel_runs_v3 and does not archive a
-chapter.  V3 must earn the right to replace the existing production chain by
-passing a human read first.
-"""
+"""V3 author-room chapter generation and local archiving entry point."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -23,7 +19,28 @@ from novel_engine_v3 import AuthorEngine, V3ValidationError
 ROOT = Path(__file__).resolve().parent
 
 
-def execute(prompt: Path, output: Path, run_dir: Path) -> None:
+def accept_deep_edit(run_dir: Path, output: Path) -> None:
+    """Validate a complete replacement before atomically updating the candidate."""
+    candidate = run_dir / "candidate.md"
+    original = candidate.read_text(encoding="utf-8-sig").strip()
+    revised = output.read_text(encoding="utf-8-sig").strip()
+    if not revised.startswith("# ") or "\n" not in revised:
+        raise V3ValidationError("深层编辑未返回完整的 Markdown 章节，原候选稿已保留")
+    if len(revised) < len(original) * 0.6 or revised.startswith("```"):
+        raise V3ValidationError("深层编辑返回的正文不完整，原候选稿已保留")
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=run_dir,
+        prefix=".candidate-", suffix=".tmp", delete=False,
+    ) as handle:
+        handle.write(revised + "\n")
+        temporary = Path(handle.name)
+    try:
+        os.replace(temporary, candidate)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: bool = False) -> None:
     codex = shutil.which("codex")
     if not codex:
         raise V3ValidationError("找不到 codex CLI；请先安装并登录")
@@ -36,7 +53,8 @@ def execute(prompt: Path, output: Path, run_dir: Path) -> None:
             [codex, "exec", "--ephemeral", "--skip-git-repo-check",
              "-C", str(isolated_cwd),
              "--add-dir", str(ROOT), "--add-dir", str(run_dir),
-             "--sandbox", "workspace-write", "--config", 'approval_policy="never"',
+             "--sandbox", "read-only" if capture_candidate else "workspace-write",
+             "--config", 'approval_policy="never"',
              "--output-last-message", str(output), "-"],
             cwd=isolated_cwd,
             input=prompt.read_text(encoding="utf-8"),
@@ -48,6 +66,8 @@ def execute(prompt: Path, output: Path, run_dir: Path) -> None:
         shutil.rmtree(isolated_cwd, ignore_errors=True)
     if result.returncode:
         raise V3ValidationError(f"阶段失败：{prompt.name}，退出码 {result.returncode}")
+    if capture_candidate:
+        accept_deep_edit(run_dir, output)
 
 
 def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
@@ -107,7 +127,8 @@ def main() -> int:
             chapter = (chapter or 1) + 1
             continue
         for stage in ("author_room", "draft", "deep_edit", "reader"):
-            execute(run / f"{stage}.md", run / f"{stage}.result.md", run)
+            execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
+                    capture_candidate=stage == "deep_edit")
         review = json.loads((run / "reader_review.json").read_text(encoding="utf-8"))
         if review.get("blocking"):
             raise V3ValidationError(f"第 {run.name[:4]} 章读者检查未通过：存在阻塞问题")
