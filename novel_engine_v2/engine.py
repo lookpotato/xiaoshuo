@@ -321,8 +321,6 @@ class NovelEngine:
 最近正文：
 {recent}
 
-先读 `shared/opening_promise.md`。首章要核对书名、作品简介或配置中的一句话卖点与实际开篇是否是同一个承诺；前三章明确本章兑现的可见收益、下一章接续的具体问题。进入新地点或换场时，把读者需要的时间、地点、来由、人物关系写入 required_context；已经铺垫过的只需短承接。若作品资料没有简介或卖点，先在导演阶段指出缺口，不得凭空宣称已经兑现。
-
 输出两个文件：
 
 1. `{run / 'chapter_contract.json'}`：必须使用精确字段 continuation、single_mission、protagonist_want、opposition、choice、visible_result、next_reason、cast、required_context、protected_unknowns。cast、required_context、protected_unknowns 为非空数组，其余为非空文本。
@@ -355,15 +353,11 @@ class NovelEngine:
 本次最多装配这些写作模块：
 {writer_modules}
 
-执行章节合同中的读者入场信息：第一屏让人知道谁在何处、正在做什么、与现场关键人物是什么关系；首次进入陌生场景时，用短旁白或行动补上到此的原因和当地限制。已有铺垫的场景简短承接即可。前三章让书名与简介许诺的独特冲突在人物行动中发生并带来可见结果，第二章不能只处理第一章的赔偿或善后。允许必要的叙述性介绍，不要让人物在对白里替作者讲背景。
-
 写作时不要读取 reader.md、旧版共享门禁或跨书经验文件。不要边写边自评。完成后保存 `{run / 'candidate.md'}`，格式为 `# 第 {manifest['chapter']} 章 标题` 加正文；另存 `{run / 'state_delta.json'}`，使用精确字段 characters、resources、revealed_facts、unresolved、next_opening，前四项为数组，next_opening 为非空文本，只记录正文实际发生的变化。不得更新作品状态，不得归档或发布。
 """
         reader = f"""# 陌生读者阶段：只读候选稿
 
 你没有作者设定知识。只读取 `{run / 'candidate.md'}` 和 `{run / 'chapter_contract.json'}`；合同只能用于核对承诺，不能替正文补充信息。
-
-做读者入场检查：只凭正文能否辨认首次出场人物的关系、换场后的时间地点和来由；前三章能否看到主角有别于普通故事的具体做法与一次实在兑现，下一章的理由是否从本章结果长出。缺少这些而影响理解或追读时列为 blocking，并引用原句或指出缺失位置；不要用合同内容替正文补洞。
 
 检查模块：
 {reader_modules}
