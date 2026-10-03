@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "chapter_number": 2,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-10-03T14:16:11+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "1cbd1f8d3b9e016194db5f94201aa06f2c26ebc4f136f848587b6d1a4213f4a1",
+  "questions": {
+    "previous_context": {
+      "answer": "田小雨母女借住突然出现的七楼，次日早上整栋楼仍能看见新楼层。",
+      "evidence": [
+        "田小雨领着可可从七零一下来。她昨晚借住的屋子没有变化，电饭锅的保温灯还亮着，桌上却没有人碰过饭。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "原房修完漏水仍不能住，七楼能否继续借给母女以及楼道怎么安全使用成了眼前争执。",
+      "evidence": [
+        "七楼先别锁门。里面的线还没查明白，谁也别搬电器上去，晚上我把门口灯接个独立开关。"
+      ]
+    },
+    "decision_basis": {
+      "answer": "周寻摸到泡坏的板材与电线，知道停水不等于能立即回六零三。",
+      "evidence": [
+        "石膏板泡得一按一个坑，电线外皮也黏糊糊的。"
+      ]
+    },
+    "action_logic": {
+      "answer": "周寻区分了止漏与可居住，并继续检查电线和疏通楼道。",
+      "evidence": [
+        "水停了，不等于屋能住。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "房东承担短期租金损失，田小雨选择再借住七楼，众人仍须解决线路与楼道安全。",
+      "evidence": [
+        "我退你一周房租。附近旅馆你先找，够不够再说。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "夜里又出现八楼，门牌点名仍住二楼的刘桂芳，使她的住房处境成为下一章的急事。",
+      "evidence": [
+        "周寻走近，借着手电看见门牌下的纸条。上面只有一个名字，写得端端正正："
+      ]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

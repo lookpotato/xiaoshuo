@@ -217,6 +217,27 @@
       "manual_extra_chapters_supported": true,
       "default_publish_times": [],
       "note": "从第1章走统一小说生产流程的系统重写版；五章已通过读者关卡和独立文学终审，现为默认展示。本地写作，不自动排期、不连接番茄。"
+    },
+    {
+      "id": "night-floor",
+      "title": "我家旧楼每晚多一层",
+      "path": "我家旧楼每晚多一层",
+      "enabled": true,
+      "status": "testing",
+      "schedule": {"days": [], "time": "12:00"},
+      "priority": 140,
+      "mode": "write_only",
+      "daily_chapter_target": 1,
+      "reader_gate_from_chapter": 1,
+      "chapter_length": {
+        "target_min_hanzi": 1900,
+        "target_hanzi": 2200,
+        "target_max_hanzi": 2400,
+        "overlong_review_hanzi": 2600
+      },
+      "manual_extra_chapters_supported": true,
+      "default_publish_times": [],
+      "note": "新都市奇幻两章试读，绑定 echo-v1；本地写作，不自动排期、不连接番茄。"
     }
   ]
 }

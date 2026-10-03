@@ -42,6 +42,11 @@
         "style_guide.md",
         "feedback_learning.json"
       ]
+    },
+    "night-floor": {
+      "title": "我家旧楼每晚多一层",
+      "project": "我家旧楼每晚多一层",
+      "sources": ["novel_config.md", "opening_contract.md", "outline.md", "characters.md", "world.md", "style_guide.md"]
     }
   }
 }

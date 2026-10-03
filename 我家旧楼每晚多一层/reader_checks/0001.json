@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "chapter_number": 1,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-10-03T14:16:11+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "c0141407bc703297997dc067f042e31e579478ae1202c7c17028ab9911ad1eca",
+  "questions": {
+    "previous_context": {
+      "answer": "新书的生活起点是南梧柳北里一栋只有六层、周寻熟悉的旧居民楼。",
+      "evidence": [
+        "柳北里六号楼只有六层。没有电梯，外卖送到五楼要加两块钱，送到六楼要看骑手心情。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "六零三漏水，田小雨母女今晚需要安全的落脚处。",
+      "evidence": [
+        "南梧下了三天雨，六号楼的外墙湿得发黑。六零三的田小雨刚下医院夜班，屋里顶灯却像下了第二场雨。"
+      ]
+    },
+    "decision_basis": {
+      "answer": "周寻先敲、踩新台阶，知道七楼有真实可承重的表面，但还没有断言整层安全。",
+      "evidence": [
+        "周寻拿扳手敲了一下踏步。实心的。"
+      ]
+    },
+    "action_logic": {
+      "answer": "田小雨决定跟在周寻后面试走，若脚下不对立即撤下；她自己作入住选择。",
+      "evidence": [
+        "你上去的时候，我跟在后面。踩着不对，咱们就下来。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "母女借住七楼一晚，田小雨明确只是暂借，不让周寻替她决定住房。",
+      "evidence": [
+        "“就借一晚。”田小雨说，“门不锁。周寻，明早我还得给房东打电话，不能算你替我找了房。”"
+      ]
+    },
+    "reader_hook": {
+      "answer": "七楼门牌点名田小雨，并要求确认旧住处无法居住，暗示楼知道她的处境。",
+      "evidence": [
+        "田小雨，入住前请确认原住处已不能居住。"
+      ]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

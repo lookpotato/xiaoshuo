@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "book_id": "night-floor",
+  "max_images_per_chapter": 1,
+  "style_bible": {
+    "visual_style": "南梧旧居民楼的写实都市生活质感；雨夜、暖色楼道灯与住户日常物件。试读阶段不生成图片。"
+  },
+  "entities": {},
+  "chapter_images": {}
+}
