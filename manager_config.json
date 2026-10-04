@@ -5,7 +5,7 @@
   "max_daily_attempts": 2,
   "retry_delay_minutes": 30,
   "default_failure_policy": "retry_same_day",
-  "default_book_id": "old-object-echo-rewrite",
+  "default_book_id": "night-floor",
   "writing_policy": {
     "de_ai_writing": {
       "enabled": true,
@@ -153,78 +153,15 @@
       "note": "独立重写校准项目；绑定专属作者，从第1章开始，只在本地写作，不连接或复用旧书番茄书号。"
     },
     {
-      "id": "h-ip-product-test",
-      "title": "潮汐造物铺（暂定）",
-      "path": "H_IP产品化测试版",
-      "enabled": true,
-      "status": "testing",
-      "schedule": {
-        "days": [],
-        "time": "12:00"
-      },
-      "priority": 110,
-      "mode": "write_only",
-      "daily_chapter_target": 1,
-      "reader_gate_from_chapter": 1,
-      "manual_extra_chapters_supported": true,
-      "default_publish_times": [],
-      "note": "H 正式第一版 IP+实体产品化路线测试；本地写作，不连接番茄，不自动排期。"
-    },
-    {
-      "id": "old-object-echo-sample",
-      "title": "旧物回声事务所（五章试读）",
-      "path": "旧物回声事务所_试读版",
-      "enabled": false,
-      "status": "testing",
-      "schedule": {
-        "days": [],
-        "time": "12:00"
-      },
-      "priority": 120,
-      "mode": "write_only",
-      "daily_chapter_target": 1,
-      "reader_gate_from_chapter": 6,
-      "chapter_length": {
-        "target_min_hanzi": 2200,
-        "target_hanzi": 2600,
-        "target_max_hanzi": 3000,
-        "overlong_review_hanzi": 3200
-      },
-      "manual_extra_chapters_supported": true,
-      "default_publish_times": [],
-      "note": "独立五章试读；第六章起执行读者验收。本地写作，不自动排期、不连接番茄。"
-    },
-    {
-      "id": "old-object-echo-rewrite",
-      "title": "旧物回声事务所（系统重写版）",
-      "path": "旧物回声事务所_系统重写版",
-      "enabled": true,
-      "status": "testing",
-      "schedule": {
-        "days": [],
-        "time": "12:00"
-      },
-      "priority": 130,
-      "mode": "write_only",
-      "daily_chapter_target": 1,
-      "reader_gate_from_chapter": 1,
-      "chapter_length": {
-        "target_min_hanzi": 2200,
-        "target_hanzi": 2600,
-        "target_max_hanzi": 3000,
-        "overlong_review_hanzi": 3200
-      },
-      "manual_extra_chapters_supported": true,
-      "default_publish_times": [],
-      "note": "从第1章走统一小说生产流程的系统重写版；五章已通过读者关卡和独立文学终审，现为默认展示。本地写作，不自动排期、不连接番茄。"
-    },
-    {
       "id": "night-floor",
       "title": "我家旧楼每晚多一层",
       "path": "我家旧楼每晚多一层",
       "enabled": true,
       "status": "testing",
-      "schedule": {"days": [], "time": "12:00"},
+      "schedule": {
+        "days": [],
+        "time": "12:00"
+      },
       "priority": 140,
       "mode": "write_only",
       "daily_chapter_target": 1,

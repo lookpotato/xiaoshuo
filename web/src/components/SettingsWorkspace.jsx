@@ -133,12 +133,34 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
     finally { setBusy(false); }
   }
 
+  async function deleteBook() {
+    if (scope !== "book" || !draft || busy || draft.locked) return;
+    const title = settings.registry.title;
+    if (!window.confirm(`确定删除《${title}》吗？\n\n作品会从列表移除，全部文件将进入本地可恢复回收目录。`)) return;
+    const confirmedTitle = window.prompt(`第二次确认：请输入完整书名\n${title}`);
+    if (confirmedTitle === null) return;
+    if (confirmedTitle !== title) { setError("书名不一致，已取消删除"); return; }
+    if (!window.confirm(`最后确认：删除《${title}》？\n\n请先检查作品编号：${bookId}\n确认后立即执行。`)) return;
+    setBusy(true); setError("");
+    try {
+      const result = await api("/api/book/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        book_id: bookId,
+        config_revision: settings.config_revision,
+        confirm_title: confirmedTitle,
+        confirm_book_id: bookId,
+      }) });
+      onNotice(`已删除《${title}》；文件保存在 ${result.deletion.trash_path}`);
+      await onSaved();
+    } catch (nextError) { setError(nextError.message); onNotice(nextError.message); }
+    finally { setBusy(false); }
+  }
+
   const draftMatchesScope = draft?.scope === scope && (scope === "system" || draft.book_id === bookId);
   if (!draftMatchesScope) return <article className="panel settings-loading">{error || "正在读取模块化配置……"}</article>;
   return <section className="settings-page">
     <article className="panel settings-hero">
       <div><p className="eyebrow">{scope === "system" ? "SYSTEM SETTINGS" : "BOOK SETTINGS"}</p><h2>{scope === "system" ? "番茄系统设置" : `${draft.registry.title} · 小说设置`}</h2><p>{scope === "system" ? "控制所有小说共享的底层能力。每项规则按模块装配，不绑定某一本书。" : "控制这本书独有的文风、人物组织方式、世界观和系统提示词，不影响其他小说。"}</p></div>
-      <div className="settings-actions"><button className="button ghost" onClick={load} disabled={busy}>重新读取</button><button className="button save-settings" onClick={save} disabled={busy || !dirty || draft.locked}>{busy ? "处理中" : "保存设置"}</button></div>
+      <div className="settings-actions"><button className="button ghost" onClick={load} disabled={busy}>重新读取</button><button className="button save-settings" onClick={save} disabled={busy || !dirty || draft.locked}>{busy ? "处理中" : "保存设置"}</button>{scope === "book" && <button className="button ghost" style={{ color: "#b43e38" }} onClick={deleteBook} disabled={busy || draft.locked}>删除小说</button>}</div>
     </article>
     {draft.locked && <div className="settings-lock"><strong>设置已锁定</strong><span>{draft.locked.message} · {draft.locked.book_id || "当前任务"}</span></div>}
     {scope === "book" && draft.author_binding_error && <div className="settings-error"><strong>作者未绑定</strong><span>{draft.author_binding_error}。请选择作者并保存后才能启动生成。</span></div>}

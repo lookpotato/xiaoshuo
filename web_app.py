@@ -704,6 +704,7 @@ class AppHandler(BaseHTTPRequestHandler):
             declared_length = int(self.headers.get("Content-Length", "0"))
             body_limits = {
                 "/api/settings": 1024 * 1024,
+                "/api/book/delete": 16 * 1024,
                 "/api/character-story": 256 * 1024,
                 "/api/reader-feedback": 64 * 1024,
                 "/api/reader-feedback/apply": 16 * 1024,
@@ -729,6 +730,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/settings":
                 self.send_json({"ok": True, "settings": settings_service.save_settings(payload)})
+                return
+            if parsed.path == "/api/book/delete":
+                self.send_json({"ok": True, "deletion": settings_service.delete_book(payload)})
                 return
             if parsed.path == "/api/character-story":
                 self.send_json({"ok": True, "stories": character_story_service.save_character_story(payload)})

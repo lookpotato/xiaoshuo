@@ -438,3 +438,54 @@ def save_settings(payload: dict) -> dict:
     result = get_settings(str(scope), str(payload.get("book_id", "")))
     result["saved"] = True
     return result
+
+
+def delete_book(payload: dict) -> dict:
+    """Remove a registered book and keep its files in a local recovery directory."""
+    if settings_lock():
+        raise SettingsConflict("小说任务正在运行，请在任务结束后删除")
+    if payload.get("config_revision") != _revision(CONFIG_PATH):
+        raise SettingsConflict("系统配置已变化，请刷新后重新确认删除")
+    data = _read_config()
+    book_id = str(payload.get("book_id", ""))
+    book = manager.find_book(data, book_id)
+    title = str(book.get("title", book_id))
+    if payload.get("confirm_title") != title or payload.get("confirm_book_id") != book_id:
+        raise ValueError("书名或作品编号确认不匹配")
+    remaining = [item for item in data["books"] if item["id"] != book_id]
+    if not remaining:
+        raise ValueError("不能删除最后一本小说")
+    project = _project_path(book)
+    if project == ROOT.resolve() or not project.is_dir():
+        raise ValueError("书籍目录不存在或无效")
+    if any(_project_path(item) == project for item in remaining):
+        raise ValueError("其他小说仍在使用这个目录")
+    trash_root = (ROOT / ".book_trash").resolve()
+    if ROOT.resolve() not in trash_root.parents:
+        raise ValueError("回收目录越界")
+    trash = trash_root / f"{book_id}-{uuid.uuid4().hex}"
+    if trash.exists():
+        raise ValueError("回收目录已存在")
+    updated = dict(data)
+    updated["books"] = remaining
+    if updated.get("default_book_id") == book_id:
+        updated["default_book_id"] = next(
+            (item["id"] for item in remaining if item.get("enabled", True)), remaining[0]["id"]
+        )
+    writes = {CONFIG_PATH: json.dumps(updated, ensure_ascii=False, indent=2) + "\n"}
+    for version in ("v2", "v3"):
+        path = ROOT / f"novel_engine_{version}" / "system.json"
+        if not path.is_file():
+            continue
+        system = json.loads(path.read_text(encoding="utf-8"))
+        if book_id in system.get("books", {}):
+            system["books"].pop(book_id)
+            writes[path] = json.dumps(system, ensure_ascii=False, indent=2) + "\n"
+    trash_root.mkdir(parents=True, exist_ok=True)
+    os.replace(project, trash)
+    try:
+        _atomic_write_many(writes)
+    except Exception:
+        os.replace(trash, project)
+        raise
+    return {"book_id": book_id, "title": title, "trash_path": str(trash.relative_to(ROOT))}

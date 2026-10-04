@@ -106,6 +106,42 @@ class SettingsServiceTest(TestCase):
         self.assertEqual(result["authors"][0]["introduction"], "专注原创故事与现实产品的连接。")
         self.assertEqual(result["authors"][0]["specialties"], ["故事物件产品化", "群像经营题材"])
 
+    def test_delete_book_requires_exact_confirmation_and_moves_files_to_trash(self):
+        second = self.root / "book-two"
+        second.mkdir()
+        (second / "chapter.md").write_text("第二本的正文", encoding="utf-8")
+        self.config["books"].append({"id": "book-two", "title": "第二本书", "path": "book-two"})
+        self.config_path.write_text(json.dumps(self.config, ensure_ascii=False), encoding="utf-8")
+        for version in ("v2", "v3"):
+            path = self.root / f"novel_engine_{version}" / "system.json"
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps({"books": {"book-one": {}, "book-two": {}}}), encoding="utf-8")
+        payload = {"book_id": "book-one", "config_revision": settings_service._revision(self.config_path),
+                   "confirm_title": "第一本书", "confirm_book_id": "book-one"}
+        with self.assertRaises(ValueError):
+            settings_service.delete_book({**payload, "confirm_title": "错字"})
+        self.assertTrue(self.book_path.exists())
+        result = settings_service.delete_book(payload)
+        self.assertFalse(self.book_path.exists())
+        self.assertTrue((self.root / result["trash_path"] / "automation_prompt.md").exists())
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        self.assertEqual(config["default_book_id"], "book-two")
+        self.assertEqual([item["id"] for item in config["books"]], ["book-two"])
+        for version in ("v2", "v3"):
+            system = json.loads((self.root / f"novel_engine_{version}" / "system.json").read_text(encoding="utf-8"))
+            self.assertNotIn("book-one", system["books"])
+
+    def test_delete_book_refuses_stale_revision_and_shared_directory(self):
+        payload = {"book_id": "book-one", "config_revision": "stale",
+                   "confirm_title": "第一本书", "confirm_book_id": "book-one"}
+        with self.assertRaises(settings_service.SettingsConflict):
+            settings_service.delete_book(payload)
+        self.config["books"].append({"id": "book-two", "title": "第二本书", "path": "book-one"})
+        self.config_path.write_text(json.dumps(self.config, ensure_ascii=False), encoding="utf-8")
+        with self.assertRaises(ValueError):
+            settings_service.delete_book({**payload, "config_revision": settings_service._revision(self.config_path)})
+        self.assertTrue(self.book_path.exists())
+
     def test_system_settings_expose_registry_and_shared_modules(self):
         result = settings_service.get_system_settings()
         self.assertEqual(result["generation_version"], "v3")

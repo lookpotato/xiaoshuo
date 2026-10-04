@@ -9,6 +9,7 @@ __pycache__/
 .web_runtime/
 .novel_runs_v2/
 .chapter_trash/
+.book_trash/
 web/node_modules/
 
 # Browser login data lives outside the repository under %LOCALAPPDATA%\xiaoshuo.
