@@ -417,10 +417,10 @@ def local_repair_prompt(
 def dialogue_repair_prompt(chapter_number: int) -> str:
     return f"""# 中文对白专项返修
 
-你在一个与正式项目隔离的只读目录里工作。只修订 `chapter.md` 中第 {chapter_number} 章的真人对白
-及其不可分割的相邻动作，不处理图片、发布、Git 或下一章。`dialogue-review.json` 是本轮必须解决的
-问题清单；`chapter-plan.json` 只用于保护中心选择、事件结果、线索边界和章末钩子。其他可见文件
-仅用于人物声音、前文连续性和中文口语参照。
+你在一个与正式项目隔离的只读环境里工作。所需材料已附在本次消息末尾，无需读取文件或调用工具。
+只修订 `chapter.md` 中第 {chapter_number} 章的真人对白及其不可分割的相邻动作，不处理图片、发布、
+Git 或下一章。`dialogue-review.json` 是本轮必须解决的问题清单；`chapter-plan.json` 只用于保护
+中心选择、事件结果、线索边界和章末钩子。其他材料仅用于人物声音、前文连续性和中文口语参照。
 
 不得用“符合人设”“人物目的成立”否定试读指出的现实语用问题。逐项处理 review.issues：
 先确认说话人此刻想让对方做什么，再把作者概括、抽象标签、并列清单或完整推理还原成
@@ -521,6 +521,11 @@ def run_isolated_dialogue_repair(
     with TemporaryDirectory(prefix="novel-dialogue-repair-") as temporary:
         isolated = Path(temporary)
         _copy_dialogue_repair_context(book_id, project, chapter_number, isolated)
+        repair_material = "\n\n".join(
+            f"## {path.relative_to(isolated).as_posix()}\n\n{path.read_text(encoding='utf-8-sig')}"
+            for path in sorted(isolated.rglob("*")) if path.is_file()
+        )
+        repair_input = dialogue_repair_prompt(chapter_number) + "\n\n# 本轮材料\n\n" + repair_material
         isolated_result = isolated / "revised-chapter.md"
         for attempt in range(MAX_CODEX_PROCESS_RETRIES + 1):
             isolated_result.unlink(missing_ok=True)
@@ -532,7 +537,7 @@ def run_isolated_dialogue_repair(
                     "--output-last-message", str(isolated_result), "-",
                 ],
                 cwd=isolated,
-                input=dialogue_repair_prompt(chapter_number),
+                input=repair_input,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
