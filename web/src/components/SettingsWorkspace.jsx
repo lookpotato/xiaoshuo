@@ -36,7 +36,7 @@ function SystemGeneral({ value, books, onChange }) {
   </div>;
 }
 
-function BookGeneral({ value, authors, onChange }) {
+function BookGeneral({ value, savedValue, authors, modelOptions, reasoningEfforts, onChange }) {
   const update = (key, next) => onChange({ ...value, [key]: next });
   const exemptionChapter = Number(value.word_count_exemption_chapter || value.next_chapter_number || 1);
   const exemptChapters = value.word_count_exempt_chapters || [];
@@ -49,6 +49,8 @@ function BookGeneral({ value, authors, onChange }) {
   return <div className="settings-form-grid">
     <Field label="书名"><input value={value.title || ""} onChange={(event) => update("title", event.target.value)} /></Field>
     <Field label="作者（必选）" hint="作者决定创作取舍；未绑定作者的小说不能启动生成"><select required value={value.author || ""} onChange={(event) => update("author", event.target.value)}><option value="" disabled>请选择作者</option>{authors.map((author) => <option key={author.id} value={author.id}>{author.name} · {author.id}</option>)}</select></Field>
+    <Field label="当前使用模型" hint={`当前生效：${savedValue.codex_model} · ${savedValue.codex_reasoning_effort}。保存后，下一次规划、写作和审稿任务使用所选模型。`}><select value={value.codex_model} onChange={(event) => update("codex_model", event.target.value)}>{modelOptions.map((model) => <option key={model.id} value={model.id}>{model.label} · {model.id}</option>)}</select></Field>
+    <Field label="推理档位" hint="与当前小说的模型一起保存，下一次任务生效。"><select value={value.codex_reasoning_effort} onChange={(event) => update("codex_reasoning_effort", event.target.value)}>{reasoningEfforts.map((effort) => <option key={effort} value={effort}>{effort}</option>)}</select></Field>
     <Field label="运行模式"><select value={value.mode} onChange={(event) => update("mode", event.target.value)}><option value="write_only">仅本地创作</option><option value="write_then_upload">创作并可上传</option></select></Field>
     <Field label="每日章节数"><input type="number" min="1" max="20" value={value.daily_chapter_target} onChange={(event) => update("daily_chapter_target", Number(event.target.value))} /></Field>
     <Field label="任务优先级"><input type="number" min="0" max="10000" value={value.priority} onChange={(event) => update("priority", Number(event.target.value))} /></Field>
@@ -175,7 +177,7 @@ export default function SettingsWorkspace({ scope, books, bookId, onBookChange, 
     </article>}
     <article className="panel settings-section">
       <div className="panel-head"><div><p className="eyebrow">BASICS</p><h2>{scope === "system" ? "运行底座" : "作品运行参数"}</h2></div></div>
-      {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} authors={draft.authors} onChange={(registry) => setDraft({ ...draft, registry })} />}
+      {scope === "system" ? <SystemGeneral value={draft.general} books={books} onChange={(general) => setDraft({ ...draft, general })} /> : <BookGeneral value={draft.registry} savedValue={settings.registry} authors={draft.authors} modelOptions={draft.model_options} reasoningEfforts={draft.reasoning_efforts} onChange={(registry) => setDraft({ ...draft, registry })} />}
     </article>
     {scope === "book" && <CreativeModules draft={draft} onChange={updateDocument} />}
     {scope === "book" && <CharacterStorylines bookId={bookId} onNotice={onNotice} />}

@@ -13,6 +13,7 @@ import fanqie_novel_manager as manager
 import creative_modules
 import author_registry
 import generation_version
+import novel_codex_model
 
 
 ROOT = Path(__file__).resolve().parent
@@ -207,6 +208,7 @@ def get_book_settings(book_id: str) -> dict:
     except author_registry.AuthorConfigError as exc:
         bound_author_id = ""
         author_binding_error = str(exc)
+    codex_model, codex_reasoning_effort = novel_codex_model.book_settings(book)
     return {
         "scope": "book",
         "book_id": book_id,
@@ -218,11 +220,15 @@ def get_book_settings(book_id: str) -> dict:
         "authors": authors,
         "author_binding_error": author_binding_error,
         "locked": settings_lock(),
+        "model_options": novel_codex_model.MODEL_OPTIONS,
+        "reasoning_efforts": novel_codex_model.REASONING_EFFORTS,
         "registry": {
             "id": book["id"],
             "path": book["path"],
             "title": book.get("title", book_id),
             "author": bound_author_id,
+            "codex_model": codex_model,
+            "codex_reasoning_effort": codex_reasoning_effort,
             "enabled": bool(book.get("enabled", True)),
             "mode": book.get("mode", "write_only"),
             "priority": int(book.get("priority", 0)),
@@ -337,6 +343,10 @@ def _validated_book_registry(value: object, current: dict) -> dict:
         raise ValueError("每本小说必须选择作者")
     if author_id not in {author["id"] for author in author_registry.list_authors(ROOT)}:
         raise ValueError(f"作者不存在：{author_id}")
+    updated["codex_model"], updated["codex_reasoning_effort"] = novel_codex_model.validate(
+        value.get("codex_model", current.get("codex_model", novel_codex_model.MODEL)),
+        value.get("codex_reasoning_effort", current.get("codex_reasoning_effort", novel_codex_model.REASONING_EFFORT)),
+    )
     for key, low, high in (
         ("priority", 0, 10000),
         ("daily_chapter_target", 1, 20),

@@ -13,6 +13,7 @@ class IndependentReviewRunnerTests(TestCase):
     def test_dialogue_repair_uses_isolated_full_chapter_candidate(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
+            (root / "manager_config.json").write_text(json.dumps({"books": [{"id": "demo"}]}), encoding="utf-8")
             project = root / "book"
             for folder in ("chapters", "drafts", "dialogue_reviews", "reader_checks", "literary_reviews", "chapter_plans"):
                 (project / folder).mkdir(parents=True, exist_ok=True)
@@ -83,6 +84,7 @@ class IndependentReviewRunnerTests(TestCase):
     def test_dialogue_repair_retries_connection_without_consuming_revision(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
+            (root / "manager_config.json").write_text(json.dumps({"books": [{"id": "demo"}]}), encoding="utf-8")
             project = root / "book"
             (project / "chapters").mkdir(parents=True)
             (project / "dialogue_reviews").mkdir()

@@ -505,7 +505,7 @@ def run_isolated_dialogue_repair(
             isolated_result.unlink(missing_ok=True)
             process = subprocess.run(
                 [
-                    *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
+                    *novel_codex_model.exec_prefix(codex, book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
                     "-C", str(isolated), "--sandbox", "read-only",
                     "--config", 'approval_policy="never"',
                     "--output-last-message", str(isolated_result), "-",
@@ -718,9 +718,9 @@ def recoverable_draft_errors(project: Path, errors: list[str]) -> bool:
     return bool(errors) and all(error.startswith(allowed_prefixes) for error in errors)
 
 
-def _stage_command(codex: str, result_file: Path) -> list[str]:
+def _stage_command(codex: str, result_file: Path, book_id: str | None = None) -> list[str]:
     return [
-        *novel_codex_model.exec_prefix(codex),
+        *novel_codex_model.exec_prefix(codex, book_id, ROOT),
         "--ephemeral",
         "-C",
         str(ROOT),
@@ -756,7 +756,7 @@ def ensure_chapter_plan(
     result_file = manager.JOB_DIR / f"{job['id']}-director-{chapter_number:04d}.md"
     print(f"正在独立规划第 {chapter_number} 章的情节与情绪任务……", flush=True)
     process = subprocess.run(
-        _stage_command(codex, result_file),
+        _stage_command(codex, result_file, book_id),
         cwd=ROOT,
         input=prompt,
         text=True,
@@ -776,6 +776,7 @@ def run_independent_literary_review(
     project: Path,
     chapter_number: int,
     job: dict,
+    book_id: str | None = None,
 ) -> None:
     """Review prose in a fresh context that cannot see plans or book bibles."""
     base_prompt = stage_pipeline.reviewer_prompt(ROOT, project, chapter_number)
@@ -819,7 +820,7 @@ def run_independent_literary_review(
                 )
                 process = subprocess.run(
                     [
-                        *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
+                        *novel_codex_model.exec_prefix(codex, book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
                         "-C", str(isolated),
                         "--sandbox", "read-only", "--config", 'approval_policy="never"',
                         "--output-last-message", str(isolated_result), "-",
@@ -877,7 +878,7 @@ def run_independent_literary_review(
 
 
 def run_independent_dialogue_review(
-    codex: str, project: Path, chapter_number: int, job: dict
+    codex: str, project: Path, chapter_number: int, job: dict, book_id: str | None = None
 ) -> dict:
     """Use a fresh, prose-only context to audit spoken Chinese."""
     try:
@@ -909,7 +910,7 @@ def run_independent_dialogue_review(
             )
             process = subprocess.run(
                 [
-                    *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
+                    *novel_codex_model.exec_prefix(codex, book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
                     "-C", str(isolated), "--sandbox", "read-only",
                     "--config", 'approval_policy="never"',
                     "--output-last-message", str(isolated_result), "-",
@@ -950,7 +951,7 @@ def run_dialogue_quality_cycle(
 ) -> None:
     """Review and, when needed, revise dialogue in separate model calls."""
     for revision in range(MAX_DIALOGUE_REVISIONS + 1):
-        review = run_independent_dialogue_review(codex, project, chapter_number, job)
+        review = run_independent_dialogue_review(codex, project, chapter_number, job, book_id)
         if review["decision"] == "pass":
             print(f"第 {chapter_number} 章中文对白独立试读通过。", flush=True)
             return
@@ -981,7 +982,7 @@ def write_one(book_id: str, job: dict) -> None:
     )
     original_state = manager.read_json(project / "chapter_state.json", {})
     result_file = manager.JOB_DIR / f"{job['id']}-write-{datetime.now():%H%M%S}.md"
-    command = _stage_command(codex, result_file)
+    command = _stage_command(codex, result_file, book_id)
     staged = stage_pipeline.enabled_for(ROOT, project)
     if staged:
         ensure_chapter_plan(codex, book_id, project, expected_chapter, job)
@@ -1018,7 +1019,7 @@ def write_one(book_id: str, job: dict) -> None:
                         codex, book_id, project, expected_chapter, job
                     )
                     run_independent_literary_review(
-                        codex, project, expected_chapter, job
+                        codex, project, expected_chapter, job, book_id
                     )
                 except RuntimeError:
                     manager.write_json(project / "chapter_state.json", original_state)

@@ -18,9 +18,9 @@ def resolve_codex() -> str:
     return path
 
 
-def execute_prompt(root: Path, prompt_path: Path, result_path: Path) -> None:
+def execute_prompt(root: Path, prompt_path: Path, result_path: Path, book_id: str | None = None) -> None:
     command = [
-        *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "-C", str(root),
+        *novel_codex_model.exec_prefix(resolve_codex(), book_id, root), "--ephemeral", "-C", str(root),
         "--sandbox", "workspace-write", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]
@@ -59,13 +59,13 @@ def run_book(
     max_revisions: int = 2,
 ) -> Path:
     run_dir = engine.prepare(book_id, signals)
-    execute_prompt(engine.root, run_dir / "director.md", run_dir / "director.result.md")
+    execute_prompt(engine.root, run_dir / "director.md", run_dir / "director.result.md", book_id)
     engine.validate_contract(run_dir)
-    execute_prompt(engine.root, run_dir / "writer.md", run_dir / "writer.result.md")
+    execute_prompt(engine.root, run_dir / "writer.md", run_dir / "writer.result.md", book_id)
     number = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["chapter"]
     engine.validate_candidate(run_dir, number)
     for attempt in range(max_revisions + 1):
-        execute_prompt(engine.root, run_dir / "reader.md", run_dir / f"reader-{attempt}.result.md")
+        execute_prompt(engine.root, run_dir / "reader.md", run_dir / f"reader-{attempt}.result.md", book_id)
         review = engine.validate_review(run_dir)
         if review["decision"] == "pass":
             return engine.finalize(book_id, run_dir)
@@ -74,6 +74,6 @@ def run_book(
                 f"陌生读者连续 {max_revisions + 1} 次未通过；候选稿保留在 {run_dir}"
             )
         prompt = revision_prompt(run_dir, attempt + 1)
-        execute_prompt(engine.root, prompt, run_dir / f"revision-{attempt + 1}.result.md")
+        execute_prompt(engine.root, prompt, run_dir / f"revision-{attempt + 1}.result.md", book_id)
         engine.validate_candidate(run_dir, number)
     raise AssertionError("unreachable")

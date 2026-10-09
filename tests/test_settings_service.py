@@ -4,6 +4,7 @@ from unittest import TestCase, mock
 
 import settings_service
 import generation_version
+import novel_codex_model
 
 
 class SettingsServiceTest(TestCase):
@@ -99,12 +100,32 @@ class SettingsServiceTest(TestCase):
         self.assertEqual(prompt["content"], "旧提示词\n")
         self.assertTrue(prompt["exists"])
         self.assertEqual(result["registry"]["author"], "owner")
+        self.assertEqual(result["registry"]["codex_model"], novel_codex_model.MODEL)
+        self.assertEqual(result["registry"]["codex_reasoning_effort"], novel_codex_model.REASONING_EFFORT)
+        self.assertIn({"id": "gpt-6.1-sol", "label": "GPT-6.1 Sol"}, result["model_options"])
         self.assertTrue(result["registry"]["word_count_limit_enabled"])
         self.assertEqual(result["registry"]["word_count_exempt_chapters"], [])
         self.assertEqual(result["registry"]["next_chapter_number"], 1)
         self.assertEqual(result["authors"][0]["name"], "当前作者")
         self.assertEqual(result["authors"][0]["introduction"], "专注原创故事与现实产品的连接。")
         self.assertEqual(result["authors"][0]["specialties"], ["故事物件产品化", "群像经营题材"])
+
+    def test_book_model_selection_is_saved_and_used_by_cli(self):
+        settings = settings_service.get_book_settings("book-one")
+        registry = {**settings["registry"], "codex_model": "gpt-6.1-sol", "codex_reasoning_effort": "high"}
+        payload = {"scope": "book", "book_id": "book-one", "config_revision": settings["config_revision"],
+                   "author_config_revision": settings["author_config_revision"], "registry": registry,
+                   "documents": []}
+        result = settings_service.save_settings(payload)
+        self.assertEqual(result["registry"]["codex_model"], "gpt-6.1-sol")
+        self.assertEqual(novel_codex_model.exec_prefix("codex", "book-one", self.root)[3], "gpt-6.1-sol")
+        saved = json.loads(self.config_path.read_text(encoding="utf-8"))["books"][0]
+        self.assertEqual(saved["keep_me"], "untouched")
+        invalid = {**payload, "config_revision": result["config_revision"],
+                   "author_config_revision": result["author_config_revision"],
+                   "registry": {**registry, "codex_model": "unknown"}}
+        with self.assertRaises(ValueError):
+            settings_service.save_settings(invalid)
 
     def test_delete_book_requires_exact_confirmation_and_moves_files_to_trash(self):
         second = self.root / "book-two"
