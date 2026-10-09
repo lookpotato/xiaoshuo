@@ -163,6 +163,32 @@ class IndependentReviewRunnerTests(TestCase):
             self.assertEqual(result["decision"], "pass")
             run.assert_not_called()
 
+    def test_dialogue_review_receives_chapter_text_without_file_tool(self):
+        with tempfile.TemporaryDirectory() as temp:
+            project = Path(temp) / "book"
+            (project / "chapters").mkdir(parents=True)
+            chapter = project / "chapters" / "0002-second.md"
+            chapter.write_text("# 第 2 章 查证\n\n“先别碰，等人来。”\n", encoding="utf-8")
+
+            def fake_run(command, **kwargs):
+                self.assertIn("“先别碰，等人来。”", kwargs["input"])
+                self.assertIn("无需调用工具读取文件", kwargs["input"])
+                output = Path(command[command.index("--output-last-message") + 1])
+                output.write_text(json.dumps({
+                    "schema_version": 1, "chapter_number": 2,
+                    "mode": pipeline.DIALOGUE_REVIEW_MODE,
+                    "narrative_sha256": narrative_sha256(chapter),
+                    "decision": "pass", "assessment": "台词先拦动作，符合现场。",
+                    "issues": [], "strengths_to_preserve": ["先拦动作再说条件。"],
+                }, ensure_ascii=False), encoding="utf-8")
+                return SimpleNamespace(returncode=0)
+
+            with mock.patch.object(xiaoshuo_on_demand.subprocess, "run", side_effect=fake_run):
+                result = xiaoshuo_on_demand.run_independent_dialogue_review(
+                    "codex", project, 2, {"id": "job-dialogue-inline"}
+                )
+            self.assertEqual(result["decision"], "pass")
+
     def test_runner_reuses_existing_review_for_unchanged_chapter(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -242,6 +268,8 @@ class IndependentReviewRunnerTests(TestCase):
             def fake_codex_run(*args, **kwargs):
                 nonlocal calls
                 calls += 1
+                self.assertIn(sentence, kwargs["input"])
+                self.assertIn("无需调用工具读取文件", kwargs["input"])
                 command = args[0]
                 self.assertIn("--skip-git-repo-check", command)
                 self.assertIn("read-only", command)

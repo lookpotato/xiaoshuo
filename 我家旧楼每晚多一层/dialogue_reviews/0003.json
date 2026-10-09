@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "chapter_number": 3,
+  "mode": "independent-spoken-chinese-reader",
+  "narrative_sha256": "c839b0b80ff9f939686e840853a8eca94aa882973ba5a33aedc7715d252ffbbb",
+  "decision": "pass",
+  "assessment": "对白能跟上现场动作：周寻隔门报警时只报亲眼所见，刘桂芳看见八楼门牌上的名字后急着上去，发现清册写着“已退出”后转而要求登记和回执。唐曼与工作人员的指令、核对也都有眼前的人和事作依据。全章没有哪句明显像把设定或作者总结硬塞进人物嘴里。",
+  "issues": [],
+  "strengths_to_preserve": [
+    "刘桂芳把钥匙放到清册旁，随后说“写我人就在二零一住着。你要上去看，我现在开门”，话直接指向眼前的错误记录。",
+    "周寻说“等他们来，我陪您上去”，既拦住刘桂芳独自上楼，也回应了她想亲眼看的要求。"
+  ]
+}

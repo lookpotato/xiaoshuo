@@ -798,10 +798,8 @@ def run_independent_literary_review(
     try:
         with TemporaryDirectory(prefix="novel-literary-reader-") as temporary:
             isolated = Path(temporary)
-            shutil.copyfile(
-                stage_pipeline.current_chapter_path(project, chapter_number),
-                isolated / "chapter.md",
-            )
+            chapter_text = stage_pipeline.current_chapter_path(project, chapter_number).read_text(encoding="utf-8")
+            (isolated / "chapter.md").write_text(chapter_text, encoding="utf-8")
             isolated_result = isolated / "review.json"
             for attempt in range(MAX_LITERARY_REVIEW_ATTEMPTS):
                 review_path.unlink(missing_ok=True)
@@ -811,9 +809,10 @@ def run_independent_literary_review(
                     prompt += (
                         "\n\n## 上一份审稿结果未通过机械校验\n"
                         f"{last_error}\n"
-                        "请重新读取 chapter.md，只重写审稿 JSON；所有 evidence 和 quote "
+                        "请重新核对下方 chapter.md 正文，只重写审稿 JSON；所有 evidence 和 quote "
                         "都必须从正文逐字复制，不得转述、补写或沿用旧审稿中的句子。"
                     )
+                prompt += "\n\n## chapter.md 全文\n\n" + chapter_text
                 print(
                     f"独立文学终审校验重试（{attempt + 1}/{MAX_LITERARY_REVIEW_ATTEMPTS}）……",
                     flush=True,
@@ -891,10 +890,8 @@ def run_independent_dialogue_review(
     last_error = "尚未生成有效对白试读"
     with TemporaryDirectory(prefix="novel-dialogue-reader-") as temporary:
         isolated = Path(temporary)
-        shutil.copyfile(
-            stage_pipeline.current_chapter_path(project, chapter_number),
-            isolated / "chapter.md",
-        )
+        chapter_text = stage_pipeline.current_chapter_path(project, chapter_number).read_text(encoding="utf-8")
+        (isolated / "chapter.md").write_text(chapter_text, encoding="utf-8")
         isolated_result = isolated / "dialogue-review.json"
         for attempt in range(MAX_DIALOGUE_REVIEW_ATTEMPTS):
             isolated_result.unlink(missing_ok=True)
@@ -902,8 +899,9 @@ def run_independent_dialogue_review(
             if attempt:
                 current_prompt += (
                     "\n\n上一份 JSON 未通过机械校验：" + last_error
-                    + "\n请重新读取 chapter.md；quote 必须逐字复制当前正文。"
+                    + "\n请重新核对下方 chapter.md 正文；quote 必须逐字复制当前正文。"
                 )
+            current_prompt += "\n\n## chapter.md 全文\n\n" + chapter_text
             print(
                 f"独立中文对白试读（{attempt + 1}/{MAX_DIALOGUE_REVIEW_ATTEMPTS}）……",
                 flush=True,
