@@ -7,6 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import novel_codex_model
 from .engine import NovelEngine, ValidationError
 
 
@@ -19,7 +20,7 @@ def resolve_codex() -> str:
 
 def execute_prompt(root: Path, prompt_path: Path, result_path: Path) -> None:
     command = [
-        resolve_codex(), "exec", "--ephemeral", "-C", str(root),
+        *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "-C", str(root),
         "--sandbox", "workspace-write", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]

@@ -18,6 +18,7 @@ import fanqie_novel_manager as manager
 import creative_modules
 import author_registry
 import novel_stage_pipeline as stage_pipeline
+import novel_codex_model
 from chapter_length_policy import chapter_length_instruction
 from fanqie_browser_worker import (
     FanqieBlocked,
@@ -504,7 +505,7 @@ def run_isolated_dialogue_repair(
             isolated_result.unlink(missing_ok=True)
             process = subprocess.run(
                 [
-                    codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                    *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
                     "-C", str(isolated), "--sandbox", "read-only",
                     "--config", 'approval_policy="never"',
                     "--output-last-message", str(isolated_result), "-",
@@ -719,8 +720,7 @@ def recoverable_draft_errors(project: Path, errors: list[str]) -> bool:
 
 def _stage_command(codex: str, result_file: Path) -> list[str]:
     return [
-        codex,
-        "exec",
+        *novel_codex_model.exec_prefix(codex),
         "--ephemeral",
         "-C",
         str(ROOT),
@@ -819,7 +819,7 @@ def run_independent_literary_review(
                 )
                 process = subprocess.run(
                     [
-                        codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                        *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
                         "-C", str(isolated),
                         "--sandbox", "read-only", "--config", 'approval_policy="never"',
                         "--output-last-message", str(isolated_result), "-",
@@ -909,7 +909,7 @@ def run_independent_dialogue_review(
             )
             process = subprocess.run(
                 [
-                    codex, "exec", "--ephemeral", "--skip-git-repo-check",
+                    *novel_codex_model.exec_prefix(codex), "--ephemeral", "--skip-git-repo-check",
                     "-C", str(isolated), "--sandbox", "read-only",
                     "--config", 'approval_policy="never"',
                     "--output-last-message", str(isolated_result), "-",

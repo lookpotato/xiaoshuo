@@ -15,6 +15,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import author_registry
+import novel_codex_model
 import reader_feedback_service as service
 from novel_engine_v2.runner import resolve_codex
 
@@ -522,7 +523,7 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
     pending_id = dialogue.get("pending_message_id")
     prompt, result_path = build_follow_up_prompt(book_id, feedback_id)
     command = [
-        resolve_codex(), "exec", "--ephemeral", "-C", str(ROOT),
+        *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "-C", str(ROOT),
         "--sandbox", "read-only", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]
@@ -583,7 +584,7 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
         )
         prompt, result_path = build_chapter_interview_prompt(book_id, feedback_id)
         command = [
-            resolve_codex(), "exec", "--ephemeral", "-C", str(ROOT),
+            *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "-C", str(ROOT),
             "--sandbox", "read-only", "--config", 'approval_policy="never"',
             "--output-last-message", str(result_path), "-",
         ]
@@ -653,7 +654,7 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
             (isolated / "feedback.json").write_text(feedback_source, encoding="utf-8")
             isolated_result = isolated / "result.json"
             blind_command = [
-                resolve_codex(), "exec", "--ephemeral", "--skip-git-repo-check",
+                *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "--skip-git-repo-check",
                 "-C", str(isolated),
                 "--sandbox", "read-only", "--config", 'approval_policy="never"',
                 "--output-last-message", str(isolated_result), "-",
@@ -700,7 +701,7 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
     )
     prompt, result_path = build_prompt(book_id, feedback_id)
     command = [
-        resolve_codex(), "exec", "--ephemeral", "-C", str(ROOT),
+        *novel_codex_model.exec_prefix(resolve_codex()), "--ephemeral", "-C", str(ROOT),
         "--sandbox", "read-only", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]
