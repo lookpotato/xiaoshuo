@@ -483,10 +483,14 @@ def cmd_list(data, _args):
               f"{'DUE' if due else reason:<15} {book['title']} -> {book['path']}")
 
 
-def cmd_validate(data, _args):
+def cmd_validate(data, args):
     failed = False
     ids = set()
     paths = set()
+    selected = getattr(args, "book", None)
+    include_disabled = bool(getattr(args, "all", False))
+    if selected:
+        find_book(data, selected)
     for book in data["books"]:
         errors = []
         if book.get("id") in ids:
@@ -495,6 +499,15 @@ def cmd_validate(data, _args):
         if book.get("path") in paths:
             errors.append("重复书籍 path")
         paths.add(book.get("path"))
+        if selected and book.get("id") != selected:
+            continue
+        if not book.get("enabled", True) and not include_disabled and not selected:
+            if errors:
+                failed = True
+                print(f"[FAIL] {book.get('id')}: " + "；".join(errors))
+            else:
+                print(f"[ARCHIVED] {book.get('id')}: 已停用，跳过历史章节门禁；使用 validate --all 复查")
+            continue
         errors.extend(validate_book(book, require_publish_complete=False))
         if errors:
             failed = True
@@ -1159,7 +1172,9 @@ def main():
     )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list")
-    sub.add_parser("validate")
+    validate = sub.add_parser("validate")
+    validate.add_argument("--all", action="store_true", help="连同已停用作品一起验收")
+    validate.add_argument("--book", help="只验收指定作品，包括已停用作品")
     notes = sub.add_parser("notes")
     notes.add_argument("--book")
     pending = sub.add_parser("pending")

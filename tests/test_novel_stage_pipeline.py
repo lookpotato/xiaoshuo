@@ -58,7 +58,7 @@ class NovelStagePipelineTests(unittest.TestCase):
 
     def valid_plan(self) -> dict:
         return {
-            "schema_version": 1,
+            "schema_version": pipeline.PLAN_SCHEMA_VERSION,
             "chapter_number": 2,
             "planning_context_sha256": pipeline.planning_context_sha256(
                 self.root, self.project, 2
@@ -78,6 +78,8 @@ class NovelStagePipelineTests(unittest.TestCase):
                 "aftermath": "妹妹被关在门外",
             },
             "promise": {"existing": "母亲能否回来", "treatment": "advance", "concrete_gain": "确认母亲已经到楼下"},
+            "reader_payoff": {"on_page_event": "妹妹拿走钥匙并留在门外", "changed_options": "阿澄不能再替妹妹开门", "prior_hook_resolution": "确认母亲已到楼下"},
+            "ending_pressure": {"visible_trigger": "门锁上时母亲喊妹妹乳名", "next_decision": "阿澄必须决定是否再开门", "why_now": "追兵正上楼"},
             "new_questions": ["妹妹能否带母亲上楼"],
             "irreversible_change": "兄妹被门分开",
             "scene_plan": [
@@ -90,7 +92,7 @@ class NovelStagePipelineTests(unittest.TestCase):
 
     def write_plan(self, value: dict | None = None) -> None:
         path = pipeline.plan_path(self.root, self.project, 2)
-        path.parent.mkdir()
+        path.parent.mkdir(exist_ok=True)
         path.write_text(
             json.dumps(value or self.valid_plan(), ensure_ascii=False),
             encoding="utf-8",
@@ -150,6 +152,8 @@ class NovelStagePipelineTests(unittest.TestCase):
         self.assertNotIn("404修理站", prompt)
         self.assertNotIn("道友你这天命与我有缘", prompt)
         self.assertIn("不得运行 git add、commit 或 push", prompt)
+        self.assertIn("reader_payoff", prompt)
+        self.assertIn("不能只留下", prompt)
         self.assertIn("新增悬念超过", str(self._new_question_error()))
 
     def _new_question_error(self) -> Exception:
@@ -165,6 +169,23 @@ class NovelStagePipelineTests(unittest.TestCase):
         self.assertEqual(
             pipeline.validate_plan(self.root, self.project, 2)["chapter_number"], 2
         )
+
+    def test_new_plan_requires_reader_payoff_and_ending_pressure(self) -> None:
+        for field in ("reader_payoff", "ending_pressure"):
+            with self.subTest(field=field):
+                plan = self.valid_plan()
+                del plan[field]
+                self.write_plan(plan)
+                with self.assertRaisesRegex(pipeline.PipelineValidationError, field):
+                    pipeline.validate_plan(self.root, self.project, 2)
+
+    def test_existing_plan_remains_valid(self) -> None:
+        plan = self.valid_plan()
+        plan["schema_version"] = 1
+        del plan["reader_payoff"]
+        del plan["ending_pressure"]
+        self.write_plan(plan)
+        self.assertEqual(pipeline.validate_plan(self.root, self.project, 2)["chapter_number"], 2)
 
     def test_plan_becomes_stale_when_book_context_changes(self) -> None:
         self.write_plan()

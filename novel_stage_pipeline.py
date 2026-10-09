@@ -13,7 +13,7 @@ from novel_reader_gate import chapter_narrative_text, narrative_sha256
 
 CONFIG_NAME = "novel_pipeline.json"
 SCHEMA_VERSION = 1
-PLAN_SCHEMA_VERSION = 1
+PLAN_SCHEMA_VERSION = 2
 REVIEW_SCHEMA_VERSION = 1
 REVIEW_MODE = "independent-literary-reader"
 DIALOGUE_REVIEW_SCHEMA_VERSION = 1
@@ -259,7 +259,7 @@ def director_prompt(
 把章节合同写入 `{output}`。创建父目录，写合法 JSON，使用精确结构：
 
 {{
-  "schema_version": 1,
+  "schema_version": {PLAN_SCHEMA_VERSION},
   "chapter_number": {number},
   "planning_context_sha256": "{context_digest}",
   "immediate_goal": "本章人物能完成或失败的具体目标",
@@ -271,6 +271,8 @@ def director_prompt(
   "central_choice": "谁必须在两个有代价的选项之间作选择",
   "emotional_progression": {{"opening": "开篇情绪", "pressure": "如何加压", "peak": "情绪最高点由哪个选择触发", "aftermath": "胜负后的真实余波"}},
   "promise": {{"existing": "本章回应的既有期待", "treatment": "advance 或 payoff 或 hold", "concrete_gain": "读者本章实际得到的答案或变化"}},
+  "reader_payoff": {{"on_page_event": "读者亲眼看到的核心设定兑现或人物胜负", "changed_options": "这件事立即改变谁能做什么、失去什么或得到什么", "prior_hook_resolution": "上一章钩子在本章获得的具体回报"}},
+  "ending_pressure": {{"visible_trigger": "末场新发生的动作、结果或关系变化", "next_decision": "谁接下来必须作选择", "why_now": "为何不能只等别人通知或明天再查"}},
   "new_questions": [],
   "irreversible_change": "结尾相对开头无法原样复位的变化",
   "scene_plan": [{{"purpose": "场景任务", "conflict": "现场阻力", "turn": "结束时发生的改变"}}],
@@ -282,12 +284,18 @@ def director_prompt(
 人物与环境、身体或自身选择的冲突写具体；new_questions 最多
 {config['max_new_questions_per_chapter']} 项。hold 只允许既有期待确有剧情理由暂缓，
 concrete_gain 仍须给读者实质变化。优先复用旧人物、旧关系、旧物件和旧问题；不得用新名词冒充推进。
+开篇十章要持续兑现书名与简介承诺的阅读乐趣。调查、报警、安全处置可以写，但若它们
+占据主要篇幅，必须同时有一次读者在场看见的奇观、人物胜负或现实处境变化。
+找到线索、登记异议、取得回执、等待核查本身不算足够的高潮或章末钩子，除非它当场
+改变人物能做的事、付出的代价或他人与其关系。末场要让一个具体结果或选择迫近，
+不能只留下“明天会不会有答复”的问题。不要靠凭空增添新规则、无视现实机构职责来加戏。
 """
 
 
 def validate_plan(root: Path, project: Path, number: int) -> dict:
     data = _read_object(plan_path(root, project, number))
-    if data.get("schema_version") != PLAN_SCHEMA_VERSION:
+    version = data.get("schema_version")
+    if version not in (1, PLAN_SCHEMA_VERSION):
         raise PipelineValidationError(f"第 {number} 章章节合同版本错误")
     if data.get("chapter_number") != number:
         raise PipelineValidationError(f"第 {number} 章章节合同章号错误")
@@ -324,6 +332,14 @@ def validate_plan(root: Path, project: Path, number: int) -> dict:
         raise PipelineValidationError(f"第 {number} 章缺少承诺兑现计划")
     if promise["treatment"] not in ("advance", "payoff", "hold"):
         raise PipelineValidationError(f"第 {number} 章 promise.treatment 无效")
+    if version >= 2:
+        for field, keys in (
+            ("reader_payoff", ("on_page_event", "changed_options", "prior_hook_resolution")),
+            ("ending_pressure", ("visible_trigger", "next_decision", "why_now")),
+        ):
+            item = data.get(field)
+            if not isinstance(item, dict) or not all(_text(item.get(key)) for key in keys):
+                raise PipelineValidationError(f"第 {number} 章缺少具体的 {field}")
     questions = data.get("new_questions")
     maximum = load_config(root)["max_new_questions_per_chapter"]
     if not isinstance(questions, list) or not all(_text(item) for item in questions):
@@ -351,7 +367,7 @@ def writer_contract(root: Path, project: Path, number: int) -> str:
 ## 分阶段章节合同
 
 动笔前必须读取并执行 `{plan_path(root, project, number).resolve()}`。这份合同负责本章的
-人物诉求、情绪推进、旧期待兑现和新增悬念上限。正文可以寻找更自然的场面表达，但不得
+人物诉求、情绪推进、旧期待兑现、读者当章回报和新增悬念上限。正文可以寻找更自然的场面表达，但不得
 悄悄替换中心选择、情绪最高点或不可逆结果；发现合同与既有正文事实冲突时停止归档并报告。
 作者阶段不得创建或填写 dialogue_reviews 与 literary_reviews；中文对白试读和文学审稿必须由
 后续两个彼此独立的新上下文完成。
@@ -397,6 +413,12 @@ def reviewer_prompt(root: Path, project: Path, number: int) -> str:
 
 判断规则：
 - 不因结构完整、句子通顺或因果可复述而自动通过。
+- 判断 promise_payoff 时，指出读者在正文里亲眼经历了什么结果，以及它立即改变了谁的处境；
+  仅找到线索、登记问题或取得等待中的回执，不能替代书名与上章钩子承诺的可见回报。
+- 判断 next_chapter_pull 时，先遮住作者大纲：若章末只有“明天等通知、再查资料、继续观察”，
+  没有迫近的人物选择、可见的新变化或已发生的损失，就判 revise；不能因为期限明确而自动通过。
+- 开篇十章尤其检查核心设定有没有被人物当场使用、碰撞或付出代价；不能连续让行政流程
+  承担主要戏剧回报。合理的官方反应仍要保留，但必须与人物行动和奇观兑现同场推进。
 - 第一章若只给出地点或时令标签，却没有建立主角身份、现实目标和异常发生前的正常参照，reader_orientation 必须判 revise；若需要重排整章信息顺序，判 redesign/chapter_plan。
 - 重点寻找人物在此刻不会说的话、危机中伤害情绪的玩笑、工整攻防、无余波的损失、
   重复处理同类问题、只开新谜团不兑现旧期待。
