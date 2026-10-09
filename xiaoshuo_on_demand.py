@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -35,6 +36,7 @@ MAX_CODEX_PROCESS_RETRIES = 2
 MAX_LITERARY_REVIEW_ATTEMPTS = 3
 MAX_DIALOGUE_REVIEW_ATTEMPTS = 3
 MAX_DIALOGUE_REVISIONS = 3
+PROSE_DRAFT_VERSION = 3
 
 
 class ArchiveGateFailure(RuntimeError):
@@ -338,11 +340,30 @@ def local_write_only_prompt(book_id: str, job: dict) -> str:
     book_sources = "\n".join(
         f"- `{path}`" for path in stage_pipeline.available_book_sources(project)
     )
+    prose_candidate = project / "prose_candidates" / f"{number:04d}.md"
+    existing_prose = any(
+        any((project / folder).glob(pattern))
+        for folder, pattern in (
+            ("chapters", f"{number:04d}-*.md"),
+            ("drafts", f"*{number:04d}*.md"),
+        )
+    )
+    if existing_prose:
+        candidate_instruction = "本章已有正文或草稿；先核对并继续现有稿件，不重新从提纲写一版。"
+    elif prose_candidate.is_file():
+        candidate_instruction = (
+            f"先读取独立作者写出的候选正文 `{prose_candidate}`。以它为本章正文底稿，"
+            "只为修正事实冲突、缺失的必要场景或明确的阅读障碍改写；不要因为后续报告字段或门禁表述重写故事。"
+        )
+    else:
+        candidate_instruction = ""
     return f"""使用 fanqie-auto-novel 技能，只在本地为书籍 `{book_id}` 生成并归档一章。
 
 这是工作台 API 的本地创作子任务，job id 为 `{job["id"]}`。只处理下一章；本子任务不上传番茄、不打开浏览器、不生图、不定时发布、不运行 Git。外层任务会按照本次运行配置决定是否同步 Git。
 
 {author_context}
+
+{candidate_instruction}
 
 读取 AGENTS.md、shared/narrative_prose_foundation.md、shared/chinese_dialogue_foundation.md、shared/chinese_dialogue_feedback.jsonl、shared/character_engine.md、shared/parallel_character_pipeline.md、shared/quality_scorecard.md、shared/reader_gate.md，以及下列实际存在的本书资料和最近三章正文。不要读取其他书，也不要猜测不存在的资料：
 {book_sources}
@@ -734,6 +755,86 @@ def _stage_command(codex: str, result_file: Path, book_id: str | None = None) ->
     ]
 
 
+def _prose_candidate_paths(project: Path, chapter_number: int) -> tuple[Path, Path]:
+    directory = project / "prose_candidates"
+    return directory / f"{chapter_number:04d}.md", directory / f"{chapter_number:04d}.json"
+
+
+def _valid_prose_candidate(project: Path, chapter_number: int, plan_digest: str) -> bool:
+    candidate, metadata = _prose_candidate_paths(project, chapter_number)
+    if not candidate.is_file() or not metadata.is_file():
+        return False
+    try:
+        data = json.loads(metadata.read_text(encoding="utf-8"))
+        content = candidate.read_text(encoding="utf-8")
+    except (OSError, json.JSONDecodeError, UnicodeError):
+        return False
+    return (
+        data.get("draft_version") == PROSE_DRAFT_VERSION
+        and data.get("plan_sha256") == plan_digest
+        and data.get("candidate_sha256") == hashlib.sha256(content.encode("utf-8")).hexdigest()
+        and bool(re.match(rf"^# 第 {chapter_number} 章 \S", content))
+    )
+
+
+def ensure_prose_candidate(
+    codex: str, book_id: str, project: Path, chapter_number: int
+) -> None:
+    """Let an isolated author write prose before the production agent handles files."""
+    plan = stage_pipeline.plan_path(ROOT, project, chapter_number)
+    plan_digest = hashlib.sha256(plan.read_bytes()).hexdigest()
+    if _valid_prose_candidate(project, chapter_number, plan_digest):
+        print(f"第 {chapter_number} 章已有与当前提纲一致的独立正文初稿，直接复用。", flush=True)
+        return
+    with TemporaryDirectory(prefix="novel-prose-writer-") as temporary:
+        isolated = Path(temporary)
+        context = [("本章提纲", plan.read_text(encoding="utf-8"))]
+        for name in (
+            "novel_config.md", "outline.md", "characters.md", "world.md",
+            "style_guide.md", "story_bible.md", "continuity_ledger.md",
+            "feedback_learning.json", "character_voice_bible.md",
+        ):
+            source = project / name
+            if source.is_file():
+                context.append((name, source.read_text(encoding="utf-8-sig")))
+        author = author_registry.book_author(ROOT, book_id)
+        author_path = (ROOT / author["document_id"]).resolve()
+        context.append(("绑定作者档案", author_path.read_text(encoding="utf-8-sig")))
+        for number, path in stage_pipeline.chapter_files(project, chapter_number)[-3:]:
+            context.append((f"第 {number} 章正文", path.read_text(encoding="utf-8-sig")))
+        material = "\n\n".join(f"## {name}\n\n{body}" for name, body in context)
+        prompt = f"""你是本书作者。以下已经给出本章提纲、作者档案、本书资料和近期正文；无需读取文件或调用工具。写第 {chapter_number} 章。
+
+提纲规定本章发生什么，不规定叙述顺序或每个场景的篇幅。先从最能让读者进入现场的动作写起；因果允许时，把本章的核心事件尽早呈现。合并重复的查证、争执和动作，不逐项复述提纲，也不在结尾重复已经解决过的一次冲突。正文用人物在场的行动、感受和选择把故事写出来；不要把提纲字段、审稿标准或人物标签写进旁白和对白。可以调整场景的自然表达，但不要改变中心选择、读者回报和不可逆结果。不要为延长悬念擅自添加提纲没有授权的新异常、新房间、新门、新组织或关键物件。只输出完整的章节 Markdown，第一行是 `# 第 {chapter_number} 章 标题`。不要写 Metadata、人物线、读者检查、报告、解释或代码围栏。"""
+        prompt += "\n\n# 创作资料\n\n" + material
+        result = isolated / "prose.md"
+        process = subprocess.run(
+            [
+                *novel_codex_model.exec_prefix(codex, book_id, ROOT),
+                "--ephemeral", "--skip-git-repo-check", "-C", str(isolated),
+                "--sandbox", "read-only", "--config", 'approval_policy="never"',
+                "--output-last-message", str(result), "-",
+            ],
+            cwd=isolated, input=prompt, text=True, encoding="utf-8", errors="replace",
+        )
+        if process.returncode or not result.is_file():
+            raise RuntimeError(f"第 {chapter_number} 章独立正文阶段失败，未开始归档")
+        content = result.read_text(encoding="utf-8").strip() + "\n"
+        if not re.match(rf"^# 第 {chapter_number} 章 \S", content):
+            raise RuntimeError(f"第 {chapter_number} 章独立正文缺少正确章节标题")
+        if len(re.findall(r"[\u4e00-\u9fff]", content)) < 500:
+            raise RuntimeError(f"第 {chapter_number} 章独立正文过短，保留原有状态")
+        candidate, metadata = _prose_candidate_paths(project, chapter_number)
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_text(content, encoding="utf-8")
+        manager.write_json(metadata, {
+            "chapter_number": chapter_number,
+            "draft_version": PROSE_DRAFT_VERSION,
+            "plan_sha256": plan_digest,
+            "candidate_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        })
+
+
 def ensure_chapter_plan(
     codex: str,
     book_id: str,
@@ -984,6 +1085,15 @@ def write_one(book_id: str, job: dict) -> None:
     staged = stage_pipeline.enabled_for(ROOT, project)
     if staged:
         ensure_chapter_plan(codex, book_id, project, expected_chapter, job)
+        if book.get("mode") == "write_only" and not any(
+            any((project / folder).glob(pattern))
+            for folder, pattern in (
+                ("chapters", f"{expected_chapter:04d}-*.md"),
+                ("drafts", f"*{expected_chapter:04d}*.md"),
+            )
+        ):
+            print(f"正在独立写作第 {expected_chapter} 章正文初稿……", flush=True)
+            ensure_prose_candidate(codex, book_id, project, expected_chapter)
     prompt = local_write_prompt(book_id, job)
     repair_count = 0
     connection_retry_count = 0
