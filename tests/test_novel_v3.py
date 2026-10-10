@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from novel_v3 import accept_deep_edit, archive_chapter
+from novel_v3 import accept_deep_edit, archive_chapter, review_and_archive
 from novel_engine_v3 import V3ValidationError
 
 
@@ -47,6 +47,21 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             self.assertIn("声音来源", (project / "chapter_state.json").read_text(encoding="utf-8"))
             with self.assertRaises(V3ValidationError):
                 archive_chapter(run, project, 2)
+
+    def test_review_and_archive_accepts_utf8_bom_from_powershell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / "run"
+            project = root / "book"
+            run.mkdir()
+            project.mkdir()
+            (run / "candidate.md").write_text("# 第 2 章 原地等候\n\n正文。", encoding="utf-8")
+            (run / "reader_review.json").write_text('{"blocking": []}', encoding="utf-8-sig")
+            (run / "state_delta.json").write_text('{"next_hook": "继续找人"}', encoding="utf-8-sig")
+            (project / "chapter_state.json").write_text('{"last_completed_chapter": 1, "next_chapter_number": 2}', encoding="utf-8")
+            archived = review_and_archive(run, project, 2)
+            self.assertTrue(archived.is_file())
+            self.assertIn("继续找人", (project / "chapter_state.json").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

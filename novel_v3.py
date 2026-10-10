@@ -98,7 +98,7 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     if existing:
         raise V3ValidationError(f"第 {chapter} 章已有归档，已保留现有正文")
     delta_path = run / "state_delta.json"
-    delta = json.loads(delta_path.read_text(encoding="utf-8")) if delta_path.is_file() else {}
+    delta = json.loads(delta_path.read_text(encoding="utf-8-sig")) if delta_path.is_file() else {}
     next_hook = str(delta.get("next_hook", "")).strip()
     unresolved = delta.get("unresolved", [])
     if isinstance(unresolved, list) and unresolved:
@@ -121,7 +121,7 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
 
 def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
     review_path = run / "reader_review.json"
-    review = json.loads(review_path.read_text(encoding="utf-8"))
+    review = json.loads(review_path.read_text(encoding="utf-8-sig"))
     if review.get("blocking"):
         prior_reviews = list(run.glob("reader_review.before_repair.*.json"))
         attempt = len(prior_reviews) + 1
@@ -140,7 +140,7 @@ def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
         )
         execute(repair_prompt, repair_output, run, capture_candidate=True)
         execute(run / "reader.md", run / f"reader.after_repair.{attempt}.result.md", run)
-        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review = json.loads(review_path.read_text(encoding="utf-8-sig"))
     if review.get("blocking"):
         raise V3ValidationError(f"第 {chapter:04d} 章读者检查仍有阻塞问题，已保留运行包供继续返修")
     return archive_chapter(run, project, chapter)
