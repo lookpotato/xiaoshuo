@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from novel_v3 import accept_deep_edit, archive_chapter, review_and_archive
 from novel_engine_v3 import V3ValidationError
@@ -62,6 +63,29 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             archived = review_and_archive(run, project, 2)
             self.assertTrue(archived.is_file())
             self.assertIn("继续找人", (project / "chapter_state.json").read_text(encoding="utf-8"))
+
+    def test_unresolved_reader_blocker_does_not_archive_or_advance_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / "run"
+            project = root / "book"
+            run.mkdir()
+            project.mkdir()
+            (run / "candidate.md").write_text("# 第 2 章 原地等候\n\n正文。", encoding="utf-8")
+            (run / "reader_review.json").write_text(
+                '{"blocking": [{"quote": "正文。", "issue": "对白失真"}]}',
+                encoding="utf-8",
+            )
+            (run / "reader.md").write_text("复读", encoding="utf-8")
+            state = project / "chapter_state.json"
+            original_state = '{"last_completed_chapter": 1, "next_chapter_number": 2}'
+            state.write_text(original_state, encoding="utf-8")
+            with patch("novel_v3.execute") as execute:
+                with self.assertRaises(V3ValidationError):
+                    review_and_archive(run, project, 2)
+            self.assertEqual(execute.call_count, 2)
+            self.assertEqual(state.read_text(encoding="utf-8"), original_state)
+            self.assertFalse((project / "chapters").exists())
 
 
 if __name__ == "__main__":
