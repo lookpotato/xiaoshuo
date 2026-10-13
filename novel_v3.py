@@ -17,6 +17,7 @@ from novel_engine_v3 import AuthorEngine, V3ValidationError
 
 
 ROOT = Path(__file__).resolve().parent
+MAX_READER_REPAIRS = 3
 
 
 def accept_deep_edit(run_dir: Path, output: Path) -> None:
@@ -119,10 +120,24 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     return final_path
 
 
+def read_reader_review(review_path: Path, chapter: int) -> dict:
+    try:
+        review = json.loads(review_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise V3ValidationError(f"第 {chapter:04d} 章读者检查结果缺失或无效：{review_path}") from exc
+    if not isinstance(review, dict) or not isinstance(review.get("blocking"), list):
+        raise V3ValidationError(f"第 {chapter:04d} 章读者检查缺少有效的 blocking 列表：{review_path}")
+    return review
+
+
 def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
     review_path = run / "reader_review.json"
-    review = json.loads(review_path.read_text(encoding="utf-8-sig"))
-    if review.get("blocking"):
+    if not review_path.is_file():
+        execute(run / "reader.md", run / "reader.resume.result.md", run)
+    review = read_reader_review(review_path, chapter)
+    for _ in range(MAX_READER_REPAIRS):
+        if not review["blocking"]:
+            break
         prior_reviews = list(run.glob("reader_review.before_repair.*.json"))
         attempt = len(prior_reviews) + 1
         saved_review = run / f"reader_review.before_repair.{attempt}.json"
@@ -139,10 +154,21 @@ def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
             encoding="utf-8",
         )
         execute(repair_prompt, repair_output, run, capture_candidate=True)
+        # A failed or incomplete reader stage must not leave the previous
+        # verdict looking like a fresh review of the revised candidate.
+        review_path.unlink(missing_ok=True)
         execute(run / "reader.md", run / f"reader.after_repair.{attempt}.result.md", run)
-        review = json.loads(review_path.read_text(encoding="utf-8-sig"))
-    if review.get("blocking"):
-        raise V3ValidationError(f"第 {chapter:04d} 章读者检查仍有阻塞问题，已保留运行包供继续返修")
+        review = read_reader_review(review_path, chapter)
+    if review["blocking"]:
+        issues = "；".join(
+            str(item.get("quote") or item.get("reason") or item)[:100]
+            if isinstance(item, dict) else str(item)[:100]
+            for item in review["blocking"][:3]
+        )
+        raise V3ValidationError(
+            f"第 {chapter:04d} 章自动返修 {MAX_READER_REPAIRS} 次后仍有 "
+            f"{len(review['blocking'])} 项阻塞：{issues}。运行包：{run}"
+        )
     return archive_chapter(run, project, chapter)
 
 

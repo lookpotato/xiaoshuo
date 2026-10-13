@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -64,6 +65,35 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             self.assertTrue(archived.is_file())
             self.assertIn("继续找人", (project / "chapter_state.json").read_text(encoding="utf-8"))
 
+    def test_second_repair_can_pass_without_manual_resume(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / "run"
+            project = root / "book"
+            run.mkdir()
+            project.mkdir()
+            (run / "candidate.md").write_text("# 第 2 章 原地等候\n\n正文。", encoding="utf-8")
+            review_path = run / "reader_review.json"
+            review_path.write_text('{"blocking": [{"quote": "第一处"}]}', encoding="utf-8")
+            (run / "reader.md").write_text("复读", encoding="utf-8")
+            (project / "chapter_state.json").write_text(
+                '{"last_completed_chapter": 1, "next_chapter_number": 2}', encoding="utf-8"
+            )
+            reviews = iter([
+                {"blocking": [{"quote": "第二处"}]},
+                {"blocking": []},
+            ])
+
+            def fake_execute(prompt, output, run_dir, **kwargs):
+                if prompt.name == "reader.md":
+                    review_path.write_text(json.dumps(next(reviews)), encoding="utf-8")
+
+            with patch("novel_v3.execute", side_effect=fake_execute) as execute:
+                archived = review_and_archive(run, project, 2)
+            self.assertTrue(archived.is_file())
+            self.assertEqual(execute.call_count, 4)
+            self.assertTrue((run / "reader_review.before_repair.2.json").is_file())
+
     def test_unresolved_reader_blocker_does_not_archive_or_advance_state(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -80,11 +110,33 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             state = project / "chapter_state.json"
             original_state = '{"last_completed_chapter": 1, "next_chapter_number": 2}'
             state.write_text(original_state, encoding="utf-8")
-            with patch("novel_v3.execute") as execute:
-                with self.assertRaises(V3ValidationError):
+            def fake_execute(prompt, output, run_dir, **kwargs):
+                if prompt.name == "reader.md":
+                    (run / "reader_review.json").write_text(
+                        '{"blocking": [{"quote": "正文。", "issue": "对白失真"}]}',
+                        encoding="utf-8",
+                    )
+
+            with patch("novel_v3.execute", side_effect=fake_execute) as execute:
+                with self.assertRaisesRegex(V3ValidationError, "自动返修 3 次后仍有 1 项阻塞.*正文"):
                     review_and_archive(run, project, 2)
-            self.assertEqual(execute.call_count, 2)
+            self.assertEqual(execute.call_count, 6)
             self.assertEqual(state.read_text(encoding="utf-8"), original_state)
+            self.assertFalse((project / "chapters").exists())
+
+    def test_missing_fresh_review_never_uses_old_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / "run"
+            project = root / "book"
+            run.mkdir()
+            project.mkdir()
+            (run / "candidate.md").write_text("# 第 2 章 原地等候\n\n正文。", encoding="utf-8")
+            (run / "reader_review.json").write_text('{"blocking": [{"quote": "待修"}]}', encoding="utf-8")
+            (run / "reader.md").write_text("复读", encoding="utf-8")
+            with patch("novel_v3.execute"):
+                with self.assertRaisesRegex(V3ValidationError, "读者检查结果缺失或无效"):
+                    review_and_archive(run, project, 2)
             self.assertFalse((project / "chapters").exists())
 
 
