@@ -1,0 +1,1 @@
+已保存第五章初稿 [candidate.md](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0005-20261011-131722/candidate.md>) 和本章状态变化 [state_delta.json](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0005-20261011-131722/state_delta.json>)。未读取 `reader.md`。

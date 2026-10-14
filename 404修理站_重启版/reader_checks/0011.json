@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 11,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T16:45:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "4cd52b93122604815ce142039f9c9a027cbb764e4ce50db71cfcc7275c7f09f6",
+  "questions": {
+    "previous_context": {"answer": "上一章的救援廊刚打开，旧炉开始轰鸣，门外炮击仍在继续。", "evidence": ["旧炉轰鸣的第一声，像有人在地底拧断了一根粗管。"]},
+    "immediate_problem": {"answer": "炉烟正在侵入救援廊，三名伤员有窒息危险，同时门外炮口即将再次开火。", "evidence": ["氧气不够，炉压在升。"]},
+    "decision_basis": {"answer": "白露判断不开通风缝炉烟会先杀人，林小满判断停炉必须借姐姐线路，段野据此选择先保活人。", "evidence": ["现在不开，炉烟先杀人。"]},
+    "action_logic": {"answer": "林小满拆断动力匣最后线路接排烟风机，老崔用唯一密封圈修正风机轴承，阿图尔用最后一发子弹打灯并卡住门下。", "evidence": ["她把最后一截线路掰断，接到排烟风机的旧端子上。"]},
+    "result_and_cost": {"answer": "排烟风机重新运转，三名伤员暂时脱离浓烟；动力匣最后线路、老崔唯一密封圈和阿图尔最后一发弹药全部消耗。", "evidence": ["风机吱呀一声转起来，黑烟被扯进管道，炉膛的红光终于压下去。"]},
+    "reader_hook": {"answer": "门内女人认识林小满和她姐姐，备用热源芯被城防锁定，炮口即将再开火。", "evidence": ["因为你姐姐当年也站在这里。"]}
+  },
+  "new_terms": [
+    {"term": "排烟风机", "plain_explanation": "把旧炉产生的黑烟抽进管道的设备。", "evidence": "借它给排烟风机供一下电"},
+    {"term": "备用芯", "plain_explanation": "北线主供热系统留下的银灰色备用热源部件。", "evidence": "北线主供热的备用芯。"}
+  ],
+  "unexplained_terms": []
+}

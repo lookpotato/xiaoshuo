@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 14,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T16:24:09+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "539f076cf176661057ab98990de322bdfcab8376870858f4d11053ec84e68c44",
+  "questions": {
+    "previous_context": {"answer": "救援廊正被炮口锁定，热源芯、伤员和林秋信号都在门内；本章从炮口红光进入门缝承接。", "evidence": ["炮口的红光贴着门缝爬进来，像一条闻到血的虫。"]},
+    "immediate_problem": {"answer": "队伍必须在炮击下同时搬走伤员和热源，失败会让伤员暴露在冷风与炮火中。", "evidence": ["炮口重新寻找热源。"]},
+    "decision_basis": {"answer": "林小满看到铜线分成通向热源芯和门框的两股，段野因此提出不拔芯而改线；魏平的口供又被回执验证。", "evidence": ["芯不动，线换路。能不能？"]},
+    "action_logic": {"answer": "阿图尔用机甲反光片制造假热源，老崔用回压阀和炉管改造医疗桌，林小满用铜杆接单向线，分别偏转炮口、供热和追踪林秋。", "evidence": ["我接一条单向线。烧的是我的手，不是我姐。"]},
+    "result_and_cost": {"answer": "队伍从东侧窄缝撤出，获得四分钟窗口、临时热车和方向针，但多人的伤势加重，回执副本与机甲部件耗尽。", "evidence": ["段野推着热车撞开东墙窄缝。冷风灌进来，热源芯蓝光骤降，四名伤者同时打了个寒战。"]},
+    "reader_hook": {"answer": "东侧旧中继站入口被里面的人锁上，且城防把第二签字人指向段守成，队伍必须继续追查。", "evidence": ["是有人在里面，替他们把门锁上了。"]}
+  },
+  "new_terms": [
+    {"term": "热车", "plain_explanation": "用医疗桌、炉管和回压阀改出的低压供热搬运车。", "evidence": "俺把这玩意儿改成热车。"},
+    {"term": "方向针", "plain_explanation": "门内女人从炉灰中取出的锈蚀指向工具，用来确认旧中继站入口方向。", "evidence": "从灰里摸出一枚锈蚀的方向针"}
+  ],
+  "unexplained_terms": []
+}

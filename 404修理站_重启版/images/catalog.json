@@ -1,0 +1,8 @@
+{
+  "schema_version": 2,
+  "book_id": "cosmic-404",
+  "max_images_per_chapter": 1,
+  "style_bible": {"visual_style": "写实工业废土，旧钢铁、盐尘、黑油和克制的暖色警示光"},
+  "entities": {},
+  "chapter_images": {}
+}

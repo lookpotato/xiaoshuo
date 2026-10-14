@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "chapter_number": 71,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T12:05:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "36399e2dc8d5d9467c83b3042bdf2a844256e9cb49947d74b45caea8193f8d16",
+  "questions": {
+    "previous_context": {"answer": "泵房红灯已经把段野写成第四班接班人，随即热路断掉，队伍必须在泵房处理回写和热源。", "evidence": ["后墙的热一下断了，热屋里传来白露的骂声"]},
+    "immediate_problem": {"answer": "热屋失热，秦砚、米沙和老四会继续低温恶化；泵房热压又会灌入，必须只放出一口水。", "evidence": ["秦砚胸口刚压住，米沙在发冷，老四一口水都不敢多咽。", "放了热屋就冷！"]},
+    "decision_basis": {"answer": "林小满摸出右线在跳，秦砚敲出低位阀仍开，门内女人用节拍指出原声朝北，队伍据此判断分叉、主线和泄压位置。", "evidence": ["低位阀还开着……右侧，砖后。"]},
+    "action_logic": {"answer": "林小满把铜片接到红灯分叉，让伪声再报一次以留下证据；老崔开右侧低位阀把热水引进废沟，从而降低泵房门压，同时保住主线。", "evidence": ["热水冲进废沟。"]},
+    "result_and_cost": {"answer": "红灯未能完成段野的接班回写，队伍救出泵房内沟的活人并取得第二见证铁板，热屋只得到一轮热；铜片、保温物、净水、拖钩和阀柄等资源耗尽或损坏，多人伤势加重。", "evidence": ["第四班，接班人：不在泵房。", "老崔手里的阀柄当场崩断。"]},
+    "reader_hook": {"answer": "真正的接班人已经进城，404院内出现了新的回敲，而且用的是段野自己的声音，下一章必须回院查人。", "evidence": ["接班人，已进城。", "“段野，开门。”"]}
+  },
+  "new_terms": [
+    {"term": "回写", "plain_explanation": "泵房线路把报班内容写到红灯和总局记录里的动作。", "evidence": "它不是刻字，是在回写。你刮一下，它就往下面补一笔。"},
+    {"term": "分叉", "plain_explanation": "把假声接出去的支路，与门内承载热路和回报的主线相区别。", "evidence": "右边这根是分叉。主线在门里，别砸。"},
+    {"term": "第二见证", "plain_explanation": "除接班人之外，负责证明这次回报发生过的第二个人。", "evidence": "Q-17，第四班，第二见证。"}
+  ],
+  "unexplained_terms": []
+}

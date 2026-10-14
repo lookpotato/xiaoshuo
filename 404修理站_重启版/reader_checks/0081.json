@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 81,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "2f66541482c7fe75cea227f59d1bcc015233e4e4cc505cef5253290f4f211a88",
+  "questions": {
+    "previous_context": {
+      "answer": "井下正在把段守成的旧接班记录继续往下写，第二行已经落出林字的一半。",
+      "evidence": ["井下第二行的第一个字已经落了一半。"]
+    },
+    "immediate_problem": {
+      "answer": "队伍必须分清回水与落笔方向；开错左侧会让北区断热，伤员和旧账都会一起失控。",
+      "evidence": ["苏青禾看着井缝里的冷水：“左边是回水，右边才是落笔。开左边，北区断热。”"]
+    },
+    "decision_basis": {
+      "answer": "林小满用最后铜片比对三短一长节拍，发现黑井只复制前三拍，而真节拍从回水管和低位闸传来。",
+      "evidence": ["黑井只学前三拍。真线在回水，假声在空管。"]
+    },
+    "action_logic": {
+      "answer": "老四说明先拉红闸把热分回北线，再开黑闸落笔；林小满按下对应手轮，才能既保住热又掐断伪造字迹。",
+      "evidence": ["先拉红，再开黑。红闸把热分回北线，黑闸才是落笔口。"]
+    },
+    "result_and_cost": {
+      "answer": "黑闸下沉后，半个林字脱落，伤员进入热槽；代价是最后的门框铰链崩断，退路只剩拳头宽。",
+      "evidence": ["黑闸下沉半寸。", "退路的门框往下一沉，窄缝只剩拳头宽。"]
+    },
+    "reader_hook": {
+      "answer": "队伍以为掐住了伪造的林字，第二道闸后却又传来林秋的声音，断笔重新写出林，且老四否认她是漏格之人。",
+      "evidence": ["第二道闸后，林秋的声音又响了。", "井下那支断掉的笔尖，重新在黑水里写出一个字。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "低位闸",
+      "plain_explanation": "它通过收住水压让线路发出节拍，是现场用来辨认真线位置的手动闸。",
+      "evidence": "低位闸。它把水压一收，线就响一下。"
+    },
+    {
+      "term": "黑井",
+      "plain_explanation": "黑井是会复制声音的空管一侧，能学前三拍却不能传出完整的真节拍。",
+      "evidence": "黑井只学前三拍。真线在回水，假声在空管。"
+    }
+  ],
+  "unexplained_terms": []
+}

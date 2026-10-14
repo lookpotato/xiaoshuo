@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "chapter_number": 2,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-08-31T12:00:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "1d49414a8ff4c568f450cabecf56cba01876e69bc5249f9b456dd99b53083772",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章锈钉刚把陈序拖进维修厂，本章直接接上追兵压进门口的动作。",
+      "evidence": [
+        "锈钉冲向三条灰潮猎犬的时候，陈序才看清它不是“冲”，更像一块被拧到极限的废铁硬往前砸。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "维修厂里的人必须在追兵压进来前决定是保门还是保人，南侧断热后还会有人受冻。",
+      "evidence": [
+        "十秒后，南侧回路会彻底断热，锅炉会先保人，不保门。",
+        "三号保温间的孩子开始咳了！"
+      ]
+    },
+    "decision_basis": {
+      "answer": "苏弥根据供热图上二十三个活口和三处转灰的点，判断必须先保住人群。",
+      "evidence": [
+        "图上有二十三个小点，代表地下保温间里还活着的人；其中三个点正在往灰色里沉。"
+      ]
+    },
+    "action_logic": {
+      "answer": "用废热井和反向风道把白塔的校正光引偏，给陈序开井盖争出时间。",
+      "evidence": [
+        "井口下面有个反向风道，能把光引偏。",
+        "废热井是给试车排气用的，后来城市怕脏，就把井封了。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "光束被偏开，井盖被撬开，局面争出一口气，但周让的背责加深、老贺受伤、锈钉继续掉零件。",
+      "evidence": [
+        "陈序趁着光偏，狠狠干开井盖。",
+        "他工牌边缘那条灰线立刻加深，像有人用刀重新刻了一遍“背责”两个字。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "废热井下面还有活东西在敲门，下一章要追查井里是谁。",
+      "evidence": [
+        "下一秒，废热井深处传来一声很轻的敲击。",
+        "像有人在下面，用指关节敲一扇已经封了很多年的门。"
+      ]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "废热井",
+      "plain_explanation": "给试车排气用的旧井，后来被封住，用来吞掉热气和白光。",
+      "evidence": "废热井是给试车排气用的，后来城市怕脏，就把井封了。"
+    },
+    {
+      "term": "反向风道",
+      "plain_explanation": "井下能把白塔校正光引偏的旧风道。",
+      "evidence": "井口下面有个反向风道，能把光引偏。"
+    }
+  ],
+  "unexplained_terms": []
+}

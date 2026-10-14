@@ -1,10 +1,10 @@
-{
-  "last_completed_chapter": 0,
-  "next_chapter_number": 1,
+﻿{
+  "last_completed_chapter": 2,
+  "next_chapter_number": 3,
   "last_uploaded_chapter": 0,
   "last_uploaded_status": "not_uploaded",
   "last_uploaded_at": null,
-  "notes_for_next_chapter": "从祭风日当天开始。先让读者认识陆遥、小满、木鸢和栖霞村的日常，再由一场必须立刻选择救谁、舍弃什么的事故打破生活。旧版及上一轮重写正文均不继承剧情状态。",
-  "status": "rewrite_reset_ready",
+  "notes_for_next_chapter": "次日辰时由韩照夜监督，在镇天碑白石外复查木鸢；木鸢卡在碑后石缝并随风向里滑。祭棚暂时撑住但西梁、粮袋和药钱赔损仍在，陆遥右臂擦伤，小满待换药。",
+  "status": "local_only",
   "source_policy": "旧版56章与上一轮重写10章只作失败样本，不承接其剧情状态"
 }

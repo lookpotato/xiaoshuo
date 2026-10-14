@@ -383,6 +383,61 @@ def _character_token(value: str) -> str:
     return re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]", "", str(value)).casefold()
 
 
+CAST_META_LABELS = {
+    "主要视角",
+    "出场人物",
+    "当章目标",
+    "本章目标",
+    "章节目标",
+    "当章小胜负",
+    "本章小胜负",
+    "小胜负",
+    "主要钩子",
+    "本章钩子",
+    "钩子",
+}
+
+
+def _cast_names(cast_text: str) -> list[str]:
+    """只从角色名单中读取人物，避免把章节元数据误认成人物。"""
+    section = re.search(
+        r"(?ms)^##\s*(?:角色名单|人物名单|出场角色)\s*$\n(?P<body>.*?)(?=^##\s|\Z)",
+        cast_text,
+    )
+    source = section.group("body") if section else cast_text
+    names: list[str] = []
+    for match in re.finditer(
+        r"^\s*-\s*([^：:|\n]+?)\s*[：:]", source, flags=re.MULTILINE
+    ):
+        name = match.group(1).strip()
+        if _character_token(name) and name not in CAST_META_LABELS:
+            names.append(name)
+    return list(dict.fromkeys(names))
+
+
+def _readable_interaction_map(text: str, cast_names: list[str] | None = None) -> bool:
+    """Validate useful multi-character content without depending on Markdown style."""
+    stripped = text.strip()
+    if len(stripped) < 80:
+        return False
+    content_lines = [
+        line.strip()
+        for line in stripped.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+        and not re.fullmatch(r"[|:\-\s]+", line)
+    ]
+    if len(content_lines) < 2:
+        return False
+    if cast_names:
+        mentioned = {
+            name for name in cast_names
+            if name and name in stripped
+        }
+        if len(mentioned) < 2:
+            return False
+    return True
+
+
 def validate_parallel_character_threads(project: Path, chapter_number: int) -> list[str]:
     """校验新章是否具备可汇总的人物并行线材料。"""
     thread_dir = project / "character_threads" / f"{int(chapter_number):04d}"
@@ -404,10 +459,12 @@ def validate_parallel_character_threads(project: Path, chapter_number: int) -> l
     if not cast_path.is_file():
         return errors
     cast_text = cast_path.read_text(encoding="utf-8")
-    names = re.findall(r"^\s*-\s*([^：:|\n]+?)\s*[：:]", cast_text, flags=re.MULTILINE)
-    names = [name.strip() for name in names if _character_token(name.strip())]
+    names = _cast_names(cast_text)
     if not names:
-        errors.append("00-cast.md 未列出人物名单")
+        errors.append(
+            "00-cast.md 未列出人物名单；请使用“## 角色名单”，并为每名真实人物单独写一行“- 人物名：...”；"
+            "主要视角、出场人物、当章目标、当章小胜负、主要钩子等元数据不要使用人物列表格式"
+        )
 
     private_lines = [
         path for path in thread_dir.glob("*.md")
@@ -424,8 +481,11 @@ def validate_parallel_character_threads(project: Path, chapter_number: int) -> l
 
     if interaction_path.is_file():
         interaction_text = interaction_path.read_text(encoding="utf-8").strip()
-        if not interaction_text or "|" not in interaction_text:
-            errors.append("interaction_map.md 没有形成可读的人物交织表")
+        if not _readable_interaction_map(interaction_text, names):
+            errors.append(
+                "interaction_map.md 缺少有效的多人交织内容；至少应有 80 字、2 段有效内容，"
+                "并明确出现至少 2 名本章角色"
+            )
     if state_path.is_file():
         state_text = state_path.read_text(encoding="utf-8")
         for name in names:
@@ -592,6 +652,16 @@ def cmd_pending(data, args):
 def cmd_session(data, args):
     book = find_book(data, args.book)
     project = project_path(book)
+    voice_pack_paths = []
+    voice_pack_dir = project / "voice_packs"
+    if voice_pack_dir.is_dir():
+        voice_pack_paths = [
+            str(path) for path in sorted(voice_pack_dir.glob("*.md"))
+        ]
+    narrative_style_paths = []
+    narrative_style_pack = project / "narrative_style_pack.md"
+    if narrative_style_pack.is_file():
+        narrative_style_paths.append(str(narrative_style_pack))
     state = read_json(project / "chapter_state.json", {})
     chapter_number = int(state.get("next_chapter_number", 1))
     length_instruction = chapter_length_instruction(book, chapter_number)
@@ -621,6 +691,9 @@ def cmd_session(data, args):
         "pending_batch_chapters": pending_publish_entries(project),
         "required_read_order": [
             str(project / "automation_prompt.md"),
+            str(ROOT / "shared" / "narrative_prose_foundation.md"),
+            str(ROOT / "shared" / "chinese_dialogue_foundation.md"),
+            str(ROOT / "shared" / "chinese_dialogue_feedback.jsonl"),
             str(ROOT / "shared" / "character_engine.md"),
             str(ROOT / "shared" / "parallel_character_pipeline.md"),
             str(ROOT / "shared" / "quality_scorecard.md"),
@@ -637,7 +710,7 @@ def cmd_session(data, args):
             str(project / "fanqie_ui_workflow.md"),
             str(project / "images" / "catalog.json"),
             str(project / "reader_checks"),
-        ],
+        ] + narrative_style_paths + voice_pack_paths,
         "start_commands": {
             "inspect": [
                 f"python .\\{MANAGER_SCRIPT} validate",
@@ -650,6 +723,9 @@ def cmd_session(data, args):
             ),
         },
         "batch_workflow": [
+            "写作前必须读取 shared\\narrative_prose_foundation.md；若本书存在 narrative_style_pack.md，必须同时读取。每个场景固定一个认知中心，新人物按来路、先行动、关系锚进入，新道具按看见、用途、代价落地。",
+            "写作前必须读取 shared\\chinese_dialogue_foundation.md 与 shared\\chinese_dialogue_feedback.jsonl；先判断人物关系、共同经历、场合和情绪，再决定称呼、信息省略与句子长度，不得用固定方言词或机械替换表冒充真人口语。",
+            "对白定稿前执行口语逆翻译：抽查至少十句，删除人物在现场不会主动交代的完整背景、书面连接词和过度清楚的步骤说明；保留具体指代、抢话、改口、停顿与关系变化，但不得损坏行动因果。",
             "每章必须执行 shared\\parallel_character_pipeline.md：先为所有有戏份人物建立 character_threads\\<章节号>\\ 私线，再建立 interaction_map.md，之后以单一主要第三人称视角汇总正式正文，最后回写 state_update.md。",
             "按人物等级分配上下文：主视角最近3—5章，重要配角最近2—3次出场，普通配角最近1—2次出场，离场人物读取上一条动向和相关公共事件；私线之间不得互相泄露内心。",
             "汇总时只写当前视角能看见、听见、记得、推断或被告知的内容；看不见的行动通过痕迹、错位、物件、伤势、缺席、传话和后果体现，不得用全知播报拼接。",

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 55,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T02:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "4b6c4f42029add6e1526238b57f60cff130d2b2add66993399e8e1efa75e9ee7",
+  "questions": {
+    "previous_context": {
+      "answer": "队伍回到404后发现人工主端正在等待段野签字，门外的阿图尔和维克多仍被城防机甲隔在外面。",
+      "evidence": ["人工主端就在锅炉后墙。"]
+    },
+    "immediate_problem": {
+      "answer": "主端会把签字人写成回收执行人，锅炉降温又会让秦砚先休克，必须在热量耗尽前拆掉底座。",
+      "evidence": ["谁在上面落了字，谁就会被系统算成这次回收的执行人。"]
+    },
+    "decision_basis": {
+      "answer": "秦砚从节拍判断红线是在仿冒林秋，段野因此让林小满避开红灯寻找锅炉墙后的真线。",
+      "evidence": ["灯是给人看的。"]
+    },
+    "action_logic": {
+      "answer": "老崔锯开旧焊底座，林小满把黑线压进铜槽，维克多再用烧黑的监察牌让回执倒灌，主端上的段野名字因此褪掉。",
+      "evidence": ["蓝光沿着老崔割开的焊缝倒灌，锅炉的热气没有回来，主端上的“段野”两个字却一点点褪掉。"]
+    },
+    "result_and_cost": {
+      "answer": "主端回执被断开，检修门打开，队伍获得去三号热站的路线；代价是锅炉热量、最后铜丝、干燥纸、诊疗桌铜片和维克多的监察牌。",
+      "evidence": ["人工主端的红灯全灭，锅炉间只剩伤员喘气和铁盒里半截录音。"]
+    },
+    "reader_hook": {
+      "answer": "阿图尔收到三号热站的回声并确认弟弟还活着，但主端随即把阿图尔列为回收对象，队伍必须赶去救人并面对追捕。",
+      "evidence": ["回收对象，阿图尔。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "人工主端",
+      "plain_explanation": "锅炉旁的旧控制台，会把人的维修确认写进旧水路并生成责任记录。",
+      "evidence": "它不是一台会说话的机器，外壳像旧收银台，正面有一条窄缝，专门把人的名字和维修确认写进旧水路。"
+    },
+    {
+      "term": "执行人字段",
+      "plain_explanation": "记录里标明谁被系统算作这次回收的负责人的一栏。",
+      "evidence": "执行人字段确认。段野——"
+    },
+    {
+      "term": "三号热站",
+      "plain_explanation": "林秋真线指向的下一处热能设施，也是阿图尔弟弟回声传来的地方。",
+      "evidence": "“三号热站。”她喘着气，“我姐把真线藏那头了。”"
+    }
+  ],
+  "unexplained_terms": []
+}

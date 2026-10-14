@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 70,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "8795a205652cc0b7c6f9781f0b293f67bdf963b70a01e2662b39798dd09dfe85",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章的假回报已经盗用段野声音，队伍因此要去北侧泵房查原始线路。",
+      "evidence": ["段野自己的声音贴着后墙爬过来，像旧螺丝在耳朵里拧了一下。"]
+    },
+    "immediate_problem": {
+      "answer": "伤员正在失温，而泵房热压会冲垮临时热路，队伍必须在不牺牲伤员的情况下开门。",
+      "evidence": ["你打算带几个都不行。秦砚的胸伤刚压住，米沙还在发冷，老四嘴唇都紫了。"]
+    },
+    "decision_basis": {
+      "answer": "林小满闻到新油膜，苏青禾确认泵房有原始回报，所以队伍判断应沿墙根找中继而不是盲目拆线。",
+      "evidence": ["泵房里有原始回报，拿到它，才能知道谁先签，谁后补。"]
+    },
+    "action_logic": {
+      "answer": "他们让假声先报一次留下证据，再由林小满只烧掉分叉、由老崔放水泄压，避免主线和伤员一起被热水冲毁。",
+      "evidence": ["下面那根才是主线，黑盒接的是旁边的分叉。分叉烧了，热路会往泵房压。"]
+    },
+    "result_and_cost": {
+      "answer": "分叉被烧断并取得错位编号铁片，但放水让后墙暖气下降，老崔阀门断裂，林小满和阿图尔的伤势继续加重。",
+      "evidence": ["热水冲进废沟，泵房门的压力立刻低了一截。代价是后墙的暖气也跟着往下掉"]
+    },
+    "reader_hook": {
+      "answer": "真正的林秋原声出现在泵房旧管里，系统却把段野刻成接班人，且热屋已经失去热量。",
+      "evidence": ["Q-17，第四班，接班人——段野。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

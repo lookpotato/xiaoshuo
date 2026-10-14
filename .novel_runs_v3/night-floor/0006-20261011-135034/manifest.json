@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "book_id": "night-floor",
+  "chapter": 6,
+  "run_id": "20261011-135034",
+  "run_dir": "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\.novel_runs_v3\\night-floor\\0006-20261011-135034",
+  "project": "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层",
+  "sources": [
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\novel_config.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\opening_contract.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\outline.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\characters.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\world.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\style_guide.md"
+  ],
+  "recent_chapters": [
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\chapters\\0004-先别划掉二零二.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\chapters\\0005-灯下那张回执.md"
+  ],
+  "workflow": [
+    "author_room",
+    "draft",
+    "deep_edit",
+    "reader"
+  ]
+}

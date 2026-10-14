@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "chapter_number": 20,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T21:54:17+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "9ae430a26a43c64c23dee5a5e0045b5c0440cb948acf55d282dc861704206d32",
+  "questions": {
+    "previous_context": {"answer": "第三道门落下，城防已从东侧检修井进入，队伍必须撤离。", "evidence": ["第三道门落下时，炉下男人先跪了。"]},
+    "immediate_problem": {"answer": "城防三台机甲要封死北廊并抓走六个活体。", "evidence": ["东井进人了。","三台机甲。第一台带切割臂，第二台有热源锁——锁住热量来源的捕捉装置。第三台没有标志。它负责抓人。"]},
+    "decision_basis": {"answer": "红灯会把北廊判成待回收区，东边有人抓、北边会塌，只有废热站有手动门。", "evidence": ["红灯一亮，北廊就会被判成待回收区。走东边，他们抓人；走北边，旧管道会塌。只有废热站还有一扇手动门。"]},
+    "action_logic": {"answer": "林小满拆下冷启动电容给主线打一记脉冲，以确认林秋定位并避开登记端。", "evidence": ["我姐还在那头。莫慌，线没断，我给她打一声。"]},
+    "result_and_cost": {"answer": "队伍带伤员撤出，但修理站后墙、黑锅启动能力和医疗储备被耗掉。", "evidence": ["整面后墙轰然陷下，404修理站的暖光被灰尘吞掉。"]},
+    "reader_hook": {"answer": "废热站名单的第七空位已经写上段野，林秋信号也在关键处中断。", "evidence": ["第七个空位上，已经写着段野两个字。"]}
+  },
+  "new_terms": [
+    {"term": "热源锁", "plain_explanation": "一种锁住热量来源、用来捕捉目标的装置。", "evidence": "第二台有热源锁——锁住热量来源的捕捉装置。"}
+  ],
+  "unexplained_terms": []
+}

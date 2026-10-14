@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 90,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T00:18:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章车辆刚脱离新回收口，但主炉底部出现模仿段野节拍的手，因此本章从窄道入口开始核对。",
+      "evidence": ["雪下那只手又敲了两下。"]
+    },
+    "immediate_problem": {
+      "answer": "必须在短楔和热位撑住的短时间内下窄道，否则车会压回回收口，伤员和箱内活体会失去热量。",
+      "evidence": ["三分钟得回来，不然上头热位先空。"]
+    },
+    "decision_basis": {
+      "answer": "段野根据左侧热风、右侧回水管和窄道中没有轨道的结构判断这是检修通道，并根据冷铁上的刻痕确认存在Q-17线索。",
+      "evidence": ["铁片被人用指甲刻了三道竖痕，旁边还有一个缺口，像编号被硬生生刮掉。"]
+    },
+    "action_logic": {
+      "answer": "短楔负责暂时顶住门框和车轮，旧驾驶扣卡住右偏车轮，读写片压进三道刻痕则能让记录显出Q-17交付字段；每一步都受热量和时间限制。",
+      "evidence": ["反而把半片读写片塞进三道刻痕之间。"]
+    },
+    "result_and_cost": {
+      "answer": "队伍打开并稳定了窄道，确认敲击手不是箱内人并拿到Q-17交付对象的半段记录；代价是焊丝、净水、热位、驾驶扣和多人的伤势继续消耗。",
+      "evidence": ["冷蓝字猛地亮开：Q-17，交付对象——"]
+    },
+    "reader_hook": {
+      "answer": "窄道里的手用和段野一样的两下敲击回应，而冷字只写到交付对象，下一章必须查清这只手和真正接班人的关系。",
+      "evidence": ["窄道里的手，敲出了和他一模一样的两下。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

@@ -13,6 +13,24 @@
       "required_before_draft": true,
       "scope": "所有分析、规划、对白和正文；以具体语义替代固定隐喻和模型套话，除真实财务语境外避免反复使用‘账’及其延伸表达。"
     },
+    "narrative_style_system": {
+      "enabled": true,
+      "shared_rules": "shared/narrative_prose_foundation.md",
+      "book_rules": "<project>/narrative_style_pack.md",
+      "required_before_draft": true,
+      "pov_rule": "每场固定一个认知中心；旁白只写此人能感知、理解、误判或被告知的内容。",
+      "entrance_rule": "新人按来路、先行动、关系锚、识别钉出场；复杂新物按看见、用途、代价落地。",
+      "hard_gate": "人物重复初登场、核心物件类型不明、同场新名词堆叠或章末凭空抛钩子时不得归档。"
+    },
+    "chinese_dialogue_foundation": {
+      "enabled": true,
+      "shared_rules": "shared/chinese_dialogue_foundation.md",
+      "feedback_records": "shared/chinese_dialogue_feedback.jsonl",
+      "required_before_draft": true,
+      "scope": "默认以当代中国大陆生活普通话为共同底色，再按地区、年龄、职业、关系、场合和情绪产生差异。",
+      "relation_rule": "称呼、语序和省略必须由双方关系与当前权力位置决定；哥、姐、兄弟、姓名、外号及不使用称呼都只是结果，不是固定替换词。",
+      "review_rule": "定稿前至少抽查十句对白执行口语逆翻译，清除书面连接词、背景复述、程序化完整句和无视共享语境的解释。"
+    },
     "character_engine": {
       "enabled": true,
       "shared_rules": "shared/character_engine.md",
@@ -72,7 +90,7 @@
     {
       "id": "cosmic-404",
       "title": "404修理站",
-      "path": "404修理站",
+      "path": "404修理站_重启版",
       "enabled": false,
       "status": "completed",
       "schedule": {
@@ -88,9 +106,9 @@
         "time": "12:00"
       },
       "priority": 100,
-      "mode": "write_then_upload",
+      "mode": "write_only",
       "daily_chapter_target": 2,
-      "reader_gate_from_chapter": 54,
+      "reader_gate_from_chapter": 1,
       "manual_extra_chapters_supported": true,
       "default_publish_times": [
         "12:00"

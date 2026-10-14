@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 1,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-02T11:30:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "1b8284488d12c231e268e18de0188e6b918620e06356414f7c6128f76dc5a0c3",
+  "questions": {
+    "previous_context": {
+      "answer": "段野守着已经被注销的404修理站，靠拆修报废设备维持北区旧热管。",
+      "evidence": ["北荒三号城下第一场雪时，段野正在一台报废机甲肚子底下偷油。"]
+    },
+    "immediate_problem": {
+      "answer": "城防清理处要切断修理站连接北区的旧热管并执行清场。",
+      "evidence": ["两名城防员从车后拖出一台切割机，白亮的刀口正对院墙下那根旧热管。"]
+    },
+    "decision_basis": {
+      "answer": "段野知道切断这根管子会让北区居民失去今晚唯一的热源。",
+      "evidence": ["割断它，院里少一根废铁；院外少的可不是铁。"]
+    },
+    "action_logic": {
+      "answer": "林小满用动力匣给黑锅借电，段野再用废油启动旧维修机甲阻止切割。",
+      "evidence": ["她把动力匣推进旧接口：“这台老东西吃得动吗？”"]
+    },
+    "result_and_cost": {
+      "answer": "黑锅挡住切割和炮火，让北区最后一盏灯重新亮起，但废油和动力匣电量已经开始消耗，两面院墙也被撞塌。",
+      "evidence": ["北区最后一盏灯，亮了。"]
+    },
+    "reader_hook": {
+      "answer": "三台追击机甲已经进入院子，404必须在有限燃油和电量耗尽前打退城防。",
+      "evidence": ["追她的三台机甲也到了。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "动力核心",
+      "plain_explanation": "一种便携供能设备，接上机甲能短时行动，接上热炉能继续供热。",
+      "evidence": "段野认得接口——便携动力核心，接上机甲能顶一阵，接上热炉能烧一宿。"
+    },
+    {
+      "term": "神经操作印记",
+      "plain_explanation": "林秋操作机器时留下的残缺反应记录，能认人并挤出少量话语，但不是完整的人。",
+      "evidence": "这里头留着我姐的一段神经操作印记。"
+    },
+    {
+      "term": "黑锅",
+      "plain_explanation": "段野给黑色旧维修机甲取的名字，它行动迟缓、漏油，但外壳够厚，可以替人挡攻击。",
+      "evidence": "段野管它叫黑锅。慢，漏油，右腿短两公分，唯一的长处是壳厚——穷人没盾的时候，它能拿自己顶一下。"
+    }
+  ],
+  "unexplained_terms": []
+}

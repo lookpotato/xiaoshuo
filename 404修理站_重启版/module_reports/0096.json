@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "chapter_number": 96,
+  "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6",
+  "plan_sha256": "1554639ab5d58741fe0b8521e04e6d2b7415f5684364ad92a50cfa800940ba83",
+  "review_method": "same-context-evidence-review",
+  "modules": {
+    "world_presentation": {
+      "status": "passed",
+      "assessment": "正文把修理站热槽、回水线、旧泵房总闸和伤员生存绑在同一现场；半圈规则在动作前交代，超过半圈的后果清楚。",
+      "evidence": [{"chapter": 96, "quote": "顺时针，半圈。过了半圈，热槽会全断。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}],
+      "issues": [],
+      "cross_chapter_review": "延续第95章冷却线和伤员热槽约束，本章补足旧泵房总闸与门锁供电的现场关系，保留交付关系谜底。",
+      "checks": {
+        "orientation": {"verdict": "met", "answer": "人物在修理站门内，伤员靠热槽维持呼吸，门外者通过回水线抽走热量。", "support": "热槽、伤员、门锁供电与回水抽取在开篇同一场景出现。", "evidence": [{"chapter": 96, "quote": "“回水被抽了。”她说，“不是车尾漏光，是有人在外面动总闸。”", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        "rule_before_use": {"verdict": "met", "answer": "段野拧闸前，周栓说明顺时针半圈的作用和超过半圈的后果。", "support": "行动原理与限制都先于闸杆动作出现。", "evidence": [{"chapter": 96, "quote": "顺时针，半圈。过了半圈，热槽会全断。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]}
+      },
+      "state": {"reader_knowledge": [
+        {"dimension": "空间", "status": "known", "summary": "修理站门、回水检修口和旧泵房总闸相连。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 96, "quote": "总闸就在旧泵房。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        {"dimension": "社会秩序", "status": "known", "summary": "北区热路受旧泵房总闸约束，关闭会直接影响站内伤员。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 96, "quote": "有人要把北区的热全关掉。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        {"dimension": "普通人生活", "status": "known", "summary": "伤员必须依靠热槽和回水活着。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 96, "quote": "不动，三个伤员先没。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        {"dimension": "主角位置", "status": "known", "summary": "段野负责在守站与追总闸之间作决定。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 96, "quote": "先追总闸。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        {"dimension": "特殊规则", "status": "known", "summary": "回水闸只能关半圈，超过会切断热槽；声音不能替代现场核验。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 96, "quote": "她不会这么问。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]}
+      ]}
+    },
+    "de_ai_writing": {
+      "status": "passed",
+      "assessment": "判断落在阀号、焊疤、回灯、闸杆和伤员反应上；对白按职业与关系区分，没有生产流程或抽象自评语言。",
+      "evidence": [{"chapter": 96, "quote": "旧泵房北侧没有七号。九号是进热，七号是排空。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}],
+      "issues": [],
+      "cross_chapter_review": "延续前章现场修理语汇，新增核验信息由人物动作和物件承担。",
+      "checks": {
+        "specificity": {"verdict": "met", "answer": "阀号、焊疤、回灯和闸杆后果均以可观察细节出现。", "support": "关键判断绑定具体物件或动作。", "evidence": [{"chapter": 96, "quote": "这只手在找门框里的刻线。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]},
+        "lexical_repetition": {"verdict": "met", "answer": "回水、热槽和声音分别承担供热、资源限制和身份核验功能。", "support": "重复词汇随行动阶段改变作用，没有用固定隐喻替代结果。", "evidence": [{"chapter": 96, "quote": "热槽火色只剩半格，却没有全灭。", "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "chapter_number": 75,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "7f02b3a8c6f62fe2b6eb387e9ed43af927671f22ef0268abd06d528a5e05d7e7",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章门后的男人已经声称林秋不在热塔并索要第二见证，本章从这句威胁直接接起。",
+      "evidence": ["“林秋不在热塔。第二见证，交出来。”"]
+    },
+    "immediate_problem": {
+      "answer": "红线门和下沉闸门夹住队伍，伤员无处安置，交出铁板又会让林秋被冒名回写。",
+      "evidence": ["门不开，伤员没地方躺；铁板递出去，林秋那笔回写就可能落到他们头上。"]
+    },
+    "decision_basis": {
+      "answer": "苏青禾从墙上旧编号与交接牌被刮过的方孔判断第四班人数被伪造。",
+      "evidence": ["墙上的旧编号只剩三道划痕，交接牌背面还有两处被刮过的方孔。第四班原先是四个人，最后一格被人拿林秋的名字补成了第五个。"]
+    },
+    "action_logic": {
+      "answer": "林小满确认细铜线只负责报名字、不是主热路，因此烧断它能切掉借声回写而不掐死热路；老崔同时卡住铁槽。",
+      "evidence": ["这根线不是通门的，是报名字的。把它烧了，门还在，里面那个人的嘴就没法替我们报班。"]
+    },
+    "result_and_cost": {
+      "answer": "队伍烧断冒名铜线、夺出新铁牌并确认七号维修车，但门后男人逃脱，闸门继续下沉，众人伤势与工具损耗加重。",
+      "evidence": ["她拽断铜线。", "老崔一把抽出断钢管，闸门立刻往下沉。"]
+    },
+    "reader_hook": {
+      "answer": "阿图尔带回一只会按林秋节拍回应的陌生动力匣，而门后男人把段守成旧案接到段野身上，逼他替父亲签字。",
+      "evidence": ["匣内没有亮灯，只传出一短一长的敲击。", "“轮到你替他签。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "第二见证",
+      "plain_explanation": "现场碰过交接牌、看见过回写的人留下的第二份手印，用来追责谁真正见证了交接。",
+      "evidence": "第二见证就是现场碰过交接牌、看见过回写的人留下的第二份手印。"
+    },
+    {
+      "term": "动力匣",
+      "plain_explanation": "能给机甲供电的便携核心，这只匣子眼下没有亮灯，只用敲击回应。",
+      "evidence": "“一个空担架。还有一只动力匣，能给机甲供电。”"
+    }
+  ],
+  "unexplained_terms": []
+}

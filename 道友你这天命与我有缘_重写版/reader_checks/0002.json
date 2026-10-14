@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "chapter_number": 2,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-13T23:03:12+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "000d698f612bd1b94e3facd0bffae84d94c1876b78f1f6c5be160cc4978cada6",
+  "questions": {
+    "previous_context": {
+      "answer": "正文承接祭风日事故后的清晨，陆遥带伤、木鸢未回，先被迫处理祭棚和伤口。",
+      "evidence": [
+        "天刚亮，陆遥把右臂泡进木作铺门口的冷水盆里。"
+      ]
+    },
+    "immediate_problem": {
+      "answer": "祭棚需要在申时报损前临时修好，同时木鸢正向镇天碑后石缝滑动，陆遥还受禁线限制。",
+      "evidence": [
+        "祭棚那边传来木板拖地的声响。领粮的队伍绕开倒梁，村里人把沾泥的粮袋一袋袋搬到晒场。"
+      ]
+    },
+    "decision_basis": {
+      "answer": "断绳、草尖和青灰翅尖给出可复核线索，显示木鸢卡在石缝且会随风继续滑入。",
+      "evidence": [
+        "石缝边，一片青灰翅尖露了出来，随着风一下一下磕在石面上。"
+      ]
+    },
+    "action_logic": {
+      "answer": "陆遥用左手在白石外标出石缝和风向，收回越线的脚，把取鸢改成申报后由韩照夜监督复查。",
+      "evidence": [
+        "他把伸出去的脚收回来，用断绳在泥上画了三道短痕，标出石缝、白石和风向。"
+      ]
+    },
+    "result_and_cost": {
+      "answer": "祭棚暂时恢复承重，陆遥承认违规并承担药钱和赔损记录，木鸢仍未取回但获得次日线外复查机会。",
+      "evidence": [
+        "违规算我的。她的药钱也记我这边。"
+      ]
+    },
+    "reader_hook": {
+      "answer": "木鸢在下一次风变前可能继续向石缝深处滑落，陆遥必须在次日辰时随韩照夜复查。",
+      "evidence": [
+        "明天辰时，韩照夜会带他到线外。木鸢能不能留下，得在下一次风变前见分晓。"
+      ]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "白石",
+      "plain_explanation": "镇天碑外一排只到脚踝高、用来挡住村民脚步的石头。",
+      "evidence": "这里立着一排白石，石头只到脚踝高，却把村民的脚都挡在外头。"
+    }
+  ],
+  "unexplained_terms": []
+}

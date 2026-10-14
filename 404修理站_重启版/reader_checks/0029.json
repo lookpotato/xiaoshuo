@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 29,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-03T15:09:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "3c534ceb2ec69a8b433b553c2631666faafbaa84bf18657ce77cf48b4248140c",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章墙下的三次敲击把追线方向引到被北墙压住的水泥板，本章从城防撞门和拆板动作直接承接。",
+      "evidence": ["城防机甲撞上院门时，老崔正把旧焊车的底梁拖到水泥板边。"]
+    },
+    "immediate_problem": {
+      "answer": "城防即将撞开院门，水泥板下有人但拆错会让北墙压进医疗间，伤员热路也只剩最后一格。",
+      "evidence": ["城防机甲撞上院门时，老崔正把旧焊车的底梁拖到水泥板边。"]
+    },
+    "decision_basis": {
+      "answer": "三次敲击被确认是真人敲击，管内幸存者提供旧检修道和回水口信息，蓝光也沿水泥板向下。",
+      "evidence": ["不是线路脉冲，是实打实有人在下面敲。"]
+    },
+    "action_logic": {
+      "answer": "老崔用车轴撬板，段野和林小满压住支撑，林小满用电芯外壳垫住受力处，阿图尔用底梁和黑标签拖慢院门识别。",
+      "evidence": ["她把腕甲电芯的外壳拆下一片，垫在车轴和冻泥之间。"]
+    },
+    "result_and_cost": {
+      "answer": "地板开出能伸手的缝并确认下面是活人，林小满接到地底人传出的编号四；电芯、底梁、黑标签和热量消耗，院门第三次撞来。",
+      "evidence": ["一个冻硬的手从黑水里探出来，五指抓住老崔的手腕。"]
+    },
+    "reader_hook": {
+      "answer": "林秋说出弟弟，地底人借林小满的手敲出编号四，而城防第三次撞门，下一步必须在防线崩溃前救人并查编号。",
+      "evidence": ["水泥板下面，有人用她的手指，在黑暗里敲出了一个清楚的编号。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

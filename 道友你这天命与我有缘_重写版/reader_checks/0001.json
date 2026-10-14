@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "chapter_number": 1,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-13T23:03:12+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "907367ca22e74d69270252de3f8f0dcc5575e305cde9cc981e5f443b2705c1cf",
+  "questions": {
+    "previous_context": {
+      "answer": "正文从祭风日清晨的村民分工起笔，陆遥正准备借祭风日试父亲留下的木鸢，限制和执行者同步出现。",
+      "evidence": ["祭风日一早，栖霞村的木屑还没扫干净，村口已经排起了领粮的队。"]
+    },
+    "immediate_problem": {
+      "answer": "小满误松绳扣后被木鸢拖向镇天碑，若继续拉拽她会更快离地，祭棚和孩子都可能受伤。",
+      "evidence": ["小满被腕上的线一拽，脚底在湿泥上拖出两道沟。"]
+    },
+    "decision_basis": {
+      "answer": "陆遥看见鞋底已经离地，并观察到正面风势被截后绳子反而加速，于是判断普通拉拽无效。",
+      "evidence": ["她的鞋底已经离地半寸，木鸢的青灰翅面在乱风里忽上忽下。"]
+    },
+    "action_logic": {
+      "answer": "青羽让陆遥看见歪木架下直达小满身侧的短风路；韩照夜只负责接住落点，陆遥借断绳荡入。",
+      "evidence": ["风里露出一条短短的空隙，从歪掉的木架下穿过去，直抵小满身侧。"]
+    },
+    "result_and_cost": {
+      "answer": "陆遥松开木鸢抓住小满，两人落地获救，但木鸢卷入镇天碑后，陆遥右臂受伤，祭棚和粮袋受损，且要按禁飞违规报损。",
+      "evidence": ["木鸢擦过陆遥的袖口，青灰色的一点被风扯进镇天碑后，连回声都没有。"]
+    },
+    "reader_hook": {
+      "answer": "木鸢没有回来，陆遥决定在次日之前根据碑后草尖的方向查出它落在哪里。",
+      "evidence": ["棚子我修，报损我去。明日之前，我先把它落在哪儿看出来。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "镇天碑",
+      "plain_explanation": "立在山脚、能把附近乱风压贴在地面的石碑。",
+      "evidence": "镇天碑立在山脚，碑身把一片乱风压得贴地，祭场上每一根绳都系在桩上。"
+    },
+    {
+      "term": "天巡司",
+      "plain_explanation": "在祭风日现场执行禁飞、收回离地物件的巡查机构。",
+      "evidence": "天巡司的人正在逐个收走孩子手里的纸片和竹片，连晒衣杆都被按回棚下。"
+    },
+    {
+      "term": "青羽",
+      "plain_explanation": "陆遥腕上的羽状物，会让他短暂察觉风中的可行空隙。",
+      "evidence": "陆遥手腕上的青羽忽然发凉，风里露出一条短短的空隙，从歪掉的木架下穿过去，直抵小满身侧。"
+    },
+    {
+      "term": "风路",
+      "plain_explanation": "乱风中短暂出现、只能容一个人借势通过的空隙。",
+      "evidence": "那条风路只够一个人。"
+    }
+  ],
+  "unexplained_terms": []
+}

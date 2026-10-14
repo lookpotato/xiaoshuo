@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "chapter_number": 89,
+  "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed",
+  "plan_sha256": "2b20a4f6961a4832e176057af62b461d8ee645ab22d0a5fef413903d447ed93f",
+  "review_method": "same-context-evidence-review",
+  "modules": {
+    "world_presentation": {
+      "status": "passed",
+      "assessment": "正文通过车轮与箱底的错位、冷字写入和三次抬升限制，让读者理解新回收口同时承担地下输送与责任归类；热位、回水和伤员的即时代价说明修理站队伍受旧热管与识别记录约束。",
+      "evidence": [
+        {"chapter": 89, "quote": "车轮没动，箱底动了！", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"},
+        {"chapter": 89, "quote": "旁边那片冷铁才负责给它归类。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"},
+        {"chapter": 89, "quote": "现在只能撑三次抬升。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}
+      ],
+      "issues": [],
+      "checks": {
+        "orientation": {
+          "verdict": "met",
+          "answer": "读者从城门内侧的缺齿车、雪下新回收口、有限热位和主炉方向，知道队伍在受旧热管与识别记录约束的维修现场。",
+          "support": "正文直接写出车底、热位、回水和主炉底部窄道，没有要求读者先知道幕后制度。",
+          "evidence": [{"chapter": 89, "quote": "新回收口又往上顶了一寸，缺齿车的车底猛地一沉。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]
+        },
+        "rule_before_use": {
+          "verdict": "met",
+          "answer": "读写片在人物依赖它前已说明负责归类；三次抬升的热量限制也先于三次操作给出。",
+          "support": "苏青禾先说明冷铁片的作用，白露先报出只能撑三次抬升，随后队伍才按该规则行动。",
+          "evidence": [{"chapter": 89, "quote": "旁边那片冷铁才负责给它归类。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]
+        }
+      },
+      "cross_chapter_review": "本章延续前章城门识别、回水和资源约束，并新增了可见的‘换车与归类’关系；主炉底部真正Q-17的来源继续保留为待核线索。",
+      "state": {
+        "reader_knowledge": [
+          {"dimension": "空间", "status": "known", "summary": "缺齿车位于城门内侧，雪下新回收口通向主炉底部窄道。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 89, "quote": "窄缝里面有热风，也有一只手敲着他的节拍。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]},
+          {"dimension": "社会秩序", "status": "known", "summary": "识别臂会把活体、见证人与维修设备分开归类，并能用旧名字补录责任。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 89, "quote": "三样东西分开写，主炉就能把车换走，再把人和责任补回去。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]},
+          {"dimension": "普通人生活", "status": "known", "summary": "队伍必须靠有限热位和回水维持伤员呼吸，净水与布料也会在现场耗尽。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 89, "quote": "三次之后，箱内和伤员一起掉压。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]},
+          {"dimension": "主角位置", "status": "known", "summary": "段野是现场修理与责任选择的中心，但不能替代军医、动力手和账房的判断。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 89, "quote": "他把掌根压上铁片，另一只手将断扁铁插进侧槽。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]},
+          {"dimension": "特殊规则", "status": "known", "summary": "新回收口旁的读写片负责归类，取出后回收口缩回，但主炉仍能模仿声音制造新风险。", "support_kind": "explicit", "required_now": true, "evidence": [{"chapter": 89, "quote": "新回收口猛地缩回雪里。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]}
+        ]
+      }
+    },
+    "de_ai_writing": {
+      "status": "passed",
+      "assessment": "正文把归类、回收和责任落在齿条、读写片、热位、方向杆与伤口上；对白按人物职业和关系切分，保留抢话、误认节拍和不完整追问。",
+      "evidence": [
+        {"chapter": 89, "quote": "不对，碰，得压着空槽。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"},
+        {"chapter": 89, "quote": "那现在听见了。你别死。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"},
+        {"chapter": 89, "quote": "主炉在学你。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}
+      ],
+      "state": {"next_experiment": "下一章继续把模仿声音落到敲击位置、节拍误差和人物选择，不用作者总结解释。"},
+      "issues": [],
+      "checks": {
+        "specificity": {
+          "verdict": "met",
+          "answer": "关键判断均落在齿条、蓝线、读写片、热位、方向杆和具体伤势上。",
+          "support": "动作段持续给出物件位置、受力次数和可见结果。",
+          "evidence": [{"chapter": 89, "quote": "他把弟弟旧驾驶扣塞进方向杆底座，硬把杆卡在右偏的位置。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]
+        },
+        "lexical_repetition": {
+          "verdict": "met",
+          "answer": "‘写、回收、热位’等词分别承担记录、移动和生存资源含义，没有用抽象隐喻替代行动。",
+          "support": "对白通过抢话、错认节拍和短句拆开信息，没有连续统一的说明腔。",
+          "evidence": [{"chapter": 89, "quote": "不对，碰，得压着空槽。", "narrative_sha256": "011c409ab74cd1fbbe4555818d76fb2eed4188d8ba9aa81f6574616fd00354ed"}]
+        }
+      },
+      "cross_chapter_review": "本章减少了系统式解释，继续让段野先动手、林小满先辨线、苏青禾先辨记录；下一章需保持主炉模仿声音时的具体行动，不把谜底改写成总结。"
+    }
+  }
+}

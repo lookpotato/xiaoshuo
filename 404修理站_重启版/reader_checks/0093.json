@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 93,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T11:40:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "35e2e4034229108bb8e1bf7854a412730168d87ec7637fb6052ba3d883a72933",
+  "questions": {
+    "previous_context": {"answer": "阀箱里的人继续用林秋的声音拒绝被带回，队伍必须先判断声音真假。", "evidence": ["阀箱里的声音又说。"]},
+    "immediate_problem": {"answer": "四号门底下的回水正在外泄，马姐体温继续下降，关错阀会让热量一起流走。", "evidence": ["四号门底下的水线正往外爬，热气却没跟着上来，像有一只手把热截在门后。"]},
+    "decision_basis": {"answer": "苏青禾根据水线和名单残角判断，接班不是接名，而是完成一次现场关阀。", "evidence": ["接班不是接名，是接一次关阀。"]},
+    "action_logic": {"answer": "周栓说明黑管拧半圈只泄回水，第二次才会把热也放走，所以队伍先等水声再决定。", "evidence": ["“半圈后等水声。别抢。”"]},
+    "result_and_cost": {"answer": "半圈关阀后冷水泄出，马姐呼吸稳定；老崔的断护板报废并脱力，热槽又熄掉一格。", "evidence": ["管里轰地一响，冷水冲过脚面。马姐的胸口起伏终于稳了一下。"]},
+    "reader_hook": {"answer": "墙后露出旧车号Q-17并首次点火，Q-17可能是车而不是阀门编号。", "evidence": ["墙后，传来发动机第一次点火的声音。"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

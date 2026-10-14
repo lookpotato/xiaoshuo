@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "chapter_number": 3,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T11:24:12+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "120bd454ae1dc0b0f901fc5334d866268fbaabb0e0ef1fdd801e0f5e415c8472",
+  "questions": {
+    "previous_context": {"answer": "段野等人追到旧热站救林小满，并要在午夜前保住北区供热。", "evidence": ["“再来一下！”老崔在后面吼，“锁箍就在门肚子里，别撞偏了！”"]},
+    "immediate_problem": {"answer": "魏平锁死主阀并把林小满关在回收笼里，动力匣即将被清空。", "evidence": ["你再晚十秒，动力匣会进入回收状态。里面的神经印记会被清空。"]},
+    "decision_basis": {"answer": "段野看见燃油只剩最后一格，老崔认出自己当年焊的锁箍，林小满听见姐姐说阀井下面还有人。", "evidence": ["段野看着林小满，又看了一眼阀杆。燃油表最后一格闪烁。"]},
+    "action_logic": {"answer": "段野用最后燃油顶住阀杆，老崔熔开旧锁箍，林小满反烧回收线路，阿图尔切断机甲并拦住魏平。", "evidence": ["她把自己的动力线咬在齿间，另一头硬插进控制台。火花炸开，回收导轨当场卡死。"]},
+    "result_and_cost": {"answer": "林小满获救，动力匣脱离回收控制，主阀开启并续热八分钟；代价是黑锅燃油耗尽、老崔伤口裂开、阿图尔左腿恶化、动力匣外壳损坏。", "evidence": ["“赢一半。”段野跳下驾驶舱，“小满，能走不？”"]},
+    "reader_hook": {"answer": "阀井下方有人用暗号求救，魏平还在下面，而北区只剩七分三十秒热量。", "evidence": ["魏平的声音从黑暗下方传来：“你们开门之前，先想清楚。下面关的不是一个人。”"]}
+  },
+  "new_terms": [
+    {"term": "主阀", "plain_explanation": "控制北区供热的总阀门。", "evidence": "主阀锁死，北区供热的指示灯一盏接一盏变黑。"},
+    {"term": "神经印记", "plain_explanation": "保存在动力匣中的姐姐意识信号。", "evidence": "里面的神经印记会被清空。"},
+    {"term": "回收笼", "plain_explanation": "用来锁住动力匣并接入回收系统的透明笼子。", "evidence": "林小满背靠笼壁，手腕勒出血痕。"},
+    {"term": "阀井", "plain_explanation": "主阀下方通往地下管道的入口。", "evidence": "刚才我姐说下面有人，听到了没？"}
+  ],
+  "unexplained_terms": []
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 96,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T14:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "9d62b7ee426432348c4702101a34df68a1f9527bfbe35120b5303fc7858995c6",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章追出的Q-17已经泄尽冷却水，修理站门外的冒用者开始拧锁，并且从外面抽走站内回水。",
+      "evidence": ["铁锁在门外转了一格。"]
+    },
+    "immediate_problem": {
+      "answer": "门外者正在用林秋的声音骗开门，同时抽走供伤员取暖的回水；继续拖延会让热槽和伤员一起失去热。",
+      "evidence": ["“回水被抽了。”她说，“不是车尾漏光，是有人在外面动总闸。”"]
+    },
+    "decision_basis": {
+      "answer": "苏青禾用旧泵房阀号反问，门外者答错；周栓又凭林秋的焊疤和拿钥匙的习惯判断那只手不是林秋。",
+      "evidence": ["旧泵房北侧没有七号。九号是进热，七号是排空。"]
+    },
+    "action_logic": {
+      "answer": "林小满切断由回水线供电的门锁，段野再按周栓说的方向只关半圈闸杆；半圈能压住抽水，超过半圈会让热槽全断。",
+      "evidence": ["顺时针，半圈。过了半圈，热槽会全断。"]
+    },
+    "result_and_cost": {
+      "answer": "冒用者没能进站，被迫退向旧泵房；热槽只剩半格，林小满手背破泡，段野左掌被冻水磨裂，Q-17也失去最后电力。",
+      "evidence": ["热槽火色只剩半格，却没有全灭。"]
+    },
+    "reader_hook": {
+      "answer": "队伍刚决定追总闸，旧泵房里却传出阿图尔已经死去七年的弟弟声音，且地下还留着相同驾驶员编号。",
+      "evidence": ["“哥，别过来。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "空班",
+      "plain_explanation": "旧泵房里对死人后留下的无人交接状态的叫法。",
+      "evidence": "空班……北墙那头，死人以后才这么叫。"
+    }
+  ],
+  "unexplained_terms": []
+}

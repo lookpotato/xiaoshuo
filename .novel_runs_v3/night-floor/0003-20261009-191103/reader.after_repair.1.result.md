@@ -1,0 +1,1 @@
+已只读取指定的 `candidate.md`，并将读感判断写入 [reader_review.json](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0003-20261009-191103/reader_review.json>)。结论是没有 blocking 问题；nonblocking 问题主要是老胡谈箱子时的对白指向，以及少量办事对白过于完整。

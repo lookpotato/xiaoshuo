@@ -1,0 +1,1 @@
+读感审查已写入 [reader_review.json](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0006-20261011-135034/reader_review.json>)。结论为**触发返修**：1 处对白列入 blocking，另有 2 处轻微卡顿列入 nonblocking。

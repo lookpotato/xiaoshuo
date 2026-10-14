@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 49,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-04T22:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "02156d83a484cec299a88ffa526eb6e3f8012fc16ebb4a5e4ed31ea454fc6a0c",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章炉底的林秋名字重新亮起，队伍因此继续追查更深的回路。",
+      "evidence": ["红灯上的“林秋”还没干，锅炉底下又敲了一声。一下。"]
+    },
+    "immediate_problem": {
+      "answer": "锅炉余热正在下降，伤员会先失温，而林秋的信号也会沿回水线消失。",
+      "evidence": ["再拖下去，人会先冷；不下去，林秋的敲击会沉没。"]
+    },
+    "decision_basis": {
+      "answer": "秦砚摸到冷水并听见金属刮声，判断信号在旧回水线；林小满又用节拍和呼吸确认信号确实与林秋有关。",
+      "evidence": ["“不是炉里。”他喘了口气，“是回水线。”"]
+    },
+    "action_logic": {
+      "answer": "打开绕开主阀的旁通可以放干旧水、露出检修槽并追线，但会把最后热量放掉；秦砚还指出通城里的黑线不能接。",
+      "evidence": ["以前能。里面全是旧水。要追，就得把旁通放干。"]
+    },
+    "result_and_cost": {
+      "answer": "队伍放掉旁通水，拿到记录片和弟弟编号尾音，听到林秋警告，但锅炉跌破红线、断门栓弯废、林小满手掌被烫伤。",
+      "evidence": ["老崔松开阀柄坐进冷水里。断门栓弯成钩，锅炉表针跌到红线以下。"]
+    },
+    "reader_hook": {
+      "answer": "铁板后有一块带总局黑牌缺角的识别牌，责任人的姓氏即将出现，维克多却阻止段野打开它，炉底同时只亮出“维”。",
+      "evidence": ["门外的维克多也在同一刻说：“段野，别打开那块板。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "旁通",
+      "plain_explanation": "这是绕开主阀的一根旧小管，能放掉旧水让队伍追到炉底，但会损失最后热量。",
+      "evidence": "“旁通。”苏青禾说。她用拓纸包着半枚维修章，“绕开主阀的旧小管。能让一点热水过去，也能让别的东西回来。”"
+    }
+  ],
+  "unexplained_terms": []
+}

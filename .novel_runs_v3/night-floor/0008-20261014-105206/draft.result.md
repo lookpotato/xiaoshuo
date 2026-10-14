@@ -1,0 +1,1 @@
+已保存第八章初稿 [candidate.md](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0008-20261014-105206/candidate.md>) 和记录本章实际变化的 [state_delta.json](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0008-20261014-105206/state_delta.json>)。未读取 `reader.md`。

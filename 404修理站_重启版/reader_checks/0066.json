@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 66,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T11:24:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "ae27d8a637d267aab4eb995567e043900c363d04bcfe2224be1d38e9fd19f841",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章站内报班拨片被砸断、热槽报废，后墙储料门随即传出女声；本章开头承接了女声和伤员缺水的局面。",
+      "evidence": ["后墙那句问话说完，储料门里先响起了水。"]
+    },
+    "immediate_problem": {
+      "answer": "三名伤员正在失温，门后有水但旧热管带压，拖延或硬拆都会让人冻伤或被热汽击中。",
+      "evidence": ["再拖，先凉的是伤员。门开了也未必有命喝水。"]
+    },
+    "decision_basis": {
+      "answer": "林小满贴门听出右下方是空腔、左边连着热管，秦砚又听见管内回压，因此段野选择从右下受力并先递出水桶。",
+      "evidence": ["莫碰中间！右下，那里空。左边是管子，扯错了锅炉间要洗热水澡。"]
+    },
+    "action_logic": {
+      "answer": "老崔用撑片分散门的受力，林小满用绝缘皮把拉力导向右下，阿图尔用驾驶环片挡热汽；这样能开缝，但会损坏热路和工具。",
+      "evidence": ["她把最后一截绝缘皮缠到扳手柄上，隔着皮套住拖钩。"]
+    },
+    "result_and_cost": {
+      "answer": "储料门被打开，女人、两桶旧净水和原始交接牌出来，伤员完成第一轮补水；代价是后墙一截暖气断掉，多人伤势和工具继续恶化。",
+      "evidence": ["热管终于“嘭”地裂了一条细口，后墙一截暖气立刻哑了。"]
+    },
+    "reader_hook": {
+      "answer": "门内女人确认有人正用段野的名字在北线接班，而且下一次接班会把人作为对象，迫使队伍追查报班源。",
+      "evidence": ["北线有人拿你的名字接了班。下一次报完，接的就不是热管，是人。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "储料门",
+      "plain_explanation": "修理站后墙一扇焊死多年的旧门，门后藏着人和能救伤员的水。",
+      "evidence": "门板被焊死二十年，焊缝黑得发亮，门缝里却往外吐热气。"
+    },
+    {
+      "term": "第四班",
+      "plain_explanation": "旧救援线路里的一组值班人员，交接时用敲击节拍确认还有谁活着。",
+      "evidence": "第四班，是旧线路上轮着守门的那组人。"
+    },
+    {
+      "term": "404-零",
+      "plain_explanation": "第四班交接牌上给404修理站留下的班位，不是空号，而是要由活人接下的责任。",
+      "evidence": "牌背露出一行旧字：Q-17，第四班，404-零，交接人——未完。"
+    }
+  ],
+  "unexplained_terms": []
+}

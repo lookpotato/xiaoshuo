@@ -1,0 +1,17 @@
+﻿{
+  "schema_version": 1,
+  "chapter_number": 80,
+  "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383",
+  "plan_sha256": "20de39d0aac506acc7c0089d774cf414ff739d100f3681d001aa35e2676c185c",
+  "review_method": "same-context-evidence-review",
+  "modules": {
+    "world_presentation": {
+      "status": "passed",
+      "assessment": "通过北线热灯明灭、热水回流和三分钟管线风险，把城市热量按旧管线分配的规则落到现场；段野必须在追人和保北区短热之间取舍。",
+      "evidence": [{"chapter": 80, "quote": "右槽的热水冲回北线，远处红灯重新亮了三盏。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}],
+      "issues": [],
+      "cross_chapter_review": "本章沿上一章主炉与Q-17线索继续，用热灯和水仓操作补足眼前社会生存后果；深层接班真相仍保留到井下记录验证。",
+      "state": {"reader_knowledge": [{"dimension": "空间", "status": "known", "summary": "Q-17北线水仓有黑井、低位闸、回水管和井下记录口，能通向北区热管。", "evidence": [{"chapter": 80, "quote": "右槽的热水冲回北线，远处红灯重新亮了三盏。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}]}, {"dimension": "社会秩序", "status": "hinted", "summary": "旧接班记录能用热量和姓名改写责任，影响北区供热。", "evidence": [{"chapter": 80, "quote": "这是拿热水推笔。北区红灯全灭，三分钟后先冻坏的是管。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}]}, {"dimension": "普通人生活", "status": "hinted", "summary": "北区居民依赖分流热管，红灯熄灭意味着管线冻结风险。", "evidence": [{"chapter": 80, "quote": "北区红灯也跟着全灭。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}]}, {"dimension": "主角位置", "status": "known", "summary": "段野以修理工判断线路并承担是否放弃追人的选择。", "evidence": [{"chapter": 80, "quote": "段野抄起脚边的断扁铁，没追人，直接插进手动杆底座。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}]}, {"dimension": "特殊规则", "status": "known", "summary": "假声可复制前三拍，真实线路的收拍与回压能验证方向。", "evidence": [{"chapter": 80, "quote": "黑井只学前面三下。", "narrative_sha256": "4e6aa573ce4ea8a69ae6d730fc986cd9bbb6d78209530b57cdfc5465ad909383"}] }]}
+    }
+  }
+}

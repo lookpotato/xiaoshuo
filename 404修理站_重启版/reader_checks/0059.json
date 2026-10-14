@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 59,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T06:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "45e9a0e4255cd75848ad97ed984c1f02025e21dd332837067b90abff0f924c95",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章泵底证人已被拖出，但主泵仍在回压，队伍必须处理北线第二盏红灯和未取出的值班簿。",
+      "evidence": ["北线第二盏红灯亮起来时，泵底的热水已经漫过段野的脚踝。"]
+    },
+    "immediate_problem": {
+      "answer": "值班簿正在北线值班室里被火烧掉，同时总阀升压会让旧管爆裂，秦砚和米沙也撑不了多久。",
+      "evidence": ["簿子在里头。烧完，就没了。"]
+    },
+    "decision_basis": {
+      "answer": "秦砚敲出一短两长，林小满据此辨认出北线总阀正在升压，并判断全开会把压力冲进旧管。",
+      "evidence": ["一短，两长。\n\n林小满猛地转头：“这不是我姐。是总阀在升压。”"]
+    },
+    "action_logic": {
+      "answer": "林小满用残电容外壳做旁路，让假回路暂时以为阀已关并留下十秒；老崔补焊门框，段野借窗口进入值班室撕出最后一页。",
+      "evidence": ["这片只能做旁路。接上，红线会以为阀已经关了，真线能给我们留十秒。"]
+    },
+    "result_and_cost": {
+      "answer": "段野抢出写有Q-17和北线全开字样的关键页，伤员被拖出，但旁路、最后焊丝、驾驶环、清晰录音和冷却沟阀杆都耗尽，多人伤势加重。",
+      "evidence": ["段野把值班簿页塞给苏青禾，转身抓住证人。阿图尔背起米沙，白露拖住秦砚，老崔一把扯下自己的断柄，几个人挤向检修门。"]
+    },
+    "reader_hook": {
+      "answer": "北线总阀已经全开，旧管开始爆响；值班簿的Q-17和林秋从融雪塔传来的节拍指向一场更大的接管与救援。",
+      "evidence": ["检修门外，北线总阀咔地一声，全开。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "旁路",
+      "plain_explanation": "一条临时绕开的线路，让假回路暂时显示阀已关闭，同时给真线留下短暂操作时间。",
+      "evidence": "这片只能做旁路。接上，红线会以为阀已经关了，真线能给我们留十秒。"
+    }
+  ],
+  "unexplained_terms": []
+}

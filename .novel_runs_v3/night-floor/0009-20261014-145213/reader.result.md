@@ -1,0 +1,1 @@
+读感审查已完成，结果写入 [reader_review.json](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0009-20261014-145213/reader_review.json>)。其中 **blocking 2 处、nonblocking 2 处**；JSON 格式已验证。

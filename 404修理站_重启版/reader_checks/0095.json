@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 95,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T13:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "3d127cd8b788da9ca7e806ca14165d9a01f44317ff4af5d9a6e15fee91260632",
+  "questions": {
+    "previous_context": {
+      "answer": "Q-17旧车的车尾冷却线通往旧风暴沟，另一辆车已经启动，修理站门外还有冒用林秋声音的人敲门。",
+      "evidence": ["旧风暴沟的车声贴着地面滚过去，三短一长，越来越远。"]
+    },
+    "immediate_problem": {
+      "answer": "队伍必须在伤员留守、追车和门外诱骗之间选择，Q-17还只有一次点火机会。",
+      "evidence": ["段哥，车头还能点一次。点完，冷却线要是接不上，发动机就锁死。"]
+    },
+    "decision_basis": {
+      "answer": "苏青禾根据阀片和尾灯说明错用会放空冷却水，阿图尔根据右轮停半拍判断车辆可能沿用弟弟的驾驶习惯。",
+      "evidence": ["以前他倒车，右轮会多停半拍。刚才车在墙里也是这样。可能是他，可能不是。我要看清楚。"]
+    },
+    "action_logic": {
+      "answer": "林小满接灰管并扯断主电线让Q-17脱墙，段野把阀片插入车尾缺口后按半圈等待三短一长回灯，以保持冷却回水。",
+      "evidence": ["阀片插进尾部右侧那道缺口，转半圈，等尾灯回三短一长，再转半圈。"]
+    },
+    "result_and_cost": {
+      "answer": "Q-17成功脱离墙缝并取得回灯核验，但冷却水泄尽，林小满手背起泡、阿图尔左腿加重、苏青禾掌伤渗血，门外者仍在拧锁。",
+      "evidence": ["段野拔出阀片，车尾冷却水猛地泄下。"]
+    },
+    "reader_hook": {
+      "answer": "阿图尔从烧焦蓝片认出驾驶者像是已死七年的弟弟，而冒用林秋声音的人已经开始拧开门锁。",
+      "evidence": ["是我弟弟。可是他已经死了七年。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 18,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T16:24:09+08:00",
+  "revision_rounds": 5,
+  "narrative_sha256": "fd55a2b8477f68d8430170c4f8694535dd47d3a1a8a3d4297690033896d71b47",
+  "questions": {
+    "previous_context": {"answer": "地下炉正在点名活人，三名伤员靠局部暖槽保温，城防已经围站。", "evidence": ["三个人一起发冷。热再掉一格，我只能保两个。"]},
+    "immediate_problem": {"answer": "旧炉要把林秋和炉下人员写成回收完成，城防也将从外面撞入。", "evidence": ["把活人……写成完成。"]},
+    "decision_basis": {"answer": "林秋确认可以只改一次，并指出必须接灰端、不能拔掉主线。", "evidence": ["能……改一次。"]},
+    "action_logic": {"answer": "林小满切断灰端错误回路，林秋制造设备故障回执，苏青禾再用确认片反播回收令固定责任。", "evidence": ["林小满扯断右侧焦黑线。蓝光塌下去，第二盏灯灭了，第一盏只剩针尖大的亮。"]},
+    "result_and_cost": {"answer": "回收登记被取消，三名伤员重新获得热量，但主线、焊片、识别灯、铜线和护理遮挡物均有损耗。", "evidence": ["设备故障解除。回收完成取消。"]},
+    "reader_hook": {"answer": "第六个蓝灯对应的人拒绝他们进入，而城防已撞开第一道门，段野仍决定开门。", "evidence": ["段守成的儿子，肯进炉了。"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

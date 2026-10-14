@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 17,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T18:45:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "82aaaef05f34828dff622dac0fbded536aacc16334e60f9da29532a82f750a81",
+  "questions": {
+    "previous_context": {"answer": "后门被修理站锁死，队伍只能在无热环境中救伤员并追地下信号。", "evidence": ["后门锁死以后，修理站里只剩一片黑。"]},
+    "immediate_problem": {"answer": "伤员会冻伤，地下炉又可能把活人登记为回收完成。", "evidence": ["没有热，冻伤会往骨头里走。"]},
+    "decision_basis": {"answer": "林小满从两短一长的敲击和旧动力匣信号判断林秋在地下且受到逼迫。", "evidence": ["她以前敲动力匣，短一下是要电，短两下是要我别碰。现在多一长，说明下面有人逼她改信号。"]},
+    "action_logic": {"answer": "老崔用废铜管把地下炉热量导入旧暖槽，避免把压力全顶回管道；林小满接主线让林秋能把信息交出来。", "evidence": ["废了才好，接到旧暖槽，不会把压力全顶回去。"]},
+    "result_and_cost": {"answer": "局部热量恢复、林秋主线被接住，但确认片触发点名，队伍消耗铜管并面临城防围站。", "evidence": ["地下炉轰然启动。"]},
+    "reader_hook": {"answer": "炉下至少亮起五盏蓝灯，城防又从外侧围住整座修理站。", "evidence": ["这一次，锁住他们的不是修理站。"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

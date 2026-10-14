@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "chapter_number": 90,
+  "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a",
+  "plan_sha256": "2235d6f27439f1f8055311dd2c38a0973332a037206746e42dff4b1e85fc3e7f",
+  "review_method": "same-context-evidence-review",
+  "modules": {
+    "world_presentation": {
+      "status": "passed",
+      "assessment": "正文用窄道的宽度、左侧热风、右侧回水和三分钟限制说明主炉底部是供人检修但会抽走上方热位的通路；热槽变暗、伤员掉压和门框承力把空间规则落到可见后果。",
+      "evidence": [
+        {"chapter": 90, "quote": "这个口往主炉下面落，热从左边走，回水从右边抽。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"},
+        {"chapter": 90, "quote": "三分钟得回来，不然上头热位先空。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}
+      ],
+      "checks": {
+        "orientation": {
+          "verdict": "met",
+          "answer": "正文交代了人物在车底窄道入口，窄道向主炉下方落，热从左侧走、回水从右侧抽，停留时间受热位约束。",
+          "support": "原句直接给出通道方向、两侧管路和三分钟限制。",
+          "evidence": [{"chapter": 90, "quote": "这个口往主炉下面落，热从左边走，回水从右边抽。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]
+        },
+        "rule_before_use": {
+          "verdict": "met",
+          "answer": "短楔和窄道回水限制都在段野进入前说明，随后才发生下窄道和热位下降。",
+          "support": "短楔的收缩后果与热位倒计时先于实际进入动作出现。",
+          "evidence": [{"chapter": 90, "quote": "过热就缩，车会压回去。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]
+        }
+      },
+      "issues": [],
+      "cross_chapter_review": "本章延续前章的回收口与热位约束，新增窄道的空间方向和停留限制；主炉深层原因与Q-17来源仍保留为线索。",
+      "state": {
+        "reader_knowledge": [
+          {"dimension": "空间", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "人物位于城门内侧废检修岔道，窄道向主炉下方落，左侧送热、右侧回水。", "evidence": [{"chapter": 90, "quote": "这个口往主炉下面落，热从左边走，回水从右边抽。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]},
+          {"dimension": "社会秩序", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "识别臂会按见证人与交付对象写记录，主炉能用记录和回声替代活人。", "evidence": [{"chapter": 90, "quote": "主炉的三短一长立刻跟上，震得回水管一阵乱抖。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]},
+          {"dimension": "普通人生活", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "伤员依靠低位热槽维持呼吸，热量不足会让伤势和回水压力一起恶化。", "evidence": [{"chapter": 90, "quote": "热槽的火色暗了一格。箱壁上的冰霜化开一圈，里面的人咳了一声。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]},
+          {"dimension": "主角位置", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "段野是现场修理判断者，必须在救人、守车和责任记录之间分配有限资源。", "evidence": [{"chapter": 90, "quote": "那就都别省。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]},
+          {"dimension": "特殊规则", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "短楔会因过热收缩，读写片能在Q-17刻痕处显出交付字段，敲击节拍可被主炉复制。", "evidence": [{"chapter": 90, "quote": "冷蓝字猛地亮开：Q-17，交付对象——", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]}
+        ]
+      }
+    },
+    "de_ai_writing": {
+      "status": "passed",
+      "assessment": "正文以短楔、阀帽、驾驶扣、回水敲击和烧伤推进现场，没有用抽象总结替代动作；人物说话保留抢话、打断、礼貌施压和结论先行的差异。",
+      "evidence": [
+        {"chapter": 90, "quote": "莫回。这个节拍不是我姐的。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"},
+        {"chapter": 90, "quote": "如果是他，你会先问，还是先拉？", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}
+      ],
+      "checks": {
+        "specificity": {
+          "verdict": "met",
+          "answer": "正文反复用具体的短楔、阀帽、驾驶扣、冷铁和敲击节拍推进判断。",
+          "support": "这些对象都带着可观察的动作或即时后果。",
+          "evidence": [{"chapter": 90, "quote": "阿图尔把旧驾驶扣往车轮底座里又磕了一下。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]
+        },
+        "lexical_repetition": {
+          "verdict": "met",
+          "answer": "敲击、回水和热位的重复分别承担辨认信号、报告压力和制造倒计时的作用，没有用同一隐喻替代不同结果。",
+          "support": "林小满、米沙和主炉的节拍在正文中被区分并造成不同选择。",
+          "evidence": [{"chapter": 90, "quote": "它在报压力。", "narrative_sha256": "df39182a8ec10d94c933a27d7ac7ab302f44dc3f51007d2303c5b7c9b634fd1a"}]
+        }
+      },
+      "issues": [],
+      "cross_chapter_review": "本章保持前章的修理现场词汇和人物口吻，删去重复的背景解释；下一章继续控制‘账’等比喻只在责任记录场景出现。",
+      "state": {"emotion_aftershock": "林小满从把假节拍当姐姐求救转为主动辨认校正节拍；阿图尔因三道刻痕更接近弟弟线索，但仍不敢确认。"}
+    }
+  }
+}

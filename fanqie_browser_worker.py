@@ -477,15 +477,11 @@ def _author_note_preview_count(scope: Locator) -> int:
 
 
 def author_note_text(chapter: Chapter) -> str:
-    """Build a clearly delimited, non-story aid for the chapter image."""
+    """Build the required 作者有话说 text from the chapter image description."""
     description = re.sub(
         r"\s+", " ", chapter.image_alt_text or chapter.title
     ).strip()
-    return (
-        "【本章辅助说明｜以下内容仅帮助理解配图，不属于小说正文】\n"
-        f"本章配图：{description}\n"
-        "【辅助说明结束】"
-    )
+    return f"本章配图：{description}"
 
 
 def fill_author_note_text(scope: Locator, chapter: Chapter) -> None:
@@ -888,6 +884,22 @@ def enable_timed_publish(page: Page) -> None:
         page.wait_for_timeout(600)
     if switch.get_attribute("aria-checked") != "true":
         raise FanqieRetryable("定时发布开关回读失败")
+
+
+def disable_timed_publish(page: Page) -> None:
+    """Turn off scheduling for an explicitly requested immediate submission."""
+    scope = publish_dialog(page)
+    switches = visible_matches(scope.locator("[role='switch'], .arco-switch"))
+    if len(switches) != 1:
+        raise FanqieRetryable(
+            f"立即发布时定时开关匹配到 {len(switches)} 个，期望 1 个"
+        )
+    switch = switches[0]
+    if switch.get_attribute("aria-checked") == "true":
+        switch.click(force=True)
+        page.wait_for_timeout(600)
+    if switch.get_attribute("aria-checked") != "false":
+        raise FanqieRetryable("立即发布时定时开关回读失败")
 
 
 def debug_checkpoint(message: str) -> None:
@@ -1396,6 +1408,7 @@ def publish(
     publish_date: str,
     publish_time: str,
     debug_browser: bool = False,
+    immediate: bool = False,
 ) -> dict:
     config = parse_publish_config(project)
     chapter = parse_chapter(chapter_path)
@@ -1426,21 +1439,25 @@ def publish(
                     "author_note_image_uploaded": chapter.image_path is not None,
                 }
             choose_ai_yes(page)
-            enable_timed_publish(page)
+            if immediate:
+                disable_timed_publish(page)
+            else:
+                enable_timed_publish(page)
             if debug_browser:
                 debug_checkpoint(
-                    "调试检查点 1/3：已选择“是否使用AI=是”，并打开“定时发布”。"
+                    "调试检查点 1/3：已选择“是否使用AI=是”，并完成发布模式设置。"
                 )
-            choose_date(page, publish_date)
+            if not immediate:
+                choose_date(page, publish_date)
+                if debug_browser:
+                    debug_checkpoint(
+                        f"调试检查点 2/3：已选择发布日期 {publish_date}。"
+                    )
+                choose_time(page, publish_time)
+                verify_publish_settings(page, publish_date, publish_time)
             if debug_browser:
                 debug_checkpoint(
-                    f"调试检查点 2/3：已选择发布日期 {publish_date}。"
-                )
-            choose_time(page, publish_time)
-            verify_publish_settings(page, publish_date, publish_time)
-            if debug_browser:
-                debug_checkpoint(
-                    f"调试检查点 3/3：已设置发布时间 {publish_time}；"
+                    f"调试检查点 3/3：已{'立即提交' if immediate else f'设置发布时间 {publish_time}'}；"
                     "下一步将点击“确认发布”。"
                 )
             assert_safe_page(page, config)
@@ -1453,6 +1470,7 @@ def publish(
             result = verify_list(page, chapter)
             return {
                 "chapter": chapter.number,
+                "immediate": immediate,
                 "author_note_image_uploaded": chapter.image_path is not None,
                 **result,
             }

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 61,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T10:22:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "80c6033cde8a7ce7137d67a24d4a9a29358f28fb58e9a1b59cc7ff3688b9d7cb",
+  "questions": {
+    "previous_context": {
+      "answer": "队伍带着伤员和证据回到404院门，但第二处爆管仍在升压，融雪塔要求他们报出Q-17当班人姓名。",
+      "evidence": ["院门上的红灯还亮着。", "北线第二处爆响隔着雪地传来，院墙跟着抖。"]
+    },
+    "immediate_problem": {
+      "answer": "系统把404视为无人接管，热水将冲进北区，伤员也会因没有热量而断气。",
+      "evidence": ["不报，热水就冲进北区。", "系统会把这里判作无人接管，关闭北线回水。"]
+    },
+    "decision_basis": {
+      "answer": "米沙凭旧驾驶环确认Q-17是班组交接号而非姓名，林小满和他又听出塔声多了一拍。",
+      "evidence": ["以前值班，Q是班组。17是交接号。姓名在后面，不能拿来当阀令。", "塔声多了一拍。"]
+    },
+    "action_logic": {
+      "answer": "段野等人把Q-17页接入读头，用旧焊片卡住回水闸，并把每个人实际碰过的阀、线、伤员和门记录下来，让系统按动作接受多人接管。",
+      "evidence": ["谁碰过阀，谁就留下动作。段野压门，老崔卡闸，林小满辨线，白露救人，阿图尔挡门，维克多转声。"]
+    },
+    "result_and_cost": {
+      "answer": "院内热路暂时建立，接管记录变成多人见证，但动力匣导片碎掉、黑杆笔折断、院门承力下降，多名伤员和人物继续付出代价。",
+      "evidence": ["第一道热水终于被导进院里废槽，热气贴着地面爬向秦砚和米沙。", "动力匣的银灰导片碎成粉末。", "接管记录：多人见证。"]
+    },
+    "reader_hook": {
+      "answer": "Q-17的交接人仍未补写，北侧巡检灯下出现通向第二处爆管的无名脚印，说明有人正在伪造最后一拍。",
+      "evidence": ["Q-17交接人：待补写。", "它正通向第二处爆管。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "仿声",
+      "plain_explanation": "仿声是有人在塔外补出假的最后一拍，冒充原本的回声。",
+      "evidence": "仿声不是从塔里来的。有人在塔外面，替它补最后一下。"
+    }
+  ],
+  "unexplained_terms": []
+}

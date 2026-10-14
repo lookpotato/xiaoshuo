@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 60,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T08:00:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "4e50f85cefcab7b55b46cfc1da61281b085ad9f324718bbab1b7a187d4476c3f",
+  "questions": {
+    "previous_context": {"answer": "队伍刚从北线值班室带出Q-17关键页、黑杆笔和伤员，北线总阀全开，旧管开始爆响。", "evidence": ["北线第一声爆响从雪地下钻出来时，段野正把泵底证人往黑锅背架上塞。"]},
+    "immediate_problem": {"answer": "第一处旧管即将爆裂，热水会冲伤队伍并放空北区热量；伤员和证人还要撤离。", "evidence": ["再让它顶两下，整段管子会从中间裂开，热水先冲伤人，再把北区的热量一口气放没。"]},
+    "decision_basis": {"answer": "段野看见阀井塌陷和管壁鼓起，老崔确认承力梁能做临时支撑，秦砚指出不能走管线中间。", "evidence": ["段野冲到红手轮旁。轮心卡着半枚断齿，手摸上去立刻起泡。"]},
+    "action_logic": {"answer": "段野拆黑锅最后承力梁插入阀下，老崔用唯一焊点做抱箍，阿图尔用黑锅肩甲顶管，维克多用最后冷却铆钉截断炮控回传。", "evidence": ["老崔咬住焊枪，给梁和阀座打下唯一一圈抱箍。"]},
+    "result_and_cost": {"answer": "第一处爆管暂时压住，队伍带着伤员和证人进404院门；黑锅失去背架，动力匣裂开，驾驶舱护板和最后保温层、冷却铆钉耗尽。", "evidence": ["第一处爆管终于低了下去，只剩热水沿雪沟哗哗流。"]},
+    "reader_hook": {"answer": "融雪塔用多一拍的节拍要求404确认接管并报出Q-17当班人，院门红灯写下404待核验。", "evidence": ["回答有效。请报Q-17当班人姓名。"]}
+  },
+  "new_terms": [{"term": "抱箍", "plain_explanation": "用承力梁和焊点临时箍住阀座，先压低爆管压力；代价是黑锅失去回程承力。", "evidence": "老崔咬住焊枪，给梁和阀座打下唯一一圈抱箍。"}],
+  "unexplained_terms": []
+}

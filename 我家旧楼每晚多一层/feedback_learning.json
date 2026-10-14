@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "uncomfortable-93b52dfe26d8",
+      "scope": "book",
+      "book_id": "night-floor",
+      "category": "uncomfortable",
+      "principle": "住户在现场谈维修时间和受损物品时，先让最迫近的要求从眼前处境里说出，其余要求随对方的回应自然带出。",
+      "applies_when": "本书邻里、房东与维修人员在同一现场协商多件具体事务时。",
+      "avoid": "不必把紧急告知或确需逐项确认的记录拆成闲聊，也不要让人物为显得口语化而说不清责任边界。",
+      "rationale": "这类协商会随旧楼每层带来的空间和利益问题反复出现；原则能保留事务信息，同时避免人物把它们逐项念成台词。",
+      "tags": [
+        "邻里关系",
+        "维修现场",
+        "对话"
+      ],
+      "recommended_scope": "book",
+      "confidence": "high",
+      "evidence_feedback_ids": [
+        "20261013-130020-3d16c347"
+      ],
+      "evidence_count": 1,
+      "confirmed_at": "2026-10-13T16:23:12.964596+08:00",
+      "updated_at": "2026-10-13T16:23:12.964596+08:00"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+    "schema_version":  1,
+    "chapter_number":  92,
+    "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495",
+    "plan_sha256":  "5b8fae0c539314beae4587a5fedad1590c7151c2f34a8407dcdc413da9788b65",
+    "review_method":  "same-context-evidence-review",
+    "modules":  {
+                    "world_presentation":  {
+                                               "status":  "passed",
+                                               "assessment":  "正文先通过热气断掉、伤员热位和门内喘息建立生活约束，再用左右槽和具体开门动作交代回水门的即时用途；深层的接班人与林秋真实位置仍保留为线索。",
+                                               "evidence":  [
+                                                                {
+                                                                    "chapter":  92,
+                                                                    "quote":  "开错了，热水回城里，咱们这几个人先冻。开对了，门后的人才有气。",
+                                                                    "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                }
+                                                            ],
+                                               "issues":  [
+
+                                                          ],
+                                               "cross_chapter_review":  "第91章只留下四号门和接班人喊话，本章补足门的热量分流作用及伤员如何受影响；普通人依赖热路的理解由门后受困的配给站人员继续落地。",
+                                               "checks":  {
+                                                              "orientation":  {
+                                                                                  "verdict":  "met",
+                                                                                  "answer":  "读者从四号回水门后的窄室、热槽和门外伤员知道人物在主炉回水区域，队伍靠热位维持呼吸并受主炉登记约束。",
+                                                                                  "support":  "正文给出窄室、左右槽用途和热位后果。",
+                                                                                  "evidence":  [
+                                                                                                   {
+                                                                                                       "chapter":  92,
+                                                                                                       "quote":  "开错了，热水回城里，咱们这几个人先冻。开对了，门后的人才有气。",
+                                                                                                       "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                              "rule_before_use":  {
+                                                                                      "verdict":  "met",
+                                                                                      "answer":  "苏青禾在段野操作前交代钥匙回半格后再压短柄的顺序及错序后果。",
+                                                                                      "support":  "规则说明先于段野照做。",
+                                                                                      "evidence":  [
+                                                                                                       {
+                                                                                                           "chapter":  92,
+                                                                                                           "quote":  "先回半格。再压短柄。不要同时动。",
+                                                                                                           "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                       }
+                                                                                                   ]
+                                                                                  }
+                                                          },
+                                               "state":  {
+                                                             "reader_knowledge":  [
+                                                                                      {
+                                                                                          "dimension":  "空间",
+                                                                                          "status":  "known",
+                                                                                          "summary":  "四号回水门后有贴着回水管的窄室和阀箱，外侧连接缺齿车与伤员热位。",
+                                                                                          "evidence":  [
+                                                                                                           {
+                                                                                                               "chapter":  92,
+                                                                                                               "quote":  "门后没有林秋，只有一间贴着回水管的窄室。",
+                                                                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                           }
+                                                                                                       ],
+                                                                                          "support_kind":  "explicit",
+                                                                                          "required_now":  true
+                                                                                      },
+                                                                                      {
+                                                                                          "dimension":  "社会秩序",
+                                                                                          "status":  "hinted",
+                                                                                          "summary":  "配给站人员与接班名单受主炉登记约束，但登记制度的完整范围仍未展开。",
+                                                                                          "evidence":  [
+                                                                                                           {
+                                                                                                               "chapter":  92,
+                                                                                                               "quote":  "一个穿旧配给站棉服的女人靠在阀箱旁",
+                                                                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                           }
+                                                                                                       ],
+                                                                                          "support_kind":  "inferred",
+                                                                                          "required_now":  false
+                                                                                      },
+                                                                                      {
+                                                                                          "dimension":  "普通人生活",
+                                                                                          "status":  "known",
+                                                                                          "summary":  "热位决定伤员能否呼吸，门内受困者靠回水门获得气息。",
+                                                                                          "evidence":  [
+                                                                                                           {
+                                                                                                               "chapter":  92,
+                                                                                                               "quote":  "门缝里立刻传出一声喘息。",
+                                                                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                           }
+                                                                                                       ],
+                                                                                          "support_kind":  "explicit",
+                                                                                          "required_now":  true
+                                                                                      },
+                                                                                      {
+                                                                                          "dimension":  "主角位置",
+                                                                                          "status":  "known",
+                                                                                          "summary":  "段野作为修理工站在开门与承担登记责任的交界处，拒绝用血替主炉补签。",
+                                                                                          "evidence":  [
+                                                                                                           {
+                                                                                                               "chapter":  92,
+                                                                                                               "quote":  "您不是设备，别替它补签。",
+                                                                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                           }
+                                                                                                       ],
+                                                                                          "support_kind":  "explicit",
+                                                                                          "required_now":  true
+                                                                                      },
+                                                                                      {
+                                                                                          "dimension":  "特殊规则",
+                                                                                          "status":  "known",
+                                                                                          "summary":  "四号门需钥匙回半格后压短柄，左槽送热、右槽抽回水，错序会同时放水。",
+                                                                                          "evidence":  [
+                                                                                                           {
+                                                                                                               "chapter":  92,
+                                                                                                               "quote":  "先回半格。再压短柄。不要同时动。",
+                                                                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                           }
+                                                                                                       ],
+                                                                                          "support_kind":  "explicit",
+                                                                                          "required_now":  true
+                                                                                      }
+                                                                                  ]
+                                                         }
+                                           },
+                    "de_ai_writing":  {
+                                          "status":  "passed",
+                                          "assessment":  "关键判断均落在钥匙、短柄、护板、担架、名单和热位等对象上；‘账’等抽象词未被滥用，人物对白通过抢话、省略、职业指令和关系称呼区分。",
+                                          "evidence":  [
+                                                           {
+                                                               "chapter":  92,
+                                                               "quote":  "他把最后半截短楔塞进门轴下面，护肩钢片一并折进去。",
+                                                               "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                           }
+                                                       ],
+                                          "issues":  [
+
+                                                     ],
+                                          "cross_chapter_review":  "本章继续使用修理现场的具体物件替代泛化解释，并让林小满用错拍而非作者说明验证声音；下一章需避免重复‘主炉模仿节拍’的句式。",
+                                          "state":  {
+                                                        "next_experiment":  "让下一章用名单残角和旧车号推动核对，减少新增抽象名词。"
+                                                    },
+                                          "checks":  {
+                                                         "specificity":  {
+                                                                             "verdict":  "met",
+                                                                             "answer":  "钥匙、短柄、护板、担架、名单和热位都以可见动作和结果推进冲突。",
+                                                                             "support":  "正文让人物先指具体部件，再呈现开门、失热和受伤后果。",
+                                                                             "evidence":  [
+                                                                                              {
+                                                                                                  "chapter":  92,
+                                                                                                  "quote":  "他把最后半截短楔塞进门轴下面，护肩钢片一并折进去。",
+                                                                                                  "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                         "lexical_repetition":  {
+                                                                                    "verdict":  "met",
+                                                                                    "answer":  "节拍、回水和热位虽多次出现，但分别承担辨声、压力和生存倒计时功能，没有用抽象套话替代动作。",
+                                                                                    "support":  "林小满的错拍、米沙的敲击和白露的热位命令对应不同人物行动。",
+                                                                                    "evidence":  [
+                                                                                                     {
+                                                                                                         "chapter":  92,
+                                                                                                         "quote":  "林小满趴到门缝旁，烧黑的手背贴着最后一截蓝线：“莫慌，听我说。门里那声不是姐。主炉在拿她的节拍招人。”",
+                                                                                                         "narrative_sha256":  "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495"
+                                                                                                     }
+                                                                                                 ]
+                                                                                }
+                                                     }
+                                      }
+                }
+}

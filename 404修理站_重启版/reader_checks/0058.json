@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 58,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T05:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "bb3a8c21c2a03252ef8f6b138ff3c189b0aa55546602059effed7d0c37252f5a",
+  "questions": {
+    "previous_context": {
+      "answer": "上章段野从泵底带回了半签维修单，但主泵仍在回压，泵底的人和米沙都没有脱险。",
+      "evidence": ["段野把半张维修单塞进胸前，刚撑起身，右肩就麻了一片。"]
+    },
+    "immediate_problem": {
+      "answer": "主泵底座持续下沉，窄缝中的证人会被压死；同时米沙和秦砚都在失去呼吸与热量。",
+      "evidence": ["主泵底座还在往下沉。"]
+    },
+    "decision_basis": {
+      "answer": "林小满根据驾驶环敲出的三短一长节拍和自己的旧检修经验，判断这是开泵诱骗而非求救。",
+      "evidence": ["我以前在城防车底下接过这种节拍。它先骗你听见人，再把热水冲下来。"]
+    },
+    "action_logic": {
+      "answer": "段野拔泄压栓让主泵向下喷热水，制造十秒窗口；老崔用骨架钢焊成可脱开的撑脚，队伍趁窗口托出泵底人。",
+      "evidence": ["主泵轰的一声，热水朝底下喷去。窄缝猛地张开"]
+    },
+    "result_and_cost": {
+      "answer": "证人和米沙被带出，低热也恢复了一点，但抗冻针、备用铜片和临时撑脚等资源耗尽，多人伤势恶化，录音盒只剩一次清晰回放。",
+      "evidence": ["白露把抗冻针空壳捏扁：“别说梦话。秦砚的热没跟上。”"]
+    },
+    "reader_hook": {
+      "answer": "新的追读问题是北线仍在燃烧的值班簿里，是否藏着真正下令焊死北线的人。",
+      "evidence": ["老崔看向主泵下面重新亮起的第二盏红灯。\n\n“在北线。还在烧。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "抗冻针",
+      "plain_explanation": "只能让冻僵的人多撑几分钟，不能治好胸伤。",
+      "evidence": "白露撕开药包，摸出最后一支抗冻针：“能让冻僵的人多撑几分钟，治不了伤。”"
+    }
+  ],
+  "unexplained_terms": []
+}

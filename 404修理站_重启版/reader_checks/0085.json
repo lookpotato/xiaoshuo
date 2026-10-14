@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 85,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "178153a01d8ffcff868ac5b61e00d0ba674ae2d72dd9bd8b5a8f5b711884b243",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章缺齿车只倒回半尺，黑铁箱里出现原始接班人的线索；本章从箱锁被另一只手扣住继续。",
+      "evidence": ["箱锁里的第二只手扣住铁链，指节白得像冻在油里的螺栓。"]
+    },
+    "immediate_problem": {
+      "answer": "车若继续进城，林秋线头会被登记成设备；若倒车又会压塌退路并抽干热压，箱内和伤员都可能失去生机。",
+      "evidence": ["再往前，铁箱会被门里的识别臂扫到；再往后，低坡口那截门框就得先折。"]
+    },
+    "decision_basis": {
+      "answer": "段野根据缺齿后轮、车身歪入轨槽、伤员呼吸和箱底节拍判断不能硬撬内锁，之后米沙敲击确认箱内有活人。",
+      "evidence": ["再往前，铁箱会被门里的识别臂扫到；再往后，低坡口那截门框就得先折。"]
+    },
+    "action_logic": {
+      "answer": "外壳和固定带可以松开半格，阿图尔从车底操作、林小满用腕甲卡轮，再由回水阀给十息热压让缺齿车回弹。",
+      "evidence": ["固定带松半格，左轮能回弹。阿图尔还在下面！"]
+    },
+    "result_and_cost": {
+      "answer": "车辆被卡在城门并拖入城内，城门记录改成待核活体，代价是钢楔、腕甲、门框承力和热压耗尽，退路塌掉。",
+      "evidence": ["车轮倒退半尺。"]
+    },
+    "reader_hook": {
+      "answer": "箱内疑似阿图尔弟弟的人用混合节拍呼叫阿图尔，而林秋禁止打开第二层，箱内身份和她的阻止理由都未解决。",
+      "evidence": ["箱壁里，林秋没有再说话。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

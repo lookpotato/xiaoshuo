@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 94,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T12:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "efe924eefb434dd84993a822ab4748d6035a53293049b4d2ef4f073e66c836a9",
+  "questions": {
+    "previous_context": {"answer": "墙后露出的Q-17被确认是旧救援车，车内还有未确认的人，队伍要继续判断声音和接班提示真假。", "evidence": ["Q-17。”周栓说，“不是阀门，是车。救援拖车，旧配给站的。”"]},
+    "immediate_problem": {"answer": "Q-17旧车被墙和铁板卡住，车头可能倒转碾人，主炉还在用接班提示逼段野作选择。", "evidence": ["旧车猛地倒转，车轮朝门内碾来。"]},
+    "decision_basis": {"answer": "林小满根据林秋的说话习惯判断主炉声音是冒用，苏青禾根据值班簿确认三短一长是Q-17回灯标记。", "evidence": ["这声音不是我姐。她要骂人，早骂了，哪会跟个算盘似的说确认。"]},
+    "action_logic": {"answer": "队伍让林小满剪断车头主线但保留尾灯，周栓按回灯找出通往旧风暴沟的冷却线，避免砸门损坏回水管。", "evidence": ["小满，剪车头的主线。别动尾灯。"]},
+    "result_and_cost": {"answer": "Q-17被顶出半个车身并留下三短一长回灯证据，但老崔右肩脱力、阿图尔驾驶扣报废、林小满腕甲烧坏且热路只够一次点火。", "evidence": ["车头挤出墙缝。旧漆剥落，露出一块褪色的白字：北线救援。"]},
+    "reader_hook": {"answer": "旧风暴沟里有另一辆车按三短一长节拍启动，修理站门外还有使用林秋声音的人敲门，段野选择追车尾。", "evidence": ["门外的人用林秋的声音说：“段野，开门。”"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

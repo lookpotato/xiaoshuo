@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 51,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-04T23:40:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "2f69d1bc3090c90e92088eac983cd34375de892de6fa911cc404ed782ccb0974",
+  "questions": {
+    "previous_context": {"answer": "炉底铁板已经打开，林秋的信号退入深处，而总局正借维克多的监察身份封闭修理站。", "evidence": ["维克多胸前的牌敲了三下。", "牌面红灯一闪，跳出两个字：封闭。"]},
+    "immediate_problem": {"answer": "队伍要在切割臂重新进门前弄清监察牌，并保住伤员和林秋的线路，否则有人会死且404会被封。", "evidence": ["摘下来，里面的生命线会断。", "门外切割臂轰然压下。"]},
+    "decision_basis": {"answer": "秦砚凭距离和旧节拍判断三下不是林秋，后来又听出林秋的一短两长是在阻止接线。", "evidence": ["三下不是林秋。她以前借回水线传话，节拍落在炉壳上。", "因为求救不会跟着我学。"]},
+    "action_logic": {"answer": "林小满用应急灯电池接听音线，段野让维克多亲自拔保险线，以免直接撬断他的心跳线。", "evidence": ["这个还有一口。别磨叽，线给我。", "你拔，失去监察权限，可能昏。我们拆，心跳线断，你直接死。"]},
+    "result_and_cost": {"answer": "监察牌被安全断开，维克多的权限失效，阿图尔发出弟弟残码；代价是通讯盒、电池、保温棉和多人的伤势。", "evidence": ["红灯灭了，牌里的三下敲击也停了。", "门轨里的通讯盒已经碎了，阿图尔撑着门，血浸过裤脚。"]},
+    "reader_hook": {"answer": "牌底指向北侧融雪塔，那里传出林秋的一短两长节拍并出现魏姓字样，队伍必须立刻去查。", "evidence": ["牌底竟浮出一行浅字：监察车，北侧融雪塔。", "黑雪下，融雪塔的红灯亮起，照出塔身上新刷的三个字：魏——到此。"]}
+  },
+  "new_terms": [
+    {"term": "监察牌", "plain_explanation": "维克多胸前的身份牌，既报身份，也传送心跳和位置。", "evidence": "牌不是普通身份牌。它一边报身份，一边给监察员传心跳和位置。"},
+    {"term": "生命线", "plain_explanation": "连接监察牌与维克多身体状态的线路，断开可能让他当场倒下。", "evidence": "摘下来，里面的生命线会断。"}
+  ],
+  "unexplained_terms": []
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "chapter_number": 62,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-05T10:19:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "534959cb5c284315144d121551721b9b98acb5455f785a19352a901e3a0eb764",
+  "questions": {
+    "previous_context": {
+      "answer": "404已形成多人见证，但北线第二处爆管仍在升压，院门和伤员都处于危险中。",
+      "evidence": ["404院门上的红灯还没灭，门外的白汽已经翻过雪沟，贴着门槛往里爬。"]
+    },
+    "immediate_problem": {
+      "answer": "第二处爆管会冲垮院门并让伤员失去热量，必须先压住阀座。",
+      "evidence": ["门外第二股白汽一冲，门板就会往院里倒。"]
+    },
+    "decision_basis": {
+      "answer": "林小满和米沙听出多出来的节拍来自融雪塔外，证人又认出脚印带着旧值班用的防滑钩。",
+      "evidence": ["有人用旧班组的东西补拍，不是塔自己响。"]
+    },
+    "action_logic": {
+      "answer": "段野拆下院门短梁卡住阀座，林小满用最后导片只照方向，阿图尔用黑锅顶管，维克多用回传箱把炮口引开。",
+      "evidence": ["她从裂口里挑出最后一缕银灰导片，贴到黑线旁边。不是为了供电，只有一个用处：把外头那一下的方向照出来。"]
+    },
+    "result_and_cost": {
+      "answer": "第二处爆管暂时被压住，热水进入废槽、多人见证被记录；代价是404失去院门，导片、回传箱和最后止血物资耗尽。",
+      "evidence": ["接管记录：多人见证。"]
+    },
+    "reader_hook": {
+      "answer": "融雪塔背面出现从塔内走出的热黑油脚印，Q-17的追问转到脚下，说明补拍者就在下一处阀井或地下。",
+      "evidence": ["这一次，声音不是从塔里来的。", "它就在他们脚下。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "Q-17",
+      "plain_explanation": "Q-17是旧班组的交接号，不是某一个人的姓名。",
+      "evidence": "Q-17只是旧班组的交接号，不是一个人的名字。"
+    },
+    {
+      "term": "热槽",
+      "plain_explanation": "热槽就是把爆管热水引进废弃排水槽，给伤员的手腕保温。",
+      "evidence": "把热水引进废弃排水槽，先做个热槽。再低一点，人就没了。"
+    },
+    {
+      "term": "导片",
+      "plain_explanation": "导片在这里不负责供电，只把仿声最后一拍的方向照出来。",
+      "evidence": "不是为了供电，只有一个用处：把外头那一下的方向照出来。"
+    },
+    {
+      "term": "回传箱",
+      "plain_explanation": "回传箱可以把短距离噪声发出去，把总局炮口引向旧水仓。",
+      "evidence": "它只发噪声，不传姓名。能把总局的炮口引到旧水仓。"
+    }
+  ],
+  "unexplained_terms": []
+}

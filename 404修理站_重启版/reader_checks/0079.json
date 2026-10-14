@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "chapter_number": 79,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "67665aa38667b8c51da3458849e2d8dcfaa72c45c70c98d4a972b424022e6f9a",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章主炉已经开始第二笔点名，段野必须阻止替签回写。",
+      "evidence": ["主炉里的第二笔已经落到一半。"]
+    },
+    "immediate_problem": {
+      "answer": "蓝手套用北区断热逼段野松手，队伍还要保住伤员。",
+      "evidence": ["北区的热快断了。你不让它写，三号城北边今晚就结冰。"]
+    },
+    "decision_basis": {
+      "answer": "苏青禾从铁板背面的回水槽判断，有人关小北区热阀，秦砚的敲击又证明压力正在回升。",
+      "evidence": ["第二笔下面还有回水槽。主炉不是在要您的名字，它在借您的掌力找压力。"]
+    },
+    "action_logic": {
+      "answer": "队伍只开一格回水口把热压顶回北线，同时让林小满烧断借声分叉，避免停炉或替签。",
+      "evidence": ["我只断假的。"]
+    },
+    "result_and_cost": {
+      "answer": "北区恢复一轮短热，林秋名字未被完整写入，但齿片、担架扣、支撑和铁板都受损，伤员仍危险。",
+      "evidence": ["热回来了。三分钟，最多。"]
+    },
+    "reader_hook": {
+      "answer": "林秋原声指向北线水仓，而替签人用段野的声音警告不要带人过去。",
+      "evidence": ["回水仓里，另一个声音用他的嗓子说：“段野，别带他们来。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "回水槽",
+      "plain_explanation": "把热水压力导回北线的槽口，开得太大可能炸掉北边管子。",
+      "evidence": "第二笔下面还有回水槽。主炉不是在要您的名字，它在借您的掌力找压力。"
+    },
+    {
+      "term": "借声线",
+      "plain_explanation": "把林秋留下的节拍接到假声音上的铜线分叉。",
+      "evidence": "它把我姐的节拍挂在借声线上，想叫我自己把路烧开。"
+    },
+    {
+      "term": "Q-17",
+      "plain_explanation": "墙上留下的北线维修编号，指向北线水仓。",
+      "evidence": "主炉墙上的“林秋”慢慢褪去，只留下一个旧维修编号：Q-17，北线水仓。"
+    }
+  ],
+  "unexplained_terms": []
+}

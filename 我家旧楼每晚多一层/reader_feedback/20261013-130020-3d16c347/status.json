@@ -1,0 +1,20 @@
+{
+  "status": "applied",
+  "message": "最新正式稿已更新；旧版本已收入草稿箱，过期验收已撤销，重新验收前不得发布",
+  "updated_at": "2026-10-13T16:23:21.289505+08:00",
+  "run_id": "20261013-130020-58f65918",
+  "applied_at": "2026-10-13T16:23:21.285916+08:00",
+  "receipt": {
+    "chapter": 6,
+    "filename": "0006-先别往九楼搬.md",
+    "applied_at": "2026-10-13T16:23:21.285916+08:00",
+    "word_count": 2282,
+    "revision_scope": "wording",
+    "revision_scope_label": "措辞级",
+    "previous_sha256": "88fd8d2632f84d78c3940e4e40fda05dd741b6635622fd88b272d114debbd6a5",
+    "current_sha256": "f0459daf50ab128f3304b1410dcdd836677613759ce0d90a8d39b1e0b3792116",
+    "backup": "reader_feedback\\20261013-130020-3d16c347\\original_before_apply.md",
+    "invalidated_checks": [],
+    "message": "最新正式稿已更新，页面已切回新正文；旧版本已收入草稿箱。"
+  }
+}

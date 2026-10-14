@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 74,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "661bc3a830d6cb78f19c55b1a83da72ad2fe5f5aa1ebcbe5bed97431343cbcb1",
+  "questions": {
+    "previous_context": {"answer": "上一章北三段旧管开始全线响起，队伍必须在回写和热量冲突中进入旧管。", "evidence": ["三号城的旧管一节一节地响。"]},
+    "immediate_problem": {"answer": "旧管闸即将开启，伤员的热量窗口很短；若处理失误，热屋会失热，秦砚等人会先撑不住。", "evidence": ["段野，旧管再响，北三闸要开了。", "秦砚的床架响两下，米沙跟着敲一下。"]},
+    "decision_basis": {"answer": "林小满凭林秋节拍会收回而伪声只会往前骗，苏青禾又从扣牌和铁板读出入城闸与林秋维修人的残码，判断应切断回写分叉并进闸追查。", "evidence": ["姐的节拍会收回来。它只会往前骗。", "还有一行。入城闸，维修人——林秋。"]},
+    "action_logic": {"answer": "老崔用半枚阀片限住闸座热压，白露先送伤员，段野把扣牌压进铁槽让回报漏出，林小满把焦绝缘皮塞进分叉烧断伪声。", "evidence": ["阀片卡进闸座，热水的冲劲立刻小了一半。", "林小满看准那道缝，把烧焦绝缘皮往里一塞。"]},
+    "result_and_cost": {"answer": "三名伤员通过旧管闸，伪声被烧断并留下城防维修车轮印与入城残码；阀片碎裂，绝缘皮报废，段野掌伤和阿图尔腿伤继续恶化。", "evidence": ["扣牌已经黑了，背面只剩五个字：第四班，入城。", "老崔左手一软，整个人撞到管壁上，阀片从中间裂开。"]},
+    "reader_hook": {"answer": "队伍进入旧管后，前方红线门里的男人声称要交付第二见证，并说林秋不在热塔，迫使他们继续追查她的真实去处。", "evidence": ["“还有，林秋让我带句话。”", "“她不在热塔。”"]}
+  },
+  "new_terms": [{"term": "入城闸", "plain_explanation": "三号城北三段旧管中负责收进维修车和人员的闸口，进入后可能无法原路返回。", "evidence": "以前……那儿收车。车进去，人不一定出来。"}],
+  "unexplained_terms": []
+}

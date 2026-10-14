@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "chapter_number": 91,
+  "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f",
+  "plan_sha256": "3a2152155d044cdf208be3886d4490edaab716371c7880f0a11bf18ae58bbcb2",
+  "review_method": "same-context-evidence-review",
+  "modules": {
+    "world_presentation": {
+      "status": "passed",
+      "assessment": "正文用回水闸片的左右位置说明热风与回水的即时关系，用三十息热槽倒计时说明资源约束，并以四号回水门的字段把行动方向落到具体门和管口。",
+      "evidence": [
+        {"chapter": 91, "quote": "闸片往左，热风往外顶；往右，回水管就开始吸。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"},
+        {"chapter": 91, "quote": "段野，三十息。过了这个数，热槽要空。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"},
+        {"chapter": 91, "quote": "Q-17，交付对象，四号回水门。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}
+      ],
+      "checks": {
+        "orientation": {
+          "verdict": "met",
+          "answer": "读者从主炉底部窄道、回水管和四号回水门知道人物所在空间，从热槽和伤员呼吸知道队伍靠热量维持行动。",
+          "support": "正文直接写出窄道、回水管、热槽和四号回水门，并把热量下降与伤员呼吸相连。",
+          "evidence": [{"chapter": 91, "quote": "Q-17，交付对象，四号回水门。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]
+        },
+        "rule_before_use": {
+          "verdict": "met",
+          "answer": "回水闸片在人物依赖它前已通过左右位置说明会放热或抽水，热槽倒计时也先于拖人行动出现。",
+          "support": "闸片的两种位置结果和三十息热槽限制都在段野决定拖人前被说出。",
+          "evidence": [{"chapter": 91, "quote": "闸片往左，热风往外顶；往右，回水管就开始吸。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]
+        }
+      },
+      "issues": [],
+      "cross_chapter_review": "承接第90章窄道与假节拍，本章把抽象的回声冲突落到回水闸片、热槽和四号回水门；Q-17的来源与真正接班人仍保留为后续核对问题。",
+      "state": {
+        "reader_knowledge": [
+          {"dimension": "空间", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "主炉底部窄道连着回水管和更深处的四号回水门。", "evidence": [{"chapter": 91, "quote": "Q-17，交付对象，四号回水门。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]},
+          {"dimension": "社会秩序", "status": "hinted", "support_kind": "inferred", "required_now": false, "summary": "交付对象需要现场核对，责任不能只靠死人名字补录。", "evidence": [{"chapter": 91, "quote": "它不是签收人。它只是把人交到现场。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]},
+          {"dimension": "普通人生活", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "伤员依靠热槽与回水维持呼吸，热量不足会直接威胁生命。", "evidence": [{"chapter": 91, "quote": "你再推，秦砚先没气。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]},
+          {"dimension": "主角位置", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "段野在现场承担把活人和证据拖回来的修理决策。", "evidence": [{"chapter": 91, "quote": "我要把你和这片铁一起带回去。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]},
+          {"dimension": "特殊规则", "status": "known", "support_kind": "explicit", "required_now": true, "summary": "蓝线节拍会被主炉模仿，林秋的两长一短可用来区分真实线路。", "evidence": [{"chapter": 91, "quote": "主炉的假节拍终于断了一拍。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]}
+        ]
+      }
+    },
+    "de_ai_writing": {
+      "status": "passed",
+      "assessment": "冲突主要由具体物件、动作和伤势推进；角色保留误解、抢话、拒绝和答非所问，没有用抽象总结替代现场后果。",
+      "evidence": [
+        {"chapter": 91, "quote": "驾驶扣咔地裂成两片。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"},
+        {"chapter": 91, "quote": "米沙也敲两下，第三下没敲出来。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"},
+        {"chapter": 91, "quote": "人拽出来了，门也锁死了。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}
+      ],
+      "checks": {
+        "specificity": {
+          "verdict": "met",
+          "answer": "关键推进都由安全带、驾驶扣、铜边、担架脚和短楔等具体物件承担，并留下裂开、卡住或断裂的结果。",
+          "support": "正文把人物选择直接接到物件动作和伤势后果，没有用抽象判断替代。",
+          "evidence": [{"chapter": 91, "quote": "驾驶扣咔地裂成两片。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]
+        },
+        "lexical_repetition": {
+          "verdict": "met",
+          "answer": "节拍、交付和热量在本章各自承担辨认、责任和生存倒计时，没有用同一个抽象隐喻替代不同动作。",
+          "support": "节拍用于区分声音，交付用于定位现场核对，热量用于限制救援时间。",
+          "evidence": [{"chapter": 91, "quote": "主炉的假节拍终于断了一拍。", "narrative_sha256": "1f71099a386dda82f4c0a2f230d3c3002a2a9c83519d89b44e45a2f3d24e248f"}]
+        }
+      },
+      "issues": [],
+      "cross_chapter_review": "本章延续修理现场短句和人物不对称表达，避免把Q-17身份一次解释完；下一章需继续控制‘节拍’与‘交付’的重复频率，让新信息落在开门、核对或拒绝动作上。",
+      "state": {"next_experiment": "用一次现场核对动作揭示接班人身份，不用旁白提前宣布。"}
+    }
+  }
+}

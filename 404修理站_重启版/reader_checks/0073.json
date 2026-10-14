@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 73,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "4d050e8f2e80c621b7257d7cd4414bab66abb2457ca22bb013a631860d58bf8e",
+  "questions": {
+    "previous_context": {
+      "answer": "三号城热塔继续用段野的声音报接班，队伍需要处理借声造成的进城回写。",
+      "evidence": ["“404，接班人已到。”"]
+    },
+    "immediate_problem": {
+      "answer": "热屋只剩三分钟窗口，队伍必须在回压冲开门槛前把伤员送进旧管口。",
+      "evidence": ["三分钟。三分钟内把人送到内侧热管口，剩下的我想办法。"]
+    },
+    "decision_basis": {
+      "answer": "林小满发现伪声没有林秋最后一拍，苏青禾确认城防物件与现行回写凭据，队伍据此判断北三段值得追。",
+      "evidence": ["有人在另一头抢话，但他不知道林秋的节拍。"]
+    },
+    "action_logic": {
+      "answer": "段野和老崔撑开检修盖，林小满把绝缘皮塞进接缝，苏青禾扯下扣牌，老崔用阀片转移热压，合力切断回写。",
+      "evidence": ["三个人同时动。"]
+    },
+    "result_and_cost": {
+      "answer": "检修盖下的人滑回旧管，队伍没让林秋名字继续回写，换来的证据是半枚城防扣牌；绝缘皮、阀片承力和多人伤势继续消耗。",
+      "evidence": ["是他们没让那只手把“林——”后面的名字写回红灯。"]
+    },
+    "reader_hook": {
+      "answer": "林秋原声要求追拿她名字进城的人，热塔熄灭后整座三号城旧管同时响起，队伍必须继续进城。",
+      "evidence": ["三号城全城的旧管，开始一节一节地响。"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 12,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T17:24:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "0ed2998e12cc39a7dc9bb837f3b3179d1e1a389f24996c7b997c1eddc0c69a8b",
+  "questions": {
+    "previous_context": {"answer": "上一章救援廊的旧炉正在轰鸣，门外炮口重新充能，门内女人和备用热源芯暴露在炮击下。", "evidence": ["门外炮口充能的嗡鸣压进救援廊，旧炉后那张烧黑的脸只露出半边。"]},
+    "immediate_problem": {"answer": "城防准备轰击并夺走备用热源芯，旧炉和三名伤员也会被一起摧毁。", "evidence": ["门外扩音器响起：“发现旧热源。交付热源芯，伤员可获临时保温额度。”"]},
+    "decision_basis": {"answer": "段野看到伤员承受不了下一炮，林小满判断拔芯会断热，门内女人说明芯内是姐姐的救援印记，因此他们选择改接中继线而不拔芯。", "evidence": ["拿出来，旧炉当场断热；不拿，外头把它连炉一块儿轰烂。"]},
+    "action_logic": {"answer": "阿图尔用报废肩甲扳偏炮管，苏青禾反接魏平回执，林小满把中继线接到识别板制造假目标，老崔焊出热路旁路，白露固定伤员和门内女人。", "evidence": ["她一压铜夹，蓝光轰地窜过门框。门外两台机甲同时转向，识别灯乱闪，像两头突然找不着路的铁兽。"]},
+    "result_and_cost": {"answer": "城防暂时失去热源锁定，热量被导回救援廊，三名伤员稳定；旧工牌、铜夹、铜扣、最后焊芯和热源芯稳定能量被消耗，炮口再次锁定。", "evidence": ["旧炉压力猛地回落，热风钻进救援廊，三名伤员脸上终于有了颜色。"]},
+    "reader_hook": {"answer": "姐姐的神经印记已接入三号城旧中继站，回收指令点名第二签字人林秋，且炮口再次对准救援廊。", "evidence": ["“回收开始：第二签字人，林秋。”"]}
+  },
+  "new_terms": [
+    {"term": "旧中继站", "plain_explanation": "连接旧炉与三号城、可以传递救援印记信号的旧设施。", "evidence": "她把自己接去了三号城旧中继站。"},
+    {"term": "救援印记", "plain_explanation": "林小满姐姐当年接入热源系统、留在中继线路中的神经信号记录。", "evidence": "它里面存的不是你姐姐，是她当年接进去的救援印记。"}
+  ],
+  "unexplained_terms": []
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 72,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "e95ef792e7c822e780eb11db0e6dbbe9009f68828805e61c5e94fe97093654a7",
+  "questions": {
+    "previous_context": {"answer": "泵房红灯已经写出接班人已进城，404空门随即传来段野自己的声音，队伍需要先处理借声开门。", "evidence": ["泵房那盏第二红灯已经灭了，刻在灯下的“接班人，已进城”却没灭。"]},
+    "immediate_problem": {"answer": "空门的借声回路可能抽走热屋的热并骗段野开门，秦砚等伤员只有三分钟热量可撑。", "evidence": ["过了这点，秦砚先撑不住。门一开，冷风灌进来"]},
+    "decision_basis": {"answer": "林小满试出左右两根线分别承载热与回报，秦砚敲出三分钟回压，门内女人敲出的节拍又少了最后一下，老四听出声音没有真实喘息。", "evidence": ["左边是热，右边是回报。两根挨着，谁动错，热屋马上变冰窖。"]},
+    "action_logic": {"answer": "老崔用黑锅护板把门卡在半开隔开热路，苏青禾用交接牌和铁板固定触碰见证，林小满把绝缘皮接到回报线，段野再用断扁铁卡断借声支线。", "evidence": ["短扁铁从中间崩断，铁口正好卡住右线。借声像被掐断的鸡"]},
+    "result_and_cost": {"answer": "借声没有骗开404，热重新爬回热屋，林秋留下的一短一长指向三号城旧管；黑锅最后护板、绝缘皮和扁铁报废，段野掌心被剖开，伤员状态继续恶化。", "evidence": ["门槛下的热重新往热屋爬。", "掌心被断口剖开。"]},
+    "reader_hook": {"answer": "三号城热塔亮起红灯，并用段野声音报出接班人已到，队伍必须进城追查借声者和林秋原声。", "evidence": ["红灯下，有人用段野的声音报出下一句：\n\n“404，接班人已到。”"]}
+  },
+  "new_terms": [
+    {"term": "红灯刻片", "plain_explanation": "从泵房红灯上刮下来的带字铁片，用来碰触并干扰门槛回路。", "evidence": "刻片边缘刚从泵房刮下来，铁屑还扎在掌心"},
+    {"term": "回压", "plain_explanation": "旧管里热水和压力回冲门槛的状态，会决定热屋还能撑多久。", "evidence": "回压只给三分钟，不是门能开三分钟。是热还能撑三分钟。"}
+  ],
+  "unexplained_terms": []
+}

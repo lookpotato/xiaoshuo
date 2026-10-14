@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "chapter_number": 92,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T10:35:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "be4ae5caafa855b42964c179ab3333a3e2e46dbe55d5150c26ee11705956c495",
+  "questions": {
+    "previous_context": {"answer": "四号回水门后有人用林秋的节拍说接班人到了，热气随即断掉，队伍必须开门核对。", "evidence": ["“接班的人到了”落，门缝里的热气断了。"]},
+    "immediate_problem": {"answer": "继续开门会让伤员热位先空。", "evidence": ["白露扫一眼热槽：“再开，伤员热位先空。”"]},
+    "decision_basis": {"answer": "苏青禾从锁座和钥匙判断四号门是热与回水的分流闸，必须先回钥匙再压短柄。", "evidence": ["“这门不是锁，是闸。”苏青禾蹲到门边，指尖在生锈钥匙上一抹，“开错了，热水回城里，咱们这几个人先冻。开对了，门后的人才有气。”"]},
+    "action_logic": {"answer": "先把钥匙回半格，再压短柄，能只开左侧热槽，避免两边同时放水。", "evidence": ["“先回半格。再压短柄。不要同时动。”"]},
+    "result_and_cost": {"answer": "四号门打开，白露等人拖出门后受困的马姐；代价是最后短楔和护肩钢片折断，热位又降。", "evidence": ["门后的女人被白露拖出，周栓用肩膀顶住她，米沙把担架让出半寸，阿图尔死死压住第二只齿。"]},
+    "reader_hook": {"answer": "阀箱里有人握着半枚Q-17阀片，并用林秋的声音叫段野别把自己带回去。", "evidence": ["阀箱里的人，用林秋的声音说：“段野，别把我带回去。”"]}
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}

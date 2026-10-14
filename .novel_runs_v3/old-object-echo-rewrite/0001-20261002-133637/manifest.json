@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "book_id": "old-object-echo-rewrite",
+  "chapter": 1,
+  "run_id": "20261002-133637",
+  "run_dir": "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\.novel_runs_v3\\old-object-echo-rewrite\\0001-20261002-133637",
+  "project": "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版",
+  "sources": [
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\novel_config.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\opening_contract.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\story_bible.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\outline.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\characters.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\world.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\continuity_ledger.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\style_guide.md",
+    "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\旧物回声事务所_系统重写版\\feedback_learning.json"
+  ],
+  "recent_chapters": [],
+  "workflow": [
+    "author_room",
+    "draft",
+    "deep_edit",
+    "reader"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 21,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T22:15:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "a9aea51c1e928f605497e97c6e71f76eb90df7aa586ba9e893f4656b47f18afd",
+  "questions": {
+    "previous_context": {"answer": "北侧废热站门已打开，名单第七位写成段野，林秋的信号来自城内方向。", "evidence": ["第七个空位已经写上了段野两个字，墨迹从末笔往下淌，像有人刚按着他的手盖完章。"]},
+    "immediate_problem": {"answer": "名单正在确认段野，城防机甲逼近，林秋的线路也会被回写。", "evidence": ["三十秒后，第三台机甲会进门。"]},
+    "decision_basis": {"answer": "名单依赖城里的授权而非废热站钥匙，众人必须保住纸面责任链并查授权来源。", "evidence": ["这张纸认的不是铁，是城里的授权。"]},
+    "action_logic": {"answer": "林小满接旁路、白露把金属片接入监测线，借余热把林秋信号转出来，避免主线继续登记。", "evidence": ["白露将薄片折成接触片，压进伤员监测线。三个微弱的红点亮起，随后墙内也闪了一下。"]},
+    "result_and_cost": {"answer": "名单回写被撕断，第七位暂未接管热路，但队伍耗掉了水壶余热、散热片和证据盒外壳，林秋主线烧毁。", "evidence": ["身后的旧炉轰然熄灭。三只水壶冷了，散热片弯成废铁，证据盒只剩一片半焦金属。"]},
+    "reader_hook": {"answer": "第三次名单确认需要活体见证，队伍必须赶去第三转运井救林秋并查盖章者。", "evidence": ["“第三次确认，需活体见证。”"]}
+  },
+  "new_terms": [
+    {"term": "旁路", "plain_explanation": "绕开旧炉登记端、临时接通线路的备用线路。", "evidence": "“我接的是旁路！”"},
+    {"term": "第三转运井", "plain_explanation": "城务厅北侧、四号转运口旁的中继位置，林秋的信号可能经过那里。", "evidence": "“第三转运井。”她说，“林秋在那里，或者信号经过那里。”"}
+  ],
+  "unexplained_terms": []
+}

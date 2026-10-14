@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "chapter_number": 34,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-03T18:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "4bbbe5c0d583f4bad23b8e269d1c7db930a9bd1516c9ad7076e488ee483f7860",
+  "questions": {
+    "previous_context": {"answer": "上一章队伍救出井下女人后，焊死铁板后又传来活人的声音，段野因此决定立即拆板。", "evidence": ["焊死铁板的缝里。", "焊缝没开，铁板里却传来一声闷咳。"]},
+    "immediate_problem": {"answer": "必须在北侧回水最后一股热耗尽前打开铁板救人，否则井里伤员会在冷水中失温。", "evidence": ["撬断了，北侧回水的最后一股热也没了，井里六个伤员得在冷水里熬。"]},
+    "decision_basis": {"answer": "铁板后传来闷咳，证明后面不是空壳或录音，段野据此继续撬板。", "evidence": ["焊缝没开，铁板里却传来一声闷咳。"]},
+    "action_logic": {"answer": "老崔用阀边的热水只给两次发力机会；阿图尔卡住魏平，苏青禾压住确认按钮并留证，林小满试线后主动断开。", "evidence": ["老崔把扁铁往下送了半寸。热水从阀座底下喷出来，沿着砖缝漫到段野靴里，脚背像被烙铁舔了一下。", "林小满盯着黑缝，嘴唇动了动，没喊姐。"]},
+    "result_and_cost": {"answer": "罗沉被救出并交出写有林秋状态的旧交接页，但北侧回水阀塌掉、最后保温层和门轴耗尽，队伍只能先带伤员回站。", "evidence": ["男人终于被拖过铁板。", "最后一股热水冲过来，阀座轰然塌下。", "段野把弯成钩的旧门轴丢在地上。"]},
+    "reader_hook": {"answer": "林秋仍在三号城主井的回收流程中，而404修理站已经成为下一名确认对象，段野必须在断热中迎接回收。", "evidence": ["下一名确认对象：404修理站。", "这一次，扩音器报的是他的名字。"]}
+  },
+  "new_terms": [
+    {"term": "主井", "plain_explanation": "三号城里负责确认人员并牵动回收记录的那口大井。", "evidence": "我只知道，主井每确认一个人，回收井就多亮一盏红灯。"}
+  ],
+  "unexplained_terms": []
+}

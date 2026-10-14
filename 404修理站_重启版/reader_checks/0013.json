@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "chapter_number": 13,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T16:24:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "9a118d61848163fa2ea8864312241b6e15bb1020852e307ce29f851c907ffd34",
+  "questions": {
+    "previous_context": {"answer": "第12章炮口重新锁定救援廊，热源芯和门内女人面临回收；第13章以炮口红光贴入门缝承接。", "evidence": ["炮口的红光贴着门缝爬进来，先照亮门内女人半张烧黑的脸，再照亮她手腕上那圈发蓝的热源芯。"]},
+    "immediate_problem": {"answer": "炮口锁定门内热源，若不处理会把修理站、炉子和伤员一起轰塌。", "evidence": ["炮口第二次充能。门外的白光从缝里挤进来，炉壁跟着发出闷响。"]},
+    "decision_basis": {"answer": "魏平发现回执被城内改令反咬，林小满又看到旧中继线仍有信号，因此众人判断要偏转炮口并保住线路。", "evidence": ["有人在城里改了指令。炮口现在认的是门内热源，不是我的凭证。"]},
+    "action_logic": {"answer": "阿图尔用识别板和肩甲偏转识别光，苏青绫截取回执做诱饵，老崔半开回压阀维持炉压，林小满把灰线与蓝线换接传出信号；代价是各自的装备和伤势。", "evidence": ["林小满把灰线剥出铜芯，猛地压进中继分叉口。"]},
+    "result_and_cost": {"answer": "炮口暂时失去锁定，林秋被确认在三号城，但旧工牌、识别板、铜夹、无菌布和线路受损，多人新增烧伤或旧伤崩裂。", "evidence": ["门外炮口失去锁定，轰出的炮弹擦着屋顶飞过，整片铁皮像被巨手掀开。"]},
+    "reader_hook": {"answer": "旧中继站确认第二签字人线索与段家有关，且随后用两短一长再次敲击，迫使众人前往追查。", "evidence": ["像有人在黑暗里，替他们把门又敲开了一条缝。"]}
+  },
+  "new_terms": [
+    {"term": "回压阀", "plain_explanation": "把过热气体放回管道、降低热量的小阀。", "evidence": "回压阀就是把过热气体放回管道的小阀，阀门一开，热量会降，旧中继线却会被反冲烧断。"}
+  ],
+  "unexplained_terms": []
+}

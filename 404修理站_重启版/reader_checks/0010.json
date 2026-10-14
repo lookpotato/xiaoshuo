@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "chapter_number": 10,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-09T00:00:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "245aa36fefc4f7965bc4ed833b8f5371956472e9e3b758b98233e79cc9dfacdf",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章留下的第七码门敲击和门外炮口危机直接延续到本章，队伍必须在伤员和热量窗口耗尽前开门。",
+      "evidence": ["门外的炮口锁住红灯时，第七码门里又敲了三下。"]
+    },
+    "immediate_problem": {
+      "answer": "城防要求交出三名伤员，否则北区停热；站内只有七分钟热量，门锁还没有打开。",
+      "evidence": ["门外扩音器紧跟着响：“交付三名活体编号，北区停热倒计时开始。”"]
+    },
+    "decision_basis": {
+      "answer": "白露确认热管只剩七分钟，说明伤员和开门都必须立刻处理，随后队伍根据门锁和炮口的限制分工。",
+      "evidence": ["热管还能撑七分钟。过了，医疗桌先凉，人也跟着凉。"]
+    },
+    "action_logic": {
+      "answer": "用黑锅断梁顶住铰链，再用护腕导电片给旧锁一次短脉冲，锁醒后由老崔撬开焊缝；阿图尔同时用识别板卡住城防机甲。",
+      "evidence": ["动力匣没电。要开门，得给旧锁喂一下脉冲——让它醒几秒。"]
+    },
+    "result_and_cost": {
+      "answer": "门成功打开，三名伤员进入救援廊，代价是护腕、黑锅断梁、医疗桌保温板和门的回封能力被耗掉，且门后有炉烟。",
+      "evidence": ["林小满的护腕烧成两截，门锁发出最后一声脆响。段野把断梁往前一送，门轰然打开。"]
+    },
+    "reader_hook": {
+      "answer": "门内出现与段守成有关的第二签字人，而且旧炉正在重新轰鸣，众人必须查明门内的人和危险。",
+      "evidence": ["“第二个签字人，仍在门内。”"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "第七码门",
+      "plain_explanation": "旧救援线留下的封死门，门后连接救援廊。",
+      "evidence": "第七码门是旧救援线留下的封死门，门后本该只有废轨和冷炉。"
+    },
+    {
+      "term": "活体编号",
+      "plain_explanation": "城防给活人贴上的交付货码，用来把人当作要交出去的货物。",
+      "evidence": "活体编号，就是城防给活人贴上的交付货码。"
+    },
+    {
+      "term": "脉冲",
+      "plain_explanation": "一次短促电流，让没有持续电力的旧锁短暂醒来。",
+      "evidence": "要开门，得给旧锁喂一下脉冲——让它醒几秒。"
+    },
+    {
+      "term": "识别板",
+      "plain_explanation": "机甲用来认身份的金属牌，也能被临时塞进履带卡住机甲。",
+      "evidence": "那是机甲用来认身份的金属牌。"
+    },
+    {
+      "term": "救援廊",
+      "plain_explanation": "旧门后供救援车和伤员通行的狭窄通道。",
+      "evidence": "门后是救援廊。"
+    }
+  ],
+  "unexplained_terms": []
+}

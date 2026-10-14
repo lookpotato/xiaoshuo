@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 19,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-01T16:24:09+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "9f95be0c9dc4ea9b8465060181dd8ee2d931cab64c0457e6891983a293227e40",
+  "questions": {
+    "previous_context": {
+      "answer": "第六盏蓝灯下有活人，旧炉可能把整张名单重新登记，三名伤员仍依赖暖槽。",
+      "evidence": ["第六盏蓝灯在炉门后晃了一下，像被谁用指甲掐住了。"]
+    },
+    "immediate_problem": {
+      "answer": "开第六舱可能触发旧炉全名单播报，炉下男人阻止开门而林秋仍困在线路中。",
+      "evidence": ["开门，旧炉会把整张名单再播一遍。"]
+    },
+    "decision_basis": {
+      "answer": "林秋说明男人锁的是登记端而不是门，且提醒接线会让外面的人不再被写进里面。",
+      "evidence": ["他锁的是登记端，不是门。"]
+    },
+    "action_logic": {
+      "answer": "林小满把主线接到不经过旧炉登记端的旁路，门内女人压住手动闸，段野用铁扣固定闸杆。",
+      "evidence": ["她将主线分成两股，另一股接到旁边一根废弃导线：“旁路，临时不经过旧炉登记端的线。"]
+    },
+    "result_and_cost": {
+      "answer": "第六舱暂时打开并救出炉下男人，回收暂停；焊片、净水、识别灯反光片和腕甲动力都耗尽，城防进入修理站。",
+      "evidence": ["设备故障。回收暂停。"]
+    },
+    "reader_hook": {
+      "answer": "林秋揭示段守成不是锁名单的人，而是把钥匙交给了城里的人，修理站第三道门也落下。",
+      "evidence": ["不是他锁的。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "旁路",
+      "plain_explanation": "一条临时绕开旧炉登记端的线路，让主线继续工作但不把人写进回收记录。",
+      "evidence": "旁路，临时不经过旧炉登记端的线。"
+    }
+  ],
+  "unexplained_terms": []
+}

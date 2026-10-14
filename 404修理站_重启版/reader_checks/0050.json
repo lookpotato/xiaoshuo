@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "chapter_number": 50,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-04T23:20:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "2f529383f960e0bcf137660131d0c4be9fcadb5bf8d21c4d174bf7a1791e72c3",
+  "questions": {
+    "previous_context": {
+      "answer": "上一章炉底铁板后出现姓氏残句，维克多阻止段野打开；本章直接从那阵敲击和冷水中的铁板继续。",
+      "evidence": ["铁板后那三个敲击声还在响。"]
+    },
+    "immediate_problem": {
+      "answer": "旁通放空后最后余温没了，伤员会失温，同时城防切割臂正在逼近铁板，队伍必须在失温和被定位前开板。",
+      "evidence": ["炉底那点余温已经被旁通放空，压力表的指针掉到零线，锅炉像一只喘不动的破肺。"]
+    },
+    "decision_basis": {
+      "answer": "秦砚用敲击提示右侧是会把城里引来的回传线，林小满接左侧后听见林秋警告；老崔又辨出左边是旧焊、右边是后补焊。",
+      "evidence": ["“回传。”秦砚喘得很急，“接上，城里会顺着它找过来。”"]
+    },
+    "action_logic": {
+      "answer": "段野用维修章顶锁、老崔只拆左侧旧焊，林小满接左侧铜片，阿图尔掰断通讯保险片；这样能开板并截断定位，但会烧毁薄片、加重伤势并失去余温。",
+      "evidence": ["“临时封路、关阀、改回收顺序。拿它的人，现场不用等监察签字。”"]
+    },
+    "result_and_cost": {
+      "answer": "铁板被打开，露出仍有温度的手和黑牌，取得‘魏’姓责任线索；代价是最后暖路、腕甲薄片、通讯保险片和多人伤口都进一步消耗。",
+      "evidence": ["铁板向里塌了半寸。"]
+    },
+    "reader_hook": {
+      "answer": "总局越过维克多发出封闭404的指令，而铁板后的敲击声最后从维克多胸前的监察牌里传出，责任链和声音来源同时反转。",
+      "evidence": ["是从维克多胸前的监察牌里传出来的。"]
+    }
+  },
+  "new_terms": [
+    {
+      "term": "黑牌",
+      "plain_explanation": "黑牌是不用等监察签字、就能临时封路、关阀和改回收顺序的执行牌。",
+      "evidence": "“临时封路、关阀、改回收顺序。拿它的人，现场不用等监察签字。”"
+    }
+  ],
+  "unexplained_terms": []
+}

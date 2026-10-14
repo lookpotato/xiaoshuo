@@ -1,0 +1,1 @@
+已写好 [author_room.md](<C:/Users/16007/Desktop/小说/xiaoshuo/.novel_runs_v3/night-floor/0006-20261011-135034/author_room.md>)。记录从各人今晚原本要办的事出发，梳理他们带进现场的压力和顾虑，以及新楼层出现后可能改变的生活与关系；没有预设对白或逐场提纲。

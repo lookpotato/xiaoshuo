@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "chapter_number": 38,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-03T21:58:00+08:00",
+  "revision_rounds": 2,
+  "narrative_sha256": "3fae79d0823aa38ebc413ee1ca6bcf71c7381d822c7677e2dcc83b67389a4e62",
+  "questions": {
+    "previous_context": {"answer": "城防已经破门，维修槽内有人阻止段野用旧铅牌确认。", "evidence": ["门外的城防切割臂卡在断铜线上，火花一跳一跳，像坏掉的焊机还在喘。", "段野，别拿你爹的牌子开门。"]},
+    "immediate_problem": {"answer": "城防要强行抓走林小满并夺取控制台，槽盖和门口同时撑不住；放压会先害死槽内人。", "evidence": ["少废话！交出林小满！", "拉下去，槽里的人先没。"]},
+    "decision_basis": {"answer": "林小满根据敲击节拍判断槽内声音不是林秋，老崔根据焊缝位置判断左边第二道可拆。", "evidence": ["林秋敲的是一短两长。以前她在动力舱叫我收线，就这么敲。", "左边第二道，能拆。"]},
+    "action_logic": {"answer": "段野用黑锅残架顶住槽盖，地底人从槽底找横梁，林小满接炉灯传递节拍，老崔只砸安全焊缝。", "evidence": ["主梁刚顶上槽盖，焊缝便咔地裂了一声。", "老崔拾起铁条，砸向左边第二道焊缝。"]},
+    "result_and_cost": {"answer": "队伍撬开槽盖确认里面的人活着，城防因看到活体确认对象和回收记录暂退；代价是细铜线、铁条、铅牌、净水和多人伤势。", "evidence": ["槽盖裂开一掌宽。", "水只剩壶底浅浅一层。"]},
+    "reader_hook": {"answer": "林秋在断线后重新出现，警告不能让槽内男人出来，而城防又举起切割臂。", "evidence": ["因为下一声，叫的是第二个确认人。", "灯里传出林秋的声音。", "段野，别让他出来。"]}
+  },
+  "new_terms": [
+    {"term": "维修槽", "plain_explanation": "黑锅后方焊死的铁槽，眼下既关着活人，也能隔开城防。", "evidence": "维修槽平时塞废件，眼下能当一口硬壳，把里面的人和城防隔开。"},
+    {"term": "确认片", "plain_explanation": "把北线的人登记进事故和回收系统的旧铅牌。", "evidence": "那不是钥匙。那是确认片。"}
+  ],
+  "unexplained_terms": []
+}

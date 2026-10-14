@@ -10,12 +10,14 @@ from datetime import timezone
 from pathlib import Path
 
 import xiaoshuo_on_demand
-from fanqie_novel_manager import validate_parallel_character_threads
+from fanqie_novel_manager import _readable_interaction_map, validate_parallel_character_threads
 from xiaoshuo_on_demand import (
     _codex_result_detail,
+    enforce_local_archive_gates,
     ensure_unique_chapter_title,
     expected_regular_slot,
     normalize_schedule_entry,
+    local_write_only_prompt,
     pending_chapter,
     record_upload,
     should_publish_immediately,
@@ -41,7 +43,11 @@ class ParallelCharacterThreadTests(unittest.TestCase):
         (self.thread_dir / "01-甲.md").write_text("甲的独立动向\n", encoding="utf-8")
         (self.thread_dir / "02-乙.md").write_text("乙的独立动向\n", encoding="utf-8")
         (self.thread_dir / "interaction_map.md").write_text(
-            "|人物|交织|\n|---|---|\n|甲|乙|\n", encoding="utf-8"
+            "|场景|人物行动|相互影响|结果|\n"
+            "|---|---|---|---|\n"
+            "|门口|甲守门，乙转移物资|乙拿走工具后甲改变守门办法|两人守住入口但耗尽工具|\n"
+            "|后院|乙引开追兵，甲关闭侧门|甲的关门动作给乙留下撤退窗口|追兵改道，两人分别受伤|\n",
+            encoding="utf-8",
         )
         (self.thread_dir / "state_update.md").write_text(
             "甲：下一状态\n乙：下一状态\n", encoding="utf-8"
@@ -57,6 +63,78 @@ class ParallelCharacterThreadTests(unittest.TestCase):
         errors = validate_parallel_character_threads(self.project, 7)
         self.assertTrue(any("人物 乙 缺少独立人物线" in error for error in errors))
 
+    def test_cast_metadata_is_not_treated_as_characters(self) -> None:
+        self.write_valid_threads()
+        (self.thread_dir / "00-cast.md").write_text(
+            "# 本章人物线总表\n"
+            "\n"
+            "- 主要视角：甲。\n"
+            "- 出场人物：甲、乙。\n"
+            "- 当章目标：守住门。\n"
+            "- 当章小胜负：门没倒。\n"
+            "- 主要钩子：门外还有人。\n",
+            encoding="utf-8",
+        )
+        errors = validate_parallel_character_threads(self.project, 7)
+        self.assertTrue(any("未列出人物名单" in error for error in errors))
+        self.assertFalse(any("人物 主要视角" in error for error in errors))
+        self.assertFalse(any("人物 当章目标" in error for error in errors))
+
+    def test_numbered_interaction_log_is_readable(self) -> None:
+        self.assertTrue(_readable_interaction_map(
+            "1. 甲改变路线，乙因此失去掩护。\n"
+            "2. 丙的行动迫使甲承担代价，结果队伍撤离。\n" * 4,
+            ["甲", "乙", "丙"],
+        ))
+
+    def test_interaction_map_does_not_depend_on_fixed_keywords(self) -> None:
+        text = (
+            "段野顶住院门，魏平向门外报出站内资产，苏青禾当场截住凭证，"
+            "门外机甲暂时不能进院，魏平却靠近了旧收货台。\n"
+            "白露拆下蓄热板救人，老崔少了稳住热管的材料，只能拆门片补管夹，"
+            "伤员保住清醒，院门结构随即变得更脆。\n"
+        )
+        self.assertTrue(_readable_interaction_map(
+            text, ["段野", "魏平", "苏青禾", "白露", "老崔"]
+        ))
+
+    def test_interaction_map_rejects_single_character_filler(self) -> None:
+        text = (
+            "段野站在门口反复检查设备，记录天气、温度和门锁状态，随后继续检查。\n"
+            "段野又检查一遍设备，记录相同项目，没有其他人物参与，也没有交织内容。\n"
+        )
+        self.assertFalse(_readable_interaction_map(text, ["段野", "林小满"]))
+
+    def test_reader_gate_failure_rolls_back_state_before_success(self) -> None:
+        self.write_valid_threads()
+        state_path = self.project / "chapter_state.json"
+        state_path.write_text(
+            json.dumps({"last_completed_chapter": 7, "next_chapter_number": 8}),
+            encoding="utf-8",
+        )
+        original = {"last_completed_chapter": 6, "next_chapter_number": 7}
+        with patch.object(
+            xiaoshuo_on_demand.manager,
+            "validate_reader_checks",
+            return_value=["第 7 章正文哈希不一致"],
+        ):
+            with self.assertRaisesRegex(RuntimeError, "正文哈希不一致"):
+                enforce_local_archive_gates(self.project, 7, 1, original)
+        self.assertEqual(
+            json.loads(state_path.read_text(encoding="utf-8")), original
+        )
+
+
+class LocalWritingPromptTests(unittest.TestCase):
+    def test_write_only_prompt_requires_shared_chinese_dialogue_base(self) -> None:
+        prompt = local_write_only_prompt("cosmic-404", {"id": "test-job"})
+        self.assertIn("shared/chinese_dialogue_foundation.md", prompt)
+        self.assertIn("shared/chinese_dialogue_feedback.jsonl", prompt)
+        self.assertIn("shared/narrative_prose_foundation.md", prompt)
+        self.assertIn("narrative_style_pack.md", prompt)
+        self.assertIn("人物的关系", prompt)
+        self.assertIn("口语逆翻译", prompt)
+        self.assertIn("不能全书固定替换", prompt)
 
 class RegularScheduleTests(unittest.TestCase):
     def setUp(self) -> None:

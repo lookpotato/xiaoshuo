@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "chapter_number": 82,
+  "mode": "outline-blind-first-reader",
+  "outline_blind": true,
+  "reviewer": "codex-reader-gate",
+  "status": "passed",
+  "reviewed_at": "2026-09-06T11:30:00+08:00",
+  "revision_rounds": 1,
+  "narrative_sha256": "99aec8505467a37c9e1f634fc17d3d1290abc73fbf93dc9c2284eff4c2cf29e2",
+  "questions": {
+    "previous_context": {
+      "answer": "井下的第二道闸后仍有声音，林小满正要下井确认林秋。",
+      "evidence": ["井下那声“别下来”贴着厚水传上来，轻得像有人隔着一堵墙说梦话。"]
+    },
+    "immediate_problem": {
+      "answer": "替签人控制旧手动杆，想用名字把热压和接班责任推给队伍。",
+      "evidence": ["有人在里头按着旧手动杆。谁的名字先落下，谁就被算成接班人。"]
+    },
+    "decision_basis": {
+      "answer": "米沙指出右侧缺齿，阿图尔据此确认车辆倒着进入并被换过传动轮。",
+      "evidence": ["右侧缺齿。车是倒着进来的。"]
+    },
+    "action_logic": {
+      "answer": "林小满把铜线接入回水管和低位闸，让假声断掉后按先红后黑的顺序开闸。",
+      "evidence": ["她说完，把铜线两端分别压进管箍。火星在她指缝里跳了一下，手套立刻冒出焦味。"]
+    },
+    "result_and_cost": {
+      "answer": "黑闸被打开，热水进入低位管逼退替签人，但井盖承重断裂、退路只剩窄缝。",
+      "evidence": ["黑闸终于松开，热水轰地冲进低位管。替签人的手被水流逼退，蓝带断成两截，一截留在轴柄上，另一截顺水漂出来。", "门框承重铁脚断了。老崔向后一滚，右肩撞在墙上，整条胳膊立刻垂下去。"]
+    },
+    "reader_hook": {
+      "answer": "蓝灯检修门开启，段野决定进入门内掰开替签人的第二只手。",
+      "evidence": ["段野盯着那盏蓝灯：“我去掰开替签人的第二只手。”"]
+    }
+  },
+  "new_terms": [],
+  "unexplained_terms": []
+}
