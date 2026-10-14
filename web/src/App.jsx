@@ -66,8 +66,8 @@ function CreatePanel({ books, selectedBookId, generationVersion, onNotice, onRef
 function ChapterList({ book, onOpen, onDelete }) {
   return <article className="panel chapter-panel">
     <div className="panel-head"><div><p className="eyebrow">ARCHIVE</p><h2>章节归档</h2></div><span className="count-label">{book.chapter_count} 章</span></div>
-    <p className="chapter-delete-note">从某章重写会先将该章及后续本地章节移入可恢复的回收目录；随后在章节生成区手动启动新稿。</p>
-    <div className="chapter-list">{book.chapters.length ? book.chapters.map((chapter) => <div className="chapter-row" key={chapter.number}><button className="chapter-open" onClick={() => onOpen(book.id, chapter.number)}><span className="chapter-number">{String(chapter.number).padStart(4, "0")}</span><span className="chapter-title">{chapter.title}</span><span className="chapter-arrow">↗</span></button><button className="chapter-delete" onClick={() => onDelete(book, chapter)} aria-label={`从第 ${chapter.number} 章起重写`}>从此章重写</button></div>) : <div className="empty">还没有归档章节</div>}</div>
+    <p className="chapter-delete-note">删除某章时会同时移出该章及之后所有本地章节，内容进入可恢复的回收目录。</p>
+    <div className="chapter-list">{book.chapters.length ? book.chapters.map((chapter) => <div className="chapter-row" key={chapter.number}><button className="chapter-open" onClick={() => onOpen(book.id, chapter.number)}><span className="chapter-number">{String(chapter.number).padStart(4, "0")}</span><span className="chapter-title">{chapter.title}</span><span className="chapter-arrow">↗</span></button><button className="chapter-delete" onClick={() => onDelete(book, chapter)} aria-label={`从第 ${chapter.number} 章起删除`}>删除</button></div>) : <div className="empty">还没有归档章节</div>}</div>
   </article>;
 }
 
@@ -158,12 +158,12 @@ export default function App() {
   async function deleteChapterTail(targetBook, targetChapter) {
     const affected = targetBook.chapters.filter((item) => item.number >= targetChapter.number).sort((a, b) => a.number - b.number);
     const range = affected.length > 1 ? `第 ${affected[0].number}—${affected[affected.length - 1].number} 章` : `第 ${targetChapter.number} 章`;
-    if (!window.confirm(`确定从《${targetBook.title}》第 ${targetChapter.number} 章开始重写吗？\n\n${range}的旧正文、草稿、审稿与人物线会移入可恢复的回收目录；此操作只重置进度，不会立刻生成新正文。`)) return;
+    if (!window.confirm(`确定删除《${targetBook.title}》${range}吗？\n\n相关正文、草稿、审稿与人物线会移入可恢复的回收目录；下一次生成将从第 ${targetChapter.number} 章开始。`)) return;
     try {
       const result = await api("/api/chapter/delete-tail", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: targetBook.id, from_chapter: targetChapter.number, confirm_from_chapter: targetChapter.number }) });
       setChapter(null);
       await loadOverview();
-      setNotice(`重写准备完成：旧第 ${result.deletion.deleted_chapters.join("、")} 章已存入回收目录；请从第 ${result.deletion.next_chapter_number} 章逐章生成`);
+      setNotice(`已删除第 ${result.deletion.deleted_chapters.join("、")} 章；下一章恢复为第 ${result.deletion.next_chapter_number} 章`);
     } catch (error) { setNotice(error.message); }
   }
   async function resume(jobId) { try { await api("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jobId }) }); setNotice("续跑任务已启动"); loadOverview(); } catch (error) { setNotice(error.message); } }

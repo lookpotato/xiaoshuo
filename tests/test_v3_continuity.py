@@ -112,7 +112,6 @@ class UnifiedContinuityTests(unittest.TestCase):
         self.assertEqual(manifest["recent_chapters"], [])
         self.assertEqual(manifest["workflow"][0:3], ["director", "characters", "author_room"])
         self.assertIn("story_clock", (run / "director.md").read_text(encoding="utf-8"))
-        self.assertIn("unknown_pressure", (run / "director.md").read_text(encoding="utf-8"))
         self.assertIn("state_update.md", (run / "continuity.md").read_text(encoding="utf-8"))
 
 

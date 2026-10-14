@@ -34,12 +34,6 @@ def validate_director(root: Path, project: Path, chapter: int) -> None:
         if not isinstance(clock, dict):
             raise V3ValidationError("章节合同缺少 story_clock")
         _validate_clock(clock, previous, chapter)
-        unknown = plan.get("unknown_pressure")
-        if not isinstance(unknown, dict) or any(
-            not isinstance(unknown.get(key), str) or not unknown[key].strip()
-            for key in ("anomaly", "disrupted_expectation", "human_cost")
-        ):
-            raise V3ValidationError("章节合同缺少楼层未知带来的具体压力")
 
 
 def _validate_clock(clock: dict, previous: dict, chapter: int) -> None:

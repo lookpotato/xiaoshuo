@@ -73,34 +73,6 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             self.assertIn("新楼层已出现", state["notes_for_next_chapter"])
             self.assertNotIn("错误的旧时间", state["notes_for_next_chapter"])
 
-    def test_unified_archive_saves_clock_checkpoint_for_rewrite(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            run = root / "run"
-            project = root / "book"
-            run.mkdir()
-            project.mkdir()
-            (run / "manifest.json").write_text('{"workflow":["director"]}', encoding="utf-8")
-            (run / "candidate.md").write_text("# 第 3 章 门后的声音\n\n八楼仍在。", encoding="utf-8")
-            (run / "continuity_review.json").write_text(
-                '{"next_hook":"门后仍有人","unresolved":[]}', encoding="utf-8"
-            )
-            (project / "chapter_state.json").write_text(
-                '{"last_completed_chapter":2,"next_chapter_number":3}', encoding="utf-8"
-            )
-            (project / "timeline_state.json").write_text(json.dumps({
-                "last_chapter": 2, "day": 2, "floor": 8, "after_2347": True,
-                "checkpoints": {"2": {"day": 2, "floor": 8, "after_2347": True}},
-            }), encoding="utf-8")
-            next_clock = {"last_chapter": 3, "day": 3, "floor": 8, "after_2347": False}
-            with patch("novel_v3.validate_unified_run", return_value=next_clock):
-                archive_chapter(run, project, 3)
-            clock = json.loads((project / "timeline_state.json").read_text(encoding="utf-8"))
-            self.assertEqual(clock["checkpoints"]["2"]["floor"], 8)
-            self.assertEqual(clock["checkpoints"]["3"], {
-                "day": 3, "floor": 8, "after_2347": False,
-            })
-
     def test_review_and_archive_accepts_utf8_bom_from_powershell(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -128,13 +128,6 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     state["status"] = "ready"
     state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if chronology_state is not None:
-        prior_clock = json.loads((project / "timeline_state.json").read_text(encoding="utf-8-sig"))
-        checkpoints = dict(prior_clock.get("checkpoints", {}))
-        checkpoints[str(chapter)] = {
-            "day": chronology_state["day"], "floor": chronology_state["floor"],
-            "after_2347": chronology_state["after_2347"],
-        }
-        chronology_state["checkpoints"] = checkpoints
         (project / "timeline_state.json").write_text(
             json.dumps(chronology_state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )

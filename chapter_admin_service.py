@@ -23,9 +23,8 @@ CHAPTER_FILE = re.compile(r"^(\d+)-.+\.md$")
 NUMBERED_ARTIFACT = re.compile(r"^(\d+)\.(?:json|md)$")
 DRAFT_CHAPTER = re.compile(r"(?:^|[-_])chapter[-_](\d{4})(?:\D|$)", re.I)
 LEDGER_HEADING = re.compile(
-    r"(?m)^#{1,6}\s*第\s*(\d+)(?:\s*[—–－-]\s*(\d+))?\s*章"
+    r"(?m)^#{1,6}\s*第\s*(\d+)\s*章(?:后|状态|状态回写|归档后)\b"
 )
-TIMELINE_ROW = re.compile(r"\|\s*第\s*(\d+)(?:\s*[—–－-]\s*(\d+))?\s*章\s*\|")
 
 
 def _read_json(path: Path, default=None):
@@ -93,30 +92,9 @@ def _remaining_chapters(project: Path, from_chapter: int) -> list[int]:
 
 def _truncate_ledger(content: str, from_chapter: int) -> tuple[str, bool]:
     for match in LEDGER_HEADING.finditer(content):
-        if int(match.group(2) or match.group(1)) >= from_chapter:
+        if int(match.group(1)) >= from_chapter:
             return content[: match.start()].rstrip() + "\n", True
     return content, False
-
-
-def _truncate_timeline(content: str, from_chapter: int) -> tuple[str, bool]:
-    lines = content.splitlines()
-    if not any(TIMELINE_ROW.search(line) for line in lines):
-        return content, False
-    kept = []
-    saw_rows = False
-    for line in lines:
-        match = TIMELINE_ROW.search(line)
-        if match:
-            saw_rows = True
-            if int(match.group(2) or match.group(1)) < from_chapter:
-                kept.append(line)
-        elif not saw_rows or line.startswith("|"):
-            kept.append(line)
-    if kept and kept[0].startswith("# 时间线"):
-        kept[0] = f"# 时间线与楼层核对（至第 {from_chapter - 1} 章）"
-    kept.append("")
-    kept.append("续写前以 timeline_state.json 为准，核对故事日、23:47 和最高楼层；后续正文重新规划。")
-    return "\n".join(kept).rstrip() + "\n", True
 
 
 def _relative_destination(trash: Path, project: Path, source: Path) -> Path:
@@ -160,18 +138,6 @@ def delete_chapter_tail(
     if not deleted_chapters:
         raise ValueError(f"第 {from_chapter} 章没有可删除的正文")
 
-    timeline_state_path = project / "timeline_state.json"
-    timeline_state = _read_json(timeline_state_path) if timeline_state_path.is_file() else None
-    checkpoint = None
-    if timeline_state_path.is_file():
-        if not isinstance(timeline_state, dict):
-            raise ValueError("时间线状态无效，不能安全回退章节")
-        checkpoint = timeline_state.get("checkpoints", {}).get(str(from_chapter - 1))
-        if not isinstance(checkpoint, dict) or not all(
-            key in checkpoint for key in ("day", "floor", "after_2347")
-        ):
-            raise ValueError(f"缺少第 {from_chapter - 1} 章时间线检查点，不能安全回退")
-
     trash_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     trash = project / ".chapter_trash" / trash_id
     trash.mkdir(parents=True, exist_ok=False)
@@ -180,10 +146,7 @@ def delete_chapter_tail(
     warnings: list[str] = []
 
     try:
-        for mutable in (
-            state_path, project / "continuity_ledger.md", project / "images" / "catalog.json",
-            timeline_state_path, project / "timeline.md",
-        ):
+        for mutable in (state_path, project / "continuity_ledger.md", project / "images" / "catalog.json"):
             originals[mutable] = mutable.read_bytes() if mutable.is_file() else None
             if mutable.is_file():
                 backup = trash / "before" / mutable.relative_to(project)
@@ -210,19 +173,6 @@ def delete_chapter_tail(
         next_state["status"] = f"chapter_{highest:04d}_archived" if highest else "ready"
         _atomic_json(state_path, next_state)
 
-        if checkpoint is not None:
-            remaining_checkpoints = {
-                key: value for key, value in timeline_state["checkpoints"].items()
-                if key.isdigit() and int(key) < from_chapter
-            }
-            _atomic_json(timeline_state_path, {
-                "last_chapter": highest,
-                "day": checkpoint["day"],
-                "floor": checkpoint["floor"],
-                "after_2347": checkpoint["after_2347"],
-                "checkpoints": remaining_checkpoints,
-            })
-
         ledger_path = project / "continuity_ledger.md"
         if ledger_path.is_file():
             ledger = ledger_path.read_text(encoding="utf-8")
@@ -231,14 +181,6 @@ def delete_chapter_tail(
                 _atomic_text(ledger_path, truncated)
             else:
                 warnings.append("连续性账本没有可识别的分章标题，已保留原文并保存删除前备份")
-
-        timeline_path = project / "timeline.md"
-        if timeline_path.is_file():
-            timeline, changed = _truncate_timeline(timeline_path.read_text(encoding="utf-8"), from_chapter)
-            if changed:
-                _atomic_text(timeline_path, timeline)
-            else:
-                warnings.append("时间线没有可识别的章节表格，已保留原文并保存删除前备份")
 
         catalog_path = project / "images" / "catalog.json"
         catalog = _read_json(catalog_path)
