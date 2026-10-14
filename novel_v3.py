@@ -14,6 +14,9 @@ from pathlib import Path
 from datetime import datetime
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
+from novel_engine_v3.continuity import (
+    stamp_candidate, validate_characters, validate_director, validate_unified_run,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -72,6 +75,10 @@ def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: boo
 
 
 def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
+    manifest_path = run / "manifest.json"
+    chronology_state = None
+    if manifest_path.is_file():
+        chronology_state = validate_unified_run(ROOT, run, project, chapter)
     candidate = run / "candidate.md"
     text = candidate.read_text(encoding="utf-8-sig").strip()
     lines = text.splitlines()
@@ -99,7 +106,10 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     if existing:
         raise V3ValidationError(f"第 {chapter} 章已有归档，已保留现有正文")
     delta_path = run / "state_delta.json"
-    delta = json.loads(delta_path.read_text(encoding="utf-8-sig")) if delta_path.is_file() else {}
+    if manifest_path.is_file():
+        delta = json.loads((run / "continuity_review.json").read_text(encoding="utf-8-sig"))
+    else:
+        delta = json.loads(delta_path.read_text(encoding="utf-8-sig")) if delta_path.is_file() else {}
     next_hook = str(delta.get("next_hook", "")).strip()
     unresolved = delta.get("unresolved", [])
     if isinstance(unresolved, list) and unresolved:
@@ -117,6 +127,10 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     state["notes_for_next_chapter"] = next_hook.strip() or "请从本章结尾和未解决问题承接。"
     state["status"] = "ready"
     state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if chronology_state is not None:
+        (project / "timeline_state.json").write_text(
+            json.dumps(chronology_state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
     return final_path
 
 
@@ -169,6 +183,13 @@ def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
             f"第 {chapter:04d} 章自动返修 {MAX_READER_REPAIRS} 次后仍有 "
             f"{len(review['blocking'])} 项阻塞：{issues}。运行包：{run}"
         )
+    manifest_path = run / "manifest.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+        if manifest.get("workflow") != ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"]:
+            raise V3ValidationError("旧运行包没有完整统一流程，请重新准备章节")
+        stamp_candidate(run)
+        execute(run / "continuity.md", run / "continuity.result.md", run)
     return archive_chapter(run, project, chapter)
 
 
@@ -204,16 +225,20 @@ def main() -> int:
         if args.command == "prepare":
             chapter = (chapter or 1) + 1
             continue
-        for stage in ("author_room", "draft", "deep_edit", "reader"):
+        for stage in ("director", "characters", "author_room", "draft", "deep_edit", "reader"):
             execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
                     capture_candidate=stage == "deep_edit")
+            if stage == "director":
+                validate_director(ROOT, project, int(run.name[:4]))
+            elif stage == "characters":
+                validate_characters(project, int(run.name[:4]), final=False)
         archived = review_and_archive(run, project, int(run.name[:4]))
         print(f"V3 已归档：{archived}")
         chapter = None
     if args.command == "prepare":
         print("V3 已生成准备包，未写正文、未归档。")
     else:
-        print("V3 已完成作者房间、初稿、深层编辑、读者检查和本地归档。")
+        print("V3 已完成总设计师、人物私线、作者房间、初稿、编辑、读者与连续性检查和本地归档。")
     return 0
 
 

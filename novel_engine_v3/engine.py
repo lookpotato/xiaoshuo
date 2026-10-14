@@ -13,6 +13,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from novel_stage_pipeline import director_prompt, plan_path, load_config
+
 
 class V3ValidationError(ValueError):
     pass
@@ -60,7 +62,8 @@ class AuthorEngine:
             match = re.match(r"^(\d+)-", path.name)
             if match and int(match.group(1)) < number:
                 found.append((int(match.group(1)), path))
-        return [p for _, p in sorted(found)[-2:]]
+        limit = load_config(self.root)["recent_chapters_for_director"]
+        return [p for _, p in sorted(found)[-limit:]]
 
     def _existing(self, project: Path, names: list[str]) -> list[Path]:
         return [project / name for name in names if (project / name).is_file()]
@@ -77,9 +80,6 @@ class AuthorEngine:
         run = self.root / ".novel_runs_v3" / book_id / f"{chapter:04d}-{run_id}"
         run.mkdir(parents=True, exist_ok=False)
         sources = self._existing(project, book.get("sources", []))
-        plan = project / "chapter_plans" / f"{chapter:04d}.json"
-        if plan.is_file():
-            sources.append(plan)
         recent = self._recent(project, chapter)
         manifest = {
             "schema_version": 3,
@@ -90,7 +90,7 @@ class AuthorEngine:
             "project": str(project),
             "sources": [str(p.resolve()) for p in sources],
             "recent_chapters": [str(p.resolve()) for p in recent],
-            "workflow": ["author_room", "draft", "deep_edit", "reader"],
+            "workflow": ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"],
         }
         (run / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -106,6 +106,33 @@ class AuthorEngine:
     ) -> dict[str, str]:
         source_list = "\n".join(f"- `{p.resolve()}`" for p in sources)
         recent_list = "\n".join(f"- `{p.resolve()}`" for p in recent) or "- 无历史正文"
+        number = manifest["chapter"]
+        plan = plan_path(self.root, project, number).resolve()
+        thread_dir = project / "character_threads" / f"{number:04d}"
+        director = director_prompt(self.root, project, number, (
+            f"作品：{book['title']}。保持人物独立行动与既有时间、空间、承诺连续；"
+            "本章若跨过固定增层时刻，章节合同须明确增层及现场后果。"
+        ))
+        if manifest["book_id"] == "night-floor":
+            director += f"""
+读取 `{project / 'timeline_state.json'}`。章节合同 JSON 另须加入 story_clock 对象：
+{{"start_day": 整数, "end_day": 整数, "start_after_2347": true或false,
+"end_after_2347": true或false, "start_floor": 整数, "end_floor": 整数,
+"crossed_2347": 从上一章终点到本章终点经过的次数}}。
+故事日从首次增层当天为第 1 天；当日 23:47 前最高楼层为 6+故事日-1，之后再加一层。
+不能用章节号代替故事日；有时间跳跃也要计算其间每个 23:47。
+"""
+        characters = f"""# 人物独立故事线
+
+先读 `{plan}`、作品资料和最近正文：
+{source_list}
+{recent_list}
+
+再读 `shared/parallel_character_pipeline.md`。检索本书 `character_threads/` 中每位出场人物最近一次私线，区分人物知道的事实与读者知道的事实。
+为本章全部有戏份人物创建 `{thread_dir}`，写 `00-cast.md`、每人独立的 `序号-人物名.md` 和 `interaction_map.md`。名单使用 `## 角色名单`，每人一行 `- 人物名：本章身份与目标`。
+每条私线写明故事日与时刻、地点、个人目标、已知与未知、独立行动、代价及下一步；交织表按时间排序。
+此阶段不得写正式正文。`state_update.md` 留给成稿后的回写阶段。
+"""
         clock_check = (
             "先按 timeline.md 核对本章开始和结束的故事日、跨过的 23:47、当时最高楼层，"
             "并把人物说的‘明天’‘后天’换成故事日；若跨过 23:47，正文必须交代新增楼层。"
@@ -117,7 +144,7 @@ class AuthorEngine:
 
 你不是提示词执行器。你要像一个长期写中国故事的作者，先理解这一章的人为什么此刻来到这里、各自还要过自己的生活、彼此有什么说不出口的顾虑，再决定这章怎样发生。
 
-读取这些资料：
+先读取并遵守章节合同 `{plan}` 与本章人物私线 `{thread_dir}`；再读取这些资料：
 {source_list}
 
 最近正文：
@@ -140,7 +167,7 @@ class AuthorEngine:
 """
         draft = f"""# 初稿：像作者写，不像系统填
 
-读取 `{run / 'author_room.md'}`、manifest 中列出的作品资料和最近正文。
+读取 `{run / 'author_room.md'}`、`{plan}`、`{thread_dir}`、manifest 中列出的作品资料和最近正文。
 {clock_check}
 
 先把场景写出来，再让信息从人的行动和关系里出现。中国人的自然感不靠方言词、口头词或短句数量，而来自人物正在办什么事、欠谁人情、怕什么后果、愿不愿意把话说死，以及公开和私下的不同。
@@ -151,7 +178,7 @@ class AuthorEngine:
 """
         edit = f"""# 深层编辑：保留故事，恢复人的生活
 
-读取 `{run / 'candidate.md'}`、`{run / 'author_room.md'}` 和最近正文。
+读取 `{run / 'candidate.md'}`、`{run / 'author_room.md'}`、`{plan}`、`{thread_dir}` 和最近正文。
 {clock_check}
 
 不要做表面口语润色。检查每个关键场景：人物是否真的带着自己的生活进入；是否先处理了眼前的事、物品、面子或边界；是否把只有作者知道的信息提前说完；是否所有人都在高效配合剧情；是否有一句话只是为了传递设定。
@@ -172,4 +199,23 @@ class AuthorEngine:
 
 把明显破坏人物或现场可信度的具体句子列入 blocking，触发返修；轻微卡顿列入 nonblocking。每项引用原句并说明它为什么不像此人此刻会说的话。不要因为个人偏好要求方言、网络梗或更短句，也不要把必要的安全提醒和现实办事信息一概判错。结果写入 `{run / 'reader_review.json'}`。
 """
-        return {"author_room": room, "draft": draft, "deep_edit": edit, "reader": reader}
+        continuity = f"""# 成稿后连续性审查与人物状态回写
+
+读取 `{run / 'candidate.md'}`、`{plan}`、`{thread_dir}`、作品时间线、前一章和 `shared/parallel_character_pipeline.md`。
+按正文真实发生的事更新 `{thread_dir / 'state_update.md'}`，逐人记录结尾时间地点、资源、知识、关系、承诺、秘密和下一步；未写进正文的私线标为读者未见。
+写 `{run / 'continuity_review.json'}`，只使用以下结构：
+{{"chapter": {number}, "blocking": [], "evidence": {{"begin": "正文原句", "end": "正文原句"}},
+"next_hook": "依据最终正文写给下一章的事实与待办", "unresolved": ["仍未解决的具体事项"]}}
+发现人物、时间、地点、承诺与正文或章节合同矛盾时，把具体问题写入 blocking，不得替正文补事实。
+"""
+        if manifest["book_id"] == "night-floor":
+            continuity += f"""
+另写 `{run / 'chronology.json'}`：
+{{"chapter": {number}, "start_day": 整数, "end_day": 整数, "start_after_2347": true或false, "end_after_2347": true或false,
+"start_floor": 整数, "end_floor": 整数,
+"crossed_2347": 整数, "events": [{{"day": 整数, "floor": 整数, "quote": "正文中新增楼层的原句"}}],
+"start_quote": "正文开头的时间依据原句", "end_quote": "正文结尾的时间依据原句"}}
+故事日从首次增层当天为第 1 天；每天 23:47 必增一层。先读取 `{project / 'timeline_state.json'}` 的上一章终点，crossed_2347 是从上一章终点到本章终点经过的次数；events 应逐次写出正文中明确交代的新楼层。引用必须来自候选正文；不确定故事日或跨夜次数就写入 blocking，不能猜。
+"""
+        return {"director": director, "characters": characters, "author_room": room,
+                "draft": draft, "deep_edit": edit, "reader": reader, "continuity": continuity}

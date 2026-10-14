@@ -50,6 +50,29 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             with self.assertRaises(V3ValidationError):
                 archive_chapter(run, project, 2)
 
+    def test_unified_archive_uses_final_continuity_hook(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / "run"
+            project = root / "book"
+            run.mkdir()
+            project.mkdir()
+            (run / "manifest.json").write_text('{"workflow":["director"]}', encoding="utf-8")
+            (run / "candidate.md").write_text("# 第 2 章 新楼层\n\n新楼层出现。", encoding="utf-8")
+            (run / "state_delta.json").write_text('{"next_hook":"错误的旧时间"}', encoding="utf-8")
+            (run / "continuity_review.json").write_text(
+                '{"next_hook":"新楼层已出现","unresolved":["尚未勘验"]}', encoding="utf-8"
+            )
+            (project / "chapter_state.json").write_text(
+                '{"last_completed_chapter":1,"next_chapter_number":2}', encoding="utf-8"
+            )
+            with patch("novel_v3.validate_unified_run", return_value=None) as gate:
+                archive_chapter(run, project, 2)
+            gate.assert_called_once()
+            state = json.loads((project / "chapter_state.json").read_text(encoding="utf-8"))
+            self.assertIn("新楼层已出现", state["notes_for_next_chapter"])
+            self.assertNotIn("错误的旧时间", state["notes_for_next_chapter"])
+
     def test_review_and_archive_accepts_utf8_bom_from_powershell(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

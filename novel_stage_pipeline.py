@@ -22,6 +22,7 @@ DIALOGUE_REVIEW_MODE = "independent-spoken-chinese-reader"
 BOOK_SOURCE_NAMES = (
     "novel_config.md",
     "outline.md",
+    "timeline.md",
     "characters.md",
     "world.md",
     "style_guide.md",
