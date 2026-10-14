@@ -106,6 +106,11 @@ class AuthorEngine:
     ) -> dict[str, str]:
         source_list = "\n".join(f"- `{p.resolve()}`" for p in sources)
         recent_list = "\n".join(f"- `{p.resolve()}`" for p in recent) or "- 无历史正文"
+        clock_check = (
+            "先按 timeline.md 核对本章开始和结束的故事日、跨过的 23:47、当时最高楼层，"
+            "并把人物说的‘明天’‘后天’换成故事日；若跨过 23:47，正文必须交代新增楼层。"
+            if manifest["book_id"] == "night-floor" else ""
+        )
         room = f"""# 作者房间：先活一遍，再决定怎么写
 
 作品：{book['title']}；章节：{manifest['chapter']}。
@@ -117,6 +122,8 @@ class AuthorEngine:
 
 最近正文：
 {recent_list}
+
+{clock_check}
 
 另读 `shared/writing_playbook.md`、`shared/narrative_prose_foundation.md`、`shared/chinese_corpus_registry.md`，只提取判断，不复制原文，不把研究结论变成台词规则。
 
@@ -134,6 +141,7 @@ class AuthorEngine:
         draft = f"""# 初稿：像作者写，不像系统填
 
 读取 `{run / 'author_room.md'}`、manifest 中列出的作品资料和最近正文。
+{clock_check}
 
 先把场景写出来，再让信息从人的行动和关系里出现。中国人的自然感不靠方言词、口头词或短句数量，而来自人物正在办什么事、欠谁人情、怕什么后果、愿不愿意把话说死，以及公开和私下的不同。
 
@@ -144,6 +152,7 @@ class AuthorEngine:
         edit = f"""# 深层编辑：保留故事，恢复人的生活
 
 读取 `{run / 'candidate.md'}`、`{run / 'author_room.md'}` 和最近正文。
+{clock_check}
 
 不要做表面口语润色。检查每个关键场景：人物是否真的带着自己的生活进入；是否先处理了眼前的事、物品、面子或边界；是否把只有作者知道的信息提前说完；是否所有人都在高效配合剧情；是否有一句话只是为了传递设定。
 
