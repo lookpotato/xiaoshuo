@@ -220,6 +220,28 @@ class WebAppDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "格式"):
             web_app.run_log("../outside")
 
+    def test_batch_rewrite_progress_is_visible_without_prose(self) -> None:
+        lines, hidden = web_app.operational_log_lines(
+            "批量重写：正在处理第 3/9 章\n小说正文一段\n"
+        )
+        self.assertIn("批量重写：正在处理第 3/9 章", lines)
+        self.assertTrue(hidden)
+        self.assertNotIn("小说正文一段", lines)
+
+    def test_refresh_run_recovers_completed_batch_rewrite(self) -> None:
+        with (
+            TemporaryDirectory() as temp,
+            patch.object(web_app, "RUNS_ROOT", Path(temp)),
+            patch.object(web_app.manager, "process_is_running", return_value=False),
+        ):
+            (Path(temp) / "12345678.log").write_text(
+                "批量重写：完成第 3—9 章；原文备份已保留\n", encoding="utf-8"
+            )
+            meta = web_app.refresh_run(
+                {"id": "12345678", "kind": "batch_rewrite", "pid": 4321, "status": "running"}
+            )
+        self.assertEqual(meta["status"], "success")
+
     def test_refresh_run_recovers_finished_process_after_server_restart(self) -> None:
         with (
             TemporaryDirectory() as temp,

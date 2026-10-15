@@ -63,20 +63,22 @@ function CreatePanel({ books, selectedBookId, generationVersion, onNotice, onRef
   </article>;
 }
 
-function BatchRewritePanel({ book, generationVersion, onNotice, onRefresh, onRunStarted }) {
+function BatchRewritePanel({ book, generationVersion, apiVersion, onNotice, onRefresh, onRunStarted }) {
   const available = book.chapters.filter((item) => item.number > (book.last_uploaded_chapter || 0) && item.number >= book.last_completed_chapter - 19).sort((a, b) => a.number - b.number);
   const [fromChapter, setFromChapter] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const selected = available.some((item) => String(item.number) === fromChapter) ? fromChapter : String(available[0]?.number || "");
   async function start() {
     if (!selected || busy) return;
     const from = Number(selected);
     if (!window.confirm(`按当前 V3 流水线重写《${book.title}》第 ${from}—${book.last_completed_chapter} 章？\n\n每章会参考原文，按顺序重写。全部通过后才替换本地归档；旧稿保留备份。不会上传番茄。`)) return;
     setBusy(true);
+    setError("");
     try {
       const result = await api("/api/chapter/batch-rewrite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: book.id, from_chapter: from }) });
       onRunStarted(result.run); onNotice("批量重写已启动，请在后端控制台查看进度"); onRefresh();
-    } catch (error) { onNotice(error.message); }
+    } catch (nextError) { setError(nextError.message); onNotice(nextError.message); }
     finally { setBusy(false); }
   }
   return <article className="panel action-panel">
@@ -84,8 +86,10 @@ function BatchRewritePanel({ book, generationVersion, onNotice, onRefresh, onRun
     <p className="panel-copy">按最新流程从所选章节重写到当前最后一章。原文供参考，完成前不替换现有正文。</p>
     <div className="run-controls"><label>从第几章开始<select aria-label="批量重写起始章" value={selected} onChange={(event) => setFromChapter(event.target.value)}>{available.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label></div>
     <div className="run-summary"><span>本批范围</span><strong>{selected ? `第 ${selected}—${book.last_completed_chapter} 章` : "暂无可重写章节"}</strong></div>
-    <button className="button primary" disabled={busy || !selected || generationVersion !== "v3"} onClick={start}>{busy ? "正在启动" : "启动批量重写"}</button>
+    <button className="button primary" disabled={busy || !selected || generationVersion !== "v3" || apiVersion < 7} onClick={start}>{busy ? "正在启动" : "启动批量重写"}</button>
     {generationVersion !== "v3" && <p className="feedback">请先在系统设置中选择 V3 流水线。</p>}
+    {apiVersion < 7 && <p className="feedback">后台仍是旧版本，请重启 Python 工作台服务后再启动。</p>}
+    {error && <p className="feedback" role="alert">启动失败：{error}</p>}
   </article>;
 }
 
@@ -201,7 +205,7 @@ export default function App() {
       <header className="topbar"><div><p className="eyebrow">FANQIE NOVEL CONTROL</p><h1>{view === "system-settings" ? "番茄系统" : book.title}</h1></div><div className="top-actions"><button className="button ghost" onClick={() => loadOverview(true)}>刷新状态</button><span className="sync-time">更新 {new Date(data.generated_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></div></header>
       {view === "reader-feedback" ? <ReaderFeedbackWorkspace book={book} onNotice={setNotice} /> : view !== "workbench" ? <SettingsWorkspace scope={view === "system-settings" ? "system" : "book"} books={data.books} bookId={book.id} onBookChange={setSelectedBookId} onNotice={setNotice} onSaved={() => loadOverview()} /> : <>
       <Metrics book={book} />
-      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><BatchRewritePanel book={book} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /></section>
+      <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><BatchRewritePanel book={book} generationVersion={data.generation_version || "v3"} apiVersion={data.api_version || 0} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /></section>
       <section className="workspace-grid"><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
       <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
       <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>

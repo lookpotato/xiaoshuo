@@ -37,7 +37,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 6
+API_VERSION = 7
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -52,6 +52,7 @@ OPERATIONAL_LOG_PREFIXES = (
     "人物线门禁",
     "并行人物线门禁",
     "批量执行",
+    "批量重写",
     "警告",
     "错误",
     "失败",
@@ -263,9 +264,10 @@ def refresh_run(meta: dict) -> dict:
                     with log_path.open("rb") as handle:
                         handle.seek(max(0, log_path.stat().st_size - 64 * 1024))
                         log_tail = handle.read().decode("utf-8", errors="replace")
-                if '"result": "failed"' in log_tail or "本次运行失败" in log_tail:
+                rewrite = meta.get("kind") == "batch_rewrite"
+                if (rewrite and "批量重写失败：" in log_tail) or '"result": "failed"' in log_tail or "本次运行失败" in log_tail:
                     meta["status"] = "failed"
-                elif '"result": "success"' in log_tail:
+                elif (rewrite and "批量重写：完成第 " in log_tail) or '"result": "success"' in log_tail:
                     meta["status"] = "success"
                 else:
                     meta["status"] = "finished"
