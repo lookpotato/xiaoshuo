@@ -402,6 +402,12 @@ python .\fanqie_novel_manager.py claim --book cosmic-404
 `pending` 会读取 `batch_schedule_*.json`，逐章列出尚未进入待发布、审核中或已发布
 状态的批量任务。已有番茄草稿时必须从原草稿继续，不得重新写作或创建重复章节。
 
+## 批量重写已归档章节
+
+工作台的“批量重写”从选定章节一直处理到当前最后一章，最多 20 章。它使用当前 V3 流水线逐章重跑；每章参考对应旧稿，后续章节承接本批已完成的新稿。运行期间现有正文不变，整批通过读者与连续性门禁后才替换本地归档。旧稿和状态保存在 `.batch_rewrites/<book>/<run>/before/`，原文参考保存在同一运行目录的 `originals/`。失败时保留工作目录供排查，不改动现有归档；已上传章节所在的范围不能启动重写。本功能不会上传番茄。
+
+也可运行 `python batch_rewrite.py --book night-floor --from-chapter 3`。
+
 ## 完整批量闭环
 
 每章必须严格串行完成：

@@ -1,0 +1,10 @@
+{
+  "1": {"last_chapter": 1, "day": 2, "floor": 7, "after_2347": false},
+  "2": {"last_chapter": 2, "day": 2, "floor": 8, "after_2347": true},
+  "3": {"last_chapter": 3, "day": 3, "floor": 8, "after_2347": false},
+  "4": {"last_chapter": 4, "day": 3, "floor": 8, "after_2347": false},
+  "5": {"last_chapter": 5, "day": 3, "floor": 8, "after_2347": false},
+  "6": {"last_chapter": 6, "day": 3, "floor": 9, "after_2347": true},
+  "7": {"last_chapter": 7, "day": 4, "floor": 9, "after_2347": false},
+  "8": {"last_chapter": 8, "day": 4, "floor": 10, "after_2347": true}
+}

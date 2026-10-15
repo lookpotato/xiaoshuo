@@ -9,6 +9,16 @@ import web_app
 
 
 class WebAppDataTests(unittest.TestCase):
+    def test_batch_rewrite_launches_local_v3_tail(self) -> None:
+        fake = {"id": "run-id", "status": "running"}
+        with patch.object(web_app, "launch_command", return_value=fake) as launch, \
+             patch.object(web_app, "list_runs", return_value=[]):
+            result = web_app.launch_batch_rewrite({"book_id": "night-floor", "from_chapter": 3})
+        self.assertEqual(result, fake)
+        command = launch.call_args.args[0]
+        self.assertTrue(command[1].endswith("batch_rewrite.py"))
+        self.assertEqual(command[-4:], ["--book", "night-floor", "--from-chapter", "3"])
+
     def test_react_frontend_is_configured(self) -> None:
         package = web_app.read_json(web_app.ROOT / "web" / "package.json", {})
         self.assertIn("react", package.get("dependencies", {}))

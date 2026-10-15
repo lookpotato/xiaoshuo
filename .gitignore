@@ -8,6 +8,8 @@ __pycache__/
 .manager_image_downloads/
 .web_runtime/
 .novel_runs_v2/
+.novel_runs_v3/
+.batch_rewrites/
 .chapter_trash/
 .book_trash/
 web/node_modules/

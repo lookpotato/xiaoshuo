@@ -501,6 +501,24 @@ def launch_resume(payload: dict) -> dict:
     return launch_command(command, "resume", f"续跑任务 {job_id}")
 
 
+def launch_batch_rewrite(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    book = registered_book(book_id)
+    try:
+        start = int(payload.get("from_chapter"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("请选择有效的起始章节") from exc
+    if generation_version.selected() != "v3":
+        raise ValueError("批量重写需要先在系统设置中启用 V3 流水线")
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待任务结束后再批量重写")
+    from batch_rewrite import validate_request
+    last = validate_request(project_for(book), start)
+    label = f"V3《{book.get('title', book_id)}》批量重写第 {start}—{last} 章 · 仅本地"
+    return launch_command([sys.executable, str(ROOT / "batch_rewrite.py"), "--book", book_id,
+                           "--from-chapter", str(start)], "batch_rewrite", label)
+
+
 def launch_reader_feedback(payload: dict) -> dict:
     item = reader_feedback_service.create_feedback(ROOT, payload)
     command = [
@@ -712,6 +730,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/dialogue": 16 * 1024,
                 "/api/reader-feedback/interview-answers": 64 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
+                "/api/chapter/batch-rewrite": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -789,6 +808,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/chapter/delete-tail":
                 self.send_json({"ok": True, "deletion": delete_chapter_tail(payload)})
+                return
+            if parsed.path == "/api/chapter/batch-rewrite":
+                self.send_json({"ok": True, "run": launch_batch_rewrite(payload)}, HTTPStatus.ACCEPTED)
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

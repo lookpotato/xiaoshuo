@@ -68,8 +68,13 @@ class AuthorEngine:
     def _existing(self, project: Path, names: list[str]) -> list[Path]:
         return [project / name for name in names if (project / name).is_file()]
 
-    def prepare(self, book_id: str, chapter: int | None = None) -> Path:
+    def prepare(self, book_id: str, chapter: int | None = None, *, project_override: Path | None = None,
+                original_chapter: Path | None = None) -> Path:
         project, book = self.book(book_id)
+        if project_override is not None:
+            project = project_override.resolve()
+            if self.root not in project.parents:
+                raise V3ValidationError("重写工作目录越界")
         if chapter is None:
             state = _json(project / "chapter_state.json")
             chapter = state.get("next_chapter_number")
@@ -90,6 +95,7 @@ class AuthorEngine:
             "project": str(project),
             "sources": [str(p.resolve()) for p in sources],
             "recent_chapters": [str(p.resolve()) for p in recent],
+            "original_chapter": str(original_chapter.resolve()) if original_chapter else None,
             "workflow": ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"],
         }
         (run / "manifest.json").write_text(
@@ -176,6 +182,13 @@ class AuthorEngine:
 
 保存 `{run / 'candidate.md'}`，只含标题和正文；另存 `{run / 'state_delta.json'}`，记录本章真实改变。不要读取 reader.md，不要边写边自评。
 """
+        if manifest.get("original_chapter"):
+            reference = manifest["original_chapter"]
+            rewrite_note = (f"\n本次是批量重写。先阅读原第 {number} 章 `{reference}`：保留仍有效的人物、伏笔和场景成果，"
+                            "把不符合当前设定、时间线或读感的部分重新创作。原文是参考材料，不能压过新章节合同和此前已重写的章节。\n")
+            director += rewrite_note
+            room += rewrite_note
+            draft += rewrite_note
         edit = f"""# 深层编辑：保留故事，恢复人的生活
 
 读取 `{run / 'candidate.md'}`、`{run / 'author_room.md'}`、`{plan}`、`{thread_dir}` 和最近正文。
