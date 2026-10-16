@@ -521,6 +521,42 @@ def launch_batch_rewrite(payload: dict) -> dict:
                            "--from-chapter", str(start)], "batch_rewrite", label)
 
 
+def resume_batch_rewrite(payload: dict) -> dict:
+    run_id = str(payload.get("run_id", ""))
+    if not SAFE_JOB_ID.fullmatch(run_id):
+        raise ValueError("任务 id 格式不正确")
+    previous = read_json(run_metadata_path(run_id), {}) or {}
+    if previous.get("kind") != "batch_rewrite" or refresh_run(previous).get("status") != "failed":
+        raise ValueError("这不是可续跑的失败批量重写任务")
+    log_path = RUNS_ROOT / f"{run_id}.log"
+    if not log_path.is_file():
+        raise ValueError("找不到批量重写工作目录")
+    with log_path.open("r", encoding="utf-8", errors="replace") as handle:
+        first_line = handle.readline().strip()
+    prefix = "批量重写：工作目录 "
+    if not first_line.startswith(prefix):
+        raise ValueError("批量重写日志缺少工作目录")
+    work = Path(first_line[len(prefix):]).resolve()
+    if work.parent.parent != (ROOT / ".batch_rewrites").resolve():
+        raise ValueError("批量重写工作目录越界")
+    manifest = read_json(work / "manifest.json", {}) or {}
+    book_id = str(manifest.get("book_id", ""))
+    book = registered_book(book_id)
+    start = int(manifest.get("from_chapter", 0))
+    from batch_rewrite import resume_workspace, validate_request
+    from novel_engine_v3 import AuthorEngine
+    if validate_request(project_for(book), start) != int(manifest.get("through_chapter", 0)):
+        raise ValueError("作品章节范围已变化，不能续跑旧批次")
+    # The runner repeats these checks before touching any chapter.
+    resume_workspace(AuthorEngine(ROOT), book_id, work, start, int(manifest.get("through_chapter", 0)))
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待后再续跑")
+    label = f"V3《{book.get('title', book_id)}》续跑批量重写第 {start}—{manifest['through_chapter']} 章 · 仅本地"
+    return launch_command([sys.executable, str(ROOT / "batch_rewrite.py"), "--book", book_id,
+                           "--from-chapter", str(start), "--resume-work", str(work)],
+                          "batch_rewrite", label)
+
+
 def launch_reader_feedback(payload: dict) -> dict:
     item = reader_feedback_service.create_feedback(ROOT, payload)
     command = [
@@ -733,6 +769,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/interview-answers": 64 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
+                "/api/chapter/batch-rewrite/resume": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -813,6 +850,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/chapter/batch-rewrite":
                 self.send_json({"ok": True, "run": launch_batch_rewrite(payload)}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/chapter/batch-rewrite/resume":
+                self.send_json({"ok": True, "run": resume_batch_rewrite(payload)}, HTTPStatus.ACCEPTED)
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

@@ -101,11 +101,11 @@ function ChapterList({ book, onOpen, onDelete }) {
   </article>;
 }
 
-function Activity({ data, bookId, onResume, onOpenLog, selectedRunId }) {
+function Activity({ data, bookId, onResume, onResumeRewrite, onOpenLog, selectedRunId }) {
   const jobs = data.jobs.filter((job) => job.book_id === bookId).slice(0, 5);
   return <article className="panel jobs-panel">
     <div className="panel-head"><div><p className="eyebrow">ACTIVITY</p><h2>任务进度</h2></div></div>
-    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>在控制台查看</button></div>) : <div className="empty">暂无网页启动记录</div>}</div>
+    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div><p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>在控制台查看</button>{run.kind === "batch_rewrite" && run.status === "failed" && <button className="resume" onClick={() => onResumeRewrite(run.id)}>从失败章节续跑</button>}</div>) : <div className="empty">暂无网页启动记录</div>}</div>
     <div className="job-list">{jobs.map((job) => { const ratio = job.target ? Math.min(100, Math.round(job.completed / job.target * 100)) : 0; const resumable = ["failed", "partial", "blocked"].includes(job.result); const delivery = [job.options?.publish_fanqie && "番茄", job.options?.sync_git && "Git"].filter(Boolean).join(" + ") || "仅本地"; return <div className="activity" key={job.id}><div className="activity-top"><strong>{job.id}</strong><span className={`status ${job.result || job.status}`}>{statusLabel(job.status, job.result)}</span></div><div className="progress"><i style={{ width: `${ratio}%` }} /></div><p>{job.completed}/{job.target} 章 · {delivery}{job.message ? ` · ${job.message}` : ""}</p>{resumable && <button className="resume" onClick={() => onResume(job.id)}>按原配置续跑</button>}</div>; })}</div>
   </article>;
 }
@@ -197,6 +197,7 @@ export default function App() {
     } catch (error) { setNotice(error.message); }
   }
   async function resume(jobId) { try { await api("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jobId }) }); setNotice("续跑任务已启动"); loadOverview(); } catch (error) { setNotice(error.message); } }
+  async function resumeRewrite(runId) { try { const result = await api("/api/chapter/batch-rewrite/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ run_id: runId }) }); openLog(result.run.id); setNotice("批量重写已从失败章节续跑"); loadOverview(); } catch (error) { setNotice(error.message); } }
 
   if (!data || !book) return <div className="loading-screen"><div className="brand-mark">番</div><p>正在连接小说项目……</p></div>;
   return <>
@@ -208,7 +209,7 @@ export default function App() {
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><BatchRewritePanel book={book} generationVersion={data.generation_version || "v3"} apiVersion={data.api_version || 0} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /></section>
       <section className="workspace-grid"><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
       <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
-      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
+      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onResumeRewrite={resumeRewrite} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
       </>}
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />

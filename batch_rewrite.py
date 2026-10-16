@@ -19,6 +19,7 @@ from novel_v3 import ROOT, execute, review_and_archive
 
 WORK_ROOT = ROOT / ".batch_rewrites"
 STAGES = ("director", "characters", "author_room", "draft", "deep_edit", "reader")
+MAX_CONTINUITY_REPAIRS = 2
 EXCLUDED = {".chapter_trash", "reader_feedback", "logs", "drafts", "images", ".batch_rewrites"}
 
 
@@ -181,27 +182,111 @@ def install(project: Path, stage: Path, work: Path, start: int, last: int) -> No
         raise
 
 
-def run(book_id: str, start: int) -> Path:
+def cached_run(book_id: str, stage: Path, number: int) -> Path | None:
+    parent = ROOT / ".novel_runs_v3" / book_id
+    for candidate in sorted(parent.glob(f"{number:04d}-*"), reverse=True):
+        manifest = candidate / "manifest.json"
+        if not manifest.is_file() or not (candidate / "candidate.md").is_file():
+            continue
+        data = json.loads(manifest.read_text(encoding="utf-8-sig"))
+        if data.get("book_id") == book_id and data.get("chapter") == number and Path(data.get("project", "")).resolve() == stage.resolve():
+            return candidate
+    return None
+
+
+def review_with_repair(prepared: Path, stage: Path, number: int) -> Path:
+    continuity_prompt = prepared / "continuity.md"
+    cast_path = stage / "character_threads" / f"{number:04d}" / "00-cast.md"
+    cast = cast_path.read_text(encoding="utf-8-sig")
+    if "返修时须逐字覆盖名单角色" not in continuity_prompt.read_text(encoding="utf-8"):
+        with continuity_prompt.open("a", encoding="utf-8") as handle:
+            handle.write(f"\n返修时须逐字覆盖名单角色：按 `{cast_path}` 的每个角色名回写状态。\n{cast}\n")
+    for attempt in range(MAX_CONTINUITY_REPAIRS + 1):
+        try:
+            return review_and_archive(prepared, stage, number)
+        except V3ValidationError as exc:
+            if attempt >= MAX_CONTINUITY_REPAIRS:
+                raise
+            review_path = prepared / "continuity_review.json"
+            review = json.loads(review_path.read_text(encoding="utf-8-sig")) if review_path.is_file() else {}
+            blocking = review.get("blocking", []) if isinstance(review, dict) else []
+            print(f"批量重写：第 {number} 章连续性返修 {attempt + 1}/{MAX_CONTINUITY_REPAIRS}：{exc}", flush=True)
+            # A missing character heading can be fixed by redoing only the
+            # continuity writeback. A factual contradiction requires new prose.
+            if not blocking and "未回写" in str(exc):
+                prompt = prepared / "continuity.md"
+                prompt.write_text(prompt.read_text(encoding="utf-8") +
+                    f"\n上次回写失败：{exc}。请核对并逐字覆盖以下名单中的每个角色名，重新写完整 state_update.md 与审查 JSON：\n{cast}\n",
+                    encoding="utf-8")
+                continue
+            repair_prompt = prepared / f"continuity_repair.{attempt + 1}.md"
+            repair_output = prepared / f"continuity_repair.{attempt + 1}.result.md"
+            repair_prompt.write_text(
+                f"# 第 {number} 章连续性返修\n\n"
+                f"读取 `{prepared / 'candidate.md'}`、`{review_path}`、"
+                f"`{stage / 'character_threads' / f'{number:04d}' / '00-cast.md'}` 和上一章正文。\n"
+                f"程序验收错误：{exc}\n"
+                f"连续性阻塞：{json.dumps(blocking, ensure_ascii=False)}\n\n"
+                "只修复列出的事实冲突及必要衔接，保留其余场景、人物选择和有效伏笔。"
+                "不要通过删掉时间依据或掩盖矛盾逃避检查。"
+                "不要调用工具修改文件。最终回复只输出完整 Markdown 章节，从 # 标题开始，不加说明或围栏。\n",
+                encoding="utf-8",
+            )
+            execute(repair_prompt, repair_output, prepared, capture_candidate=True)
+            for stale in ("reader_review.json", "continuity_review.json", "chronology.json", "candidate.sha256"):
+                (prepared / stale).unlink(missing_ok=True)
+    raise V3ValidationError(f"第 {number} 章连续性返修次数耗尽")
+
+
+def resume_workspace(engine: AuthorEngine, book_id: str, work: Path, start: int, last: int) -> Path:
+    work = work.resolve()
+    if work.parent != (WORK_ROOT / book_id).resolve():
+        raise V3ValidationError("续跑目录不属于所选作品")
+    manifest = json.loads((work / "manifest.json").read_text(encoding="utf-8-sig"))
+    project, _ = engine.book(book_id)
+    if (manifest.get("book_id") != book_id or manifest.get("from_chapter") != start
+            or manifest.get("through_chapter") != last or Path(manifest.get("project", "")).resolve() != project):
+        raise V3ValidationError("续跑清单与所选作品或章节范围不一致")
+    if manifest.get("status") not in ("failed", "preparing"):
+        raise V3ValidationError("该批任务不是可续跑的失败状态")
+    for number in range(start, last + 1):
+        saved = list((work / "originals").glob(f"{number:04d}-*.md"))
+        if len(saved) != 1 or saved[0].read_bytes() != chapter_path(project, number).read_bytes():
+            raise V3ValidationError(f"原第 {number} 章已变化，不能沿用旧重写工作目录")
+    return work / "project"
+
+
+def run(book_id: str, start: int, *, resume_work: Path | None = None) -> Path:
     engine = AuthorEngine(ROOT)
     project, _ = engine.book(book_id)
     last = validate_request(project, start)
     initial_fingerprint = project_fingerprint(project, start, last)
-    work, stage = prepare_workspace(engine, book_id, start, last)
+    if resume_work is None:
+        work, stage = prepare_workspace(engine, book_id, start, last)
+    else:
+        work = resume_work.resolve()
+        stage = resume_workspace(engine, book_id, work, start, last)
     print(f"批量重写：工作目录 {work}", flush=True)
     try:
         for number in range(start, last + 1):
+            if list((stage / "chapters").glob(f"{number:04d}-*.md")):
+                print(f"批量重写：第 {number} 章已在工作目录完成，继续下一章", flush=True)
+                continue
             originals = list((work / "originals").glob(f"{number:04d}-*.md"))
             original = originals[0]
-            prepared = engine.prepare(book_id, number, project_override=stage, original_chapter=original)
+            prepared = cached_run(book_id, stage, number) if resume_work is not None else None
+            if prepared is None:
+                prepared = engine.prepare(book_id, number, project_override=stage, original_chapter=original)
             print(f"批量重写：正在处理第 {number}/{last} 章；参考原文 {original.name}", flush=True)
-            for step in STAGES:
-                execute(prepared / f"{step}.md", prepared / f"{step}.result.md", prepared,
-                        capture_candidate=step == "deep_edit")
-                if step == "director":
-                    validate_director(ROOT, stage, number)
-                elif step == "characters":
-                    validate_characters(stage, number, final=False)
-            archived = review_and_archive(prepared, stage, number)
+            if not (prepared / "candidate.md").is_file():
+                for step in STAGES:
+                    execute(prepared / f"{step}.md", prepared / f"{step}.result.md", prepared,
+                            capture_candidate=step == "deep_edit")
+                    if step == "director":
+                        validate_director(ROOT, stage, number)
+                    elif step == "characters":
+                        validate_characters(stage, number, final=False)
+            archived = review_with_repair(prepared, stage, number)
             review = json.loads((prepared / "continuity_review.json").read_text(encoding="utf-8-sig"))
             ledger = stage / "continuity_ledger.md"
             if ledger.is_file():
@@ -242,9 +327,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="按最新 V3 流水线批量重写本地章节")
     parser.add_argument("--book", required=True)
     parser.add_argument("--from-chapter", type=int, required=True)
+    parser.add_argument("--resume-work", type=Path)
     args = parser.parse_args()
     try:
-        run(args.book, args.from_chapter)
+        run(args.book, args.from_chapter, resume_work=args.resume_work)
     except (V3ValidationError, OSError, ValueError) as exc:
         print(f"批量重写失败：{exc}", file=sys.stderr)
         return 1

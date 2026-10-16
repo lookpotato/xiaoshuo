@@ -216,6 +216,7 @@ class AuthorEngine:
 
 读取 `{run / 'candidate.md'}`、`{plan}`、`{thread_dir}`、作品时间线、前一章和 `shared/parallel_character_pipeline.md`。
 按正文真实发生的事更新 `{thread_dir / 'state_update.md'}`，逐人记录结尾时间地点、资源、知识、关系、承诺、秘密和下一步；未写进正文的私线标为读者未见。
+逐项核对 `{thread_dir / '00-cast.md'}` 的角色名单：state_update.md 必须逐字写出名单中的每个角色名；如果名单用“现场民警”等群称而正文区分个人，先写该群称的综合状态，再分别写每个人的状态。不得遗漏名单角色。
 写 `{run / 'continuity_review.json'}`，只使用以下结构：
 {{"chapter": {number}, "blocking": [], "evidence": {{"begin": "正文原句", "end": "正文原句"}},
 "next_hook": "依据最终正文写给下一章的事实与待办", "unresolved": ["仍未解决的具体事项"]}}

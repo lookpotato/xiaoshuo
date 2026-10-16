@@ -70,6 +70,32 @@ class BatchRewriteTests(unittest.TestCase):
         point = batch_rewrite.baseline(batch_rewrite.ROOT, project, "night-floor", 3)
         self.assertEqual(point, {"last_chapter": 2, "day": 2, "floor": 8, "after_2347": True})
 
+    def test_continuity_blocker_repairs_candidate_and_rechecks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage = root / "project"
+            run = root / "run"
+            (stage / "character_threads" / "0003").mkdir(parents=True)
+            run.mkdir()
+            (stage / "character_threads" / "0003" / "00-cast.md").write_text(
+                "## 角色名单\n- 现场民警：维持秩序\n", encoding="utf-8"
+            )
+            (run / "continuity.md").write_text("回写人物状态。", encoding="utf-8")
+            (run / "candidate.md").write_text("# 第三章\n\n昨天。", encoding="utf-8")
+            (run / "reader_review.json").write_text('{"blocking": []}', encoding="utf-8")
+            (run / "continuity_review.json").write_text(
+                '{"blocking": ["时间倒退"]}', encoding="utf-8"
+            )
+            with patch.object(batch_rewrite, "review_and_archive", side_effect=[
+                V3ValidationError("时间线未通过"), stage / "chapters" / "0003-新章.md"
+            ]) as review, patch.object(batch_rewrite, "execute") as execute:
+                result = batch_rewrite.review_with_repair(run, stage, 3)
+            self.assertEqual(result.name, "0003-新章.md")
+            self.assertEqual(review.call_count, 2)
+            self.assertEqual(execute.call_count, 1)
+            self.assertFalse((run / "reader_review.json").exists())
+            self.assertIn("现场民警", (run / "continuity.md").read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
