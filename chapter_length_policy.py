@@ -16,8 +16,8 @@ def chapter_length_instruction(book: dict, chapter_number: int) -> str:
     """Return the authoritative word-count instruction for one chapter."""
     if not chapter_length_limited(book, chapter_number):
         return (
-            f"第 {chapter_number} 章已关闭字数限制：忽略本书 novel_config.md、作者档案、"
-            "共享写作规范及历史提示中的单章目标字数、最低字数、最高字数、硬上限和拆章字数要求。"
+            f"第 {chapter_number} 章已关闭篇幅目标：忽略本书 novel_config.md、作者档案、"
+            "共享写作规范及历史提示中的单章目标字数、最低字数、最高字数和拆章字数建议。"
             "根据情节完整度自然决定篇幅，不为凑字扩写，也不为压字删减必要内容。"
             "此设置只豁免字数规则，不豁免读者验收、连续性、人物线和其他质量门禁。"
         )
@@ -32,15 +32,16 @@ def chapter_length_instruction(book: dict, chapter_number: int) -> str:
             for value in (minimum, target, maximum, review)
         ) and 0 < minimum <= target <= maximum <= review:
             return (
-                f"第 {chapter_number} 章执行本书专属篇幅：正文常规 {minimum}—{maximum} 汉字，"
+                f"第 {chapter_number} 章参考本书专属篇幅目标：正文常规 {minimum}—{maximum} 汉字，"
                 f"以约 {target} 汉字为中心；超过 {review} 汉字先复核是否能在真实阶段胜负处拆章。"
                 "字数按正文实际汉字（Unicode U+4E00—U+9FFF）计，不含标题和 Metadata；"
                 "不得用非空白字符数冒充汉字数。完成后按这一口径复核，常规章尽量靠近中心目标；"
                 "偏短先检查现场动作、人物关系、因果桥梁和结果余波是否写足。"
                 "本书设置优先于共享规范的通用字数建议；不为凑字扩写，也不为压字删减必要内容。"
+                "目标范围不是硬上限；不能仅因超出目标而降低正文质量或改变修订层级。"
             )
     return (
-        f"第 {chapter_number} 章继续执行本书 novel_config.md 及写作规范中的字数要求；"
+        f"第 {chapter_number} 章参考本书 novel_config.md 及写作规范中的篇幅目标；"
         "不得把单章字数限制扩展为整本书的篇幅限制。"
     )
 

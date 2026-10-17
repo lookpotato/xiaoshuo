@@ -450,7 +450,7 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 7. 修改权限由 revision_scope 决定：wording 只改选中词句和必要衔接；scene 可重写问题所在的完整场景；chapter 可重排、删写或重写整章。读者选中的原文只是问题证据，不再自动限制为局部修改。
 8. 长期经验必须写成正向、可执行的创作原则，说明何时适用和怎样避免过度泛化。只影响本书独特文风、人物或设定时推荐 book；属于这个作者跨作品稳定取舍时才推荐 author。
 9. 如果存在“主作者对审校意见的判断”，这些回答就是本次修订的创作决策：把采纳的意见落实到正文，把不采纳的意见保留在 misdiagnoses 中。只要 decision 是 accept 或 partial，就必须返回完整候选修订稿，不能只给分析不写文章。
-10. 完整候选稿必须满足 `novel_config.md` 的常规章长，按最终正文重新填写 Metadata 的 word_count；不能沿用旧数字。
+10. `novel_config.md` 的常规章长是移动端阅读节奏目标，不是硬上限或修改层级的依据。超出目标时先检查重复说明、无效场景和自然拆章点；若删减会损失必要的情绪、人物反应或因果，就保留完整内容。不能仅为达字数把 wording 升成 chapter，也不能为压字删掉关键场景。按最终正文重新填写 Metadata 的 word_count，不能沿用旧数字。
 
 最终只输出一个JSON对象，不要代码围栏，不要修改任何文件：
 {{
@@ -511,7 +511,7 @@ def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
 
 先直接回应副作者最新一句，再判断原结论是否需要改。若副作者纠正的是“现实中不会这样说”，先把台词还原成它在现场真正想完成的动作，检查抽象概括、清单结构、书面词和过度完整；不得用“符合人设”“目的成立”“其余部分没问题”回避该句本身。
 
-{"本次只重提炼长期经验候选；不要修改正文判断，不要改变 revision_scope，不要返回 proposed_revision，只需完整返回 analysis 并替换 learning_candidate。" if learning_only else "本次要求整章重写候选修订；必须将 revision_scope 设为 chapter，并返回符合本书正常章长、含正确标题和 Metadata 的完整 proposed_revision。" if chapter_rewrite else "本次涉及正文判断时，必须完整返回原分析所需字段和候选修订稿。"}
+{"本次只重提炼长期经验候选；不要修改正文判断，不要改变 revision_scope，不要返回 proposed_revision，只需完整返回 analysis 并替换 learning_candidate。" if learning_only else "本次要求整章重写候选修订；必须将 revision_scope 设为 chapter，并返回含正确标题和 Metadata 的完整 proposed_revision。常规章长只用于节奏复核，不能为压字删去必要的情绪、人物反应或因果。" if chapter_rewrite else "本次涉及正文判断时，必须完整返回原分析所需字段和候选修订稿。常规章长不是修改层级或删减必要内容的依据。"}
 
 如果最新消息明确指出“长期经验候选/learning_candidate理解错了、范围不对、表述不对或不该沉淀”，这不是普通解释问题，必须将 changed_judgment 设为 true，并重新生成完整的 learning_candidate。重新生成时要准确吸收副作者给出的原则、适用边界和反例；如果副作者认为这条意见不值得长期沉淀，learning_candidate 可以改为 null。不能只回复“明白了”而保留原候选。
 

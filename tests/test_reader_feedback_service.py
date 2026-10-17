@@ -275,7 +275,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         }, ensure_ascii=False))
         self.assertIsNone(parsed["revision"])
 
-    def test_revision_rejects_underlength_configured_chapter(self) -> None:
+    def test_chapter_length_target_does_not_block_shorter_complete_revision(self) -> None:
         (self.project / "novel_config.md").write_text(
             "# 配置\n\n- 常规章：1900—2200字。\n", encoding="utf-8"
         )
@@ -285,7 +285,8 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         })
         folder = self.project / "reader_feedback" / item["id"]
         service.atomic_json(folder / "analysis.json", {
-            "decision": "partial", "author_judgment": "问题成立。",
+            "decision": "partial", "revision_scope": "chapter",
+            "author_judgment": "问题成立。",
             "valid_observations": ["动作太快"], "misdiagnoses": [],
             "revision_strategy": ["局部补反应"],
         })
@@ -294,8 +295,30 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "# 第 1 章 试读\n\n" + "正文。" * 300
             + "\n\n---\n\n## Metadata\n\n- word_count: 2000\n",
         )
-        with self.assertRaisesRegex(ValueError, "不符合本书"):
-            service.apply_revision(self.root, "demo", item["id"])
+        result = service.apply_revision(self.root, "demo", item["id"])
+        self.assertEqual(result["receipt"]["word_count"], 600)
+
+    def test_over_target_wording_revision_keeps_its_local_scope(self) -> None:
+        (self.project / "novel_config.md").write_text(
+            "# 配置\n\n- 常规正文目标：1900—2400 汉字。\n", encoding="utf-8"
+        )
+        original = "# 第 1 章 试读\n\n" + "这是正文。" * 650 + "甲把门推开。\n"
+        self.chapter.write_text(original, encoding="utf-8")
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "character_voice",
+            "quote": "甲把门推开。", "comment": "只修改这句。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "analysis.json", {
+            "decision": "accept", "revision_scope": "wording",
+            "scope_rationale": "只有这一句需要改。", "author_judgment": "问题成立。",
+        })
+        revised = original.replace("甲把门推开。", "甲停了一下，再把门推开。")
+        revised += "\n---\n\n## Metadata\n\n- word_count: 1\n"
+        service.atomic_text(folder / "proposed_revision.md", revised)
+        result = service.apply_revision(self.root, "demo", item["id"])
+        self.assertEqual(result["receipt"]["revision_scope"], "wording")
+        self.assertGreater(result["receipt"]["word_count"], 2400)
 
     def test_revision_rejects_changes_far_outside_selected_quote(self) -> None:
         item = service.create_feedback(self.root, {
@@ -338,7 +361,7 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         service.atomic_json(literary, {"narrative_sha256": "old"})
         service.atomic_json(report, {"narrative_sha256": "old"})
         result = service.apply_revision(self.root, "demo", item["id"])
-        expected = len(service._compact(service._body_text(revised)))
+        expected = service._body_hanzi_count(revised)
         self.assertIn(
             f"- word_count: {expected}", self.chapter.read_text(encoding="utf-8")
         )

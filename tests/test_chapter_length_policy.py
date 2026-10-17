@@ -22,11 +22,11 @@ class ChapterLengthPolicyTests(unittest.TestCase):
         book = {"word_count_limit_enabled": True, "word_count_exempt_chapters": [4]}
         self.assertTrue(chapter_length_limited(book, 3))
         self.assertFalse(chapter_length_limited(book, 4))
-        self.assertIn("第 4 章已关闭字数限制", chapter_length_instruction(book, 4))
+        self.assertIn("第 4 章已关闭篇幅目标", chapter_length_instruction(book, 4))
 
     def test_existing_books_keep_limits_by_default(self):
         self.assertTrue(chapter_length_limited({}, 1))
-        self.assertIn("继续执行本书 novel_config.md", chapter_length_instruction({}, 1))
+        self.assertIn("参考本书 novel_config.md", chapter_length_instruction({}, 1))
 
     def test_book_specific_hanzi_range_overrides_shared_guidance(self):
         book = {"chapter_length": {
@@ -40,8 +40,9 @@ class ChapterLengthPolicyTests(unittest.TestCase):
         self.assertIn("约 2600 汉字", instruction)
         self.assertIn("不得用非空白字符数冒充汉字数", instruction)
         self.assertIn("优先于共享规范", instruction)
+        self.assertIn("目标范围不是硬上限", instruction)
         book["word_count_limit_enabled"] = False
-        self.assertIn("已关闭字数限制", chapter_length_instruction(book, 6))
+        self.assertIn("已关闭篇幅目标", chapter_length_instruction(book, 6))
 
     def test_project_setting_controls_short_upload_parser_gate(self):
         with tempfile.TemporaryDirectory() as temp:

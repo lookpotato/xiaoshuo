@@ -58,11 +58,11 @@ function BookGeneral({ value, savedValue, authors, modelOptions, reasoningEffort
     <Field label="默认发布时间"><input value={value.schedule_time || ""} onChange={(event) => update("schedule_time", event.target.value)} /></Field>
     <Field label="每日发布时间" hint="多个时间用逗号分隔"><input value={(value.default_publish_times || []).join(", ")} onChange={(event) => update("default_publish_times", event.target.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean))} /></Field>
     <Field label="启用本书"><label className="switch-line"><input type="checkbox" checked={value.enabled} onChange={(event) => update("enabled", event.target.checked)} />参与批量任务</label></Field>
-    <Field label="本书字数限制" hint="关闭后，本书所有章节都不套用目标字数和硬上限；质量验收照常执行。"><label className="switch-line"><input type="checkbox" checked={value.word_count_limit_enabled !== false} onChange={(event) => update("word_count_limit_enabled", event.target.checked)} />启用本书字数限制</label></Field>
-    <Field label="单章字数豁免" hint={`当前已豁免：${exemptChapters.length ? exemptChapters.map((chapter) => `第${chapter}章`).join("、") : "无"}`}>
+    <Field label="本书篇幅目标" hint="启用时按本书目标字数提示写作节奏；超出目标不会强制删减或扩大审稿范围。关闭后不提供字数目标，质量验收照常执行。"><label className="switch-line"><input type="checkbox" checked={value.word_count_limit_enabled !== false} onChange={(event) => update("word_count_limit_enabled", event.target.checked)} />启用本书篇幅目标</label></Field>
+    <Field label="单章篇幅豁免" hint={`当前已豁免：${exemptChapters.length ? exemptChapters.map((chapter) => `第${chapter}章`).join("、") : "无"}`}>
       <div className="settings-form-grid">
         <input aria-label="设置豁免的章节号" type="number" min="1" step="1" value={exemptionChapter} onChange={(event) => update("word_count_exemption_chapter", Math.max(1, Number(event.target.value) || 1))} />
-        <label className="switch-line"><input type="checkbox" checked={exemptChapters.includes(exemptionChapter)} onChange={(event) => setChapterExempt(event.target.checked)} />第 {exemptionChapter} 章不限制字数</label>
+        <label className="switch-line"><input type="checkbox" checked={exemptChapters.includes(exemptionChapter)} onChange={(event) => setChapterExempt(event.target.checked)} />第 {exemptionChapter} 章不参考篇幅目标</label>
       </div>
     </Field>
     <Field label="备注"><textarea className="short-textarea" value={value.note || ""} onChange={(event) => update("note", event.target.value)} /></Field>

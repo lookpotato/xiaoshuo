@@ -98,18 +98,8 @@ def _body_text(value: str) -> str:
     return re.sub(r"^\s*#\s*第\s*\d+\s*章\s+.*?(?:\r?\n|$)", "", narrative, count=1).strip()
 
 
-def _chapter_length_range(project: Path) -> tuple[int, int] | None:
-    config_path = project / "novel_config.md"
-    if not config_path.is_file():
-        return None
-    config = config_path.read_text(encoding="utf-8")
-    match = re.search(
-        r"常规章[^\d]{0,12}(\d{3,5})\s*[—–~～-]\s*(\d{3,5})\s*字", config
-    )
-    if not match:
-        return None
-    minimum, maximum = (int(match.group(1)), int(match.group(2)))
-    return (minimum, maximum) if 0 < minimum <= maximum else None
+def _body_hanzi_count(value: str) -> int:
+    return sum("\u4e00" <= char <= "\u9fff" for char in _body_text(value))
 
 
 def _validate_revision_scope(
@@ -696,18 +686,9 @@ def apply_revision(root: Path, book_id: str, feedback_id: str) -> dict:
     first = revision.splitlines()[0] if revision else ""
     if not re.fullmatch(rf"#\s*第\s*{number}\s*章\s+.+", first):
         raise ValueError("候选修订的章节标题不匹配")
-    current_count = len(_compact(_body_text(current)))
-    revision_count = len(_compact(_body_text(revision)))
+    revision_count = _body_hanzi_count(revision)
     if revision_count < 500:
         raise ValueError("候选修订正文过短")
-    length_range = _chapter_length_range(project)
-    if length_range and not length_range[0] <= revision_count <= length_range[1]:
-        raise ValueError(
-            f"候选修订正文为 {revision_count} 字，不符合本书 "
-            f"{length_range[0]}—{length_range[1]} 字要求"
-        )
-    if not length_range and revision_count < int(current_count * 0.85):
-        raise ValueError("候选修订删减超过原正文 15%，请改用整章重写")
     revision_scope = str(analysis.get("revision_scope", "wording"))
     _validate_revision_scope(
         current, revision, str(feedback.get("quote", "")), revision_scope
