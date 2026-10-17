@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -227,6 +228,39 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("批量重写：正在处理第 3/9 章", lines)
         self.assertTrue(hidden)
         self.assertNotIn("小说正文一段", lines)
+
+    def test_batch_rewrite_progress_survives_log_truncation(self) -> None:
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            work = root / ".batch_rewrites" / "night-floor" / "run-1"
+            stage = work / "project"
+            stage.mkdir(parents=True)
+            (work / "manifest.json").write_text(
+                '{"book_id":"night-floor","from_chapter":3,"through_chapter":9}', encoding="utf-8"
+            )
+            (stage / "chapter_state.json").write_text(
+                '{"last_completed_chapter":4}', encoding="utf-8"
+            )
+            runs = root / ".web_runtime" / "runs"
+            runs.mkdir(parents=True)
+            (runs / "12345678.log").write_text(
+                f"批量重写：工作目录 {work}\n" + "大量旧日志\n" * 1000,
+                encoding="utf-8",
+            )
+            active = root / ".novel_runs_v3" / "night-floor" / "0005-run"
+            active.mkdir(parents=True)
+            (active / "manifest.json").write_text(
+                json.dumps({"project": str(stage)}), encoding="utf-8"
+            )
+            (active / "author_room.md").write_text("正在写初稿", encoding="utf-8")
+            with patch.object(web_app, "ROOT", root), patch.object(web_app, "RUNS_ROOT", runs):
+                progress = web_app.batch_rewrite_progress(
+                    {"id": "12345678", "kind": "batch_rewrite", "status": "running"}
+                )
+        self.assertEqual(progress["completed"], 2)
+        self.assertEqual(progress["total"], 7)
+        self.assertEqual(progress["current_chapter"], 5)
+        self.assertEqual(progress["stage"], "正文初稿")
 
     def test_refresh_run_recovers_completed_batch_rewrite(self) -> None:
         with (

@@ -277,6 +277,64 @@ def refresh_run(meta: dict) -> dict:
     return meta
 
 
+def batch_rewrite_progress(meta: dict) -> dict | None:
+    """Read small on-disk artifacts so progress survives truncated logs and restarts."""
+    if meta.get("kind") != "batch_rewrite" or meta.get("status") not in ("running", "success"):
+        return None
+    run_id = str(meta.get("id", ""))
+    if not SAFE_JOB_ID.fullmatch(run_id):
+        return None
+    log_path = RUNS_ROOT / f"{run_id}.log"
+    if not log_path.is_file():
+        return None
+    with log_path.open("r", encoding="utf-8", errors="replace") as handle:
+        first_line = handle.readline().strip()
+    prefix = "批量重写：工作目录 "
+    if not first_line.startswith(prefix):
+        return None
+    work = Path(first_line[len(prefix):]).resolve()
+    if work.parent.parent != (ROOT / ".batch_rewrites").resolve():
+        return None
+    manifest = read_json(work / "manifest.json", {}) or {}
+    book_id = str(manifest.get("book_id", ""))
+    if work.parent.name != book_id or not re.fullmatch(r"[A-Za-z0-9_-]+", book_id):
+        return None
+    start = int(manifest.get("from_chapter", 0) or 0)
+    last = int(manifest.get("through_chapter", 0) or 0)
+    if start < 1 or last < start:
+        return None
+    stage_project = work / "project"
+    stage_state = read_json(stage_project / "chapter_state.json", {}) or {}
+    completed_through = int(stage_state.get("last_completed_chapter", start - 1) or 0)
+    completed = max(0, min(last - start + 1, completed_through - start + 1))
+    total = last - start + 1
+    if meta.get("status") == "success" or manifest.get("status") == "completed":
+        return {"completed": total, "total": total, "current_chapter": None,
+                "stage": "整批完成", "percent": 100}
+    current = min(last, start + completed)
+    stage_label = "剧情总设计师"
+    run_parent = ROOT / ".novel_runs_v3" / book_id
+    for candidate in sorted(run_parent.glob(f"{current:04d}-*"), reverse=True):
+        run_manifest = read_json(candidate / "manifest.json", {}) or {}
+        if Path(run_manifest.get("project", "")).resolve() != stage_project.resolve():
+            continue
+        if (candidate / "continuity_review.json").is_file():
+            stage_label = "连续性验收"
+        elif (candidate / "reader_review.json").is_file():
+            stage_label = "读者验收"
+        elif (candidate / "candidate.md").is_file():
+            stage_label = "编辑与审稿"
+        elif (candidate / "author_room.md").is_file():
+            stage_label = "正文初稿"
+        elif (stage_project / "character_threads" / f"{current:04d}" / "00-cast.md").is_file():
+            stage_label = "作者房间"
+        elif (stage_project / "chapter_plans" / f"{current:04d}.json").is_file():
+            stage_label = "人物独立线"
+        break
+    return {"completed": completed, "total": total, "current_chapter": current,
+            "stage": stage_label, "percent": round(completed / total * 100)}
+
+
 def list_runs(limit: int = 12) -> list[dict]:
     if not RUNS_ROOT.is_dir():
         return []
@@ -287,7 +345,8 @@ def list_runs(limit: int = 12) -> list[dict]:
     for path in paths[:limit]:
         meta = read_json(path)
         if isinstance(meta, dict):
-            rows.append(refresh_run(meta))
+            current = refresh_run(meta)
+            rows.append({**current, "progress": batch_rewrite_progress(current)})
     return rows
 
 
