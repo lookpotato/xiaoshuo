@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import json
 import re
 import subprocess
@@ -73,6 +74,18 @@ def _repair_evidence(chapter_text: str, evidence: str) -> tuple[str, bool]:
         if best is None or score > best[0]:
             best = (score, segment)
     return (best[1], True) if best else (raw, False)
+
+
+def _literal_blind_evidence(chapter_text: str, evidence: str) -> tuple[str, bool]:
+    """Remove only quotation marks added around an otherwise literal body span."""
+    raw = evidence.strip()
+    if raw in chapter_text:
+        return raw, raw != evidence
+    if len(raw) >= 2 and raw[0] in '“‘"\'' and raw[-1] in '”’"\'':
+        inner = raw[1:-1]
+        if inner in chapter_text:
+            return inner, True
+    return raw, False
 
 
 def parse_blind_reader_result(text: str) -> dict:
@@ -276,6 +289,7 @@ def build_blind_reader_prompt(book_id: str, feedback_id: str) -> tuple[Path, Pat
 - 读者本次留下的原始反馈：`feedback.json`
 
 你的任务不是替作者改稿，而是说明仅凭眼前正文实际读到了什么、缺了什么，以及问题影响到多大范围。
+evidence 请直接复制正文中的连续字符。若只摘取一句中的一部分，不要自行补上引号、句号或短信末尾未摘取的文字。
 
 修改层级只能三选一：
 - wording：个别词句、语序、口吻或少量前后衔接有问题，正文场景任务仍成立。
@@ -572,7 +586,8 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
     )
 
 
-def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
+def run(book_id: str, feedback_id: str, from_interview: bool = False,
+        resume_blind: bool = False) -> None:
     item = service.feedback_item(ROOT, book_id, feedback_id)
     review_mode = str(item.get("review_mode", "combined"))
     if review_mode not in service.REVIEW_MODES:
@@ -645,43 +660,55 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False) -> None:
         blind_prompt, blind_result_path = build_blind_reader_prompt(book_id, feedback_id)
         chapter_source = Path(item["chapter_file"]).read_text(encoding="utf-8")
         chapter_text = service._narrative(chapter_source)
+        if resume_blind and hashlib.sha256(chapter_source.encode("utf-8")).hexdigest() != item.get("chapter_sha256"):
+            raise ValueError("当前正文已变化，请重新提交读者反馈后审稿")
         feedback_source = (blind_result_path.parent / "feedback.json").read_text(
             encoding="utf-8"
         )
-        with TemporaryDirectory(prefix="novel-blind-reader-") as temporary:
-            isolated = Path(temporary)
-            (isolated / "chapter.md").write_text(chapter_source, encoding="utf-8")
-            (isolated / "feedback.json").write_text(feedback_source, encoding="utf-8")
-            isolated_result = isolated / "result.json"
-            blind_command = [
-                *novel_codex_model.exec_prefix(resolve_codex(), book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
-                "-C", str(isolated),
-                "--sandbox", "read-only", "--config", 'approval_policy="never"',
-                "--output-last-message", str(isolated_result), "-",
-            ]
-            blind_process = subprocess.run(
-                blind_command,
-                cwd=isolated,
-                input=blind_prompt.read_text(encoding="utf-8"),
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
-            if blind_process.returncode:
-                raise RuntimeError(f"陌生读者试读进程退出码 {blind_process.returncode}")
-            blind_result_text = isolated_result.read_text(encoding="utf-8")
-        service.atomic_text(blind_result_path, blind_result_text)
+        if resume_blind and blind_result_path.is_file():
+            blind_result_text = blind_result_path.read_text(encoding="utf-8")
+        else:
+            with TemporaryDirectory(prefix="novel-blind-reader-") as temporary:
+                isolated = Path(temporary)
+                (isolated / "chapter.md").write_text(chapter_source, encoding="utf-8")
+                (isolated / "feedback.json").write_text(feedback_source, encoding="utf-8")
+                isolated_result = isolated / "result.json"
+                blind_command = [
+                    *novel_codex_model.exec_prefix(resolve_codex(), book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
+                    "-C", str(isolated),
+                    "--sandbox", "read-only", "--config", 'approval_policy="never"',
+                    "--output-last-message", str(isolated_result), "-",
+                ]
+                blind_process = subprocess.run(
+                    blind_command,
+                    cwd=isolated,
+                    input=blind_prompt.read_text(encoding="utf-8"),
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                if blind_process.returncode:
+                    raise RuntimeError(f"陌生读者试读进程退出码 {blind_process.returncode}")
+                blind_result_text = isolated_result.read_text(encoding="utf-8")
+            service.atomic_text(blind_result_path, blind_result_text)
         blind = parse_blind_reader_result(blind_result_text)
-        if not blind["evidence"] or not all(
-            evidence.strip() in chapter_text for evidence in blind["evidence"]
-        ):
-            raise ValueError("陌生读者报告的 evidence 必须逐字存在于当前正文")
+        repairs = []
+        for index, evidence in enumerate(blind["evidence"]):
+            literal, changed = _literal_blind_evidence(chapter_text, evidence)
+            if literal not in chapter_text:
+                raise ValueError(f"陌生读者报告第 {index + 1} 条 evidence 无法在当前正文中定位：{evidence}")
+            if changed:
+                repairs.append({"from": evidence, "to": literal})
+            blind["evidence"][index] = literal
+        if not blind["evidence"]:
+            raise ValueError("陌生读者报告的 evidence 不能为空")
         folder = blind_result_path.parent
         service.atomic_json(folder / "blind_reader_analysis.json", {
             "schema_version": 1,
             **blind,
             "reviewed_at": datetime.now().astimezone().isoformat(),
             "context_policy": "只读当前章节与原始反馈，不读取作者设定或相邻章节",
+            "evidence_repairs": repairs,
         })
         if review_mode == "blind":
             service.update_status(
@@ -741,12 +768,14 @@ def main() -> int:
     parser.add_argument("--feedback-id", required=True)
     parser.add_argument("--follow-up", action="store_true")
     parser.add_argument("--from-interview", action="store_true")
+    parser.add_argument("--resume-blind", action="store_true")
     args = parser.parse_args()
     try:
         if args.follow_up:
             run_follow_up(args.book, args.feedback_id)
         else:
-            run(args.book, args.feedback_id, from_interview=args.from_interview)
+            run(args.book, args.feedback_id, from_interview=args.from_interview,
+                resume_blind=args.resume_blind)
         print("真实读者反馈分析完成")
         return 0
     except Exception as exc:

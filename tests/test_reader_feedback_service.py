@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 import reader_feedback_service as service
 from reader_feedback_worker import (
     _evidence_in_text,
+    _literal_blind_evidence,
     _repair_evidence,
     parse_blind_reader_result,
     parse_chapter_interview_result,
@@ -142,6 +143,18 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         )
         self.assertTrue(changed)
         self.assertIn(repaired, chapter)
+
+    def test_blind_evidence_removes_only_added_outer_quotes(self) -> None:
+        chapter = '她说：“先等消息。我拿到准信给您看。”短信写着一零三室；今晚房费由街道结算，续住另核。'
+        quoted = '“今晚房费由街道结算”'
+        repaired, changed = _literal_blind_evidence(chapter, quoted)
+        self.assertEqual(repaired, '今晚房费由街道结算')
+        self.assertTrue(changed)
+        self.assertIn(repaired, chapter)
+        invented, changed = _literal_blind_evidence(chapter, '“今晚房费由住户结算”')
+        self.assertEqual(invented, '“今晚房费由住户结算”')
+        self.assertFalse(changed)
+        self.assertNotIn(invented, chapter)
 
     def test_feedback_rejects_unknown_review_mode(self) -> None:
         with self.assertRaisesRegex(ValueError, "审稿方式无效"):
