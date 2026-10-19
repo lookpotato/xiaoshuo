@@ -23,6 +23,52 @@
       "evidence_count": 1,
       "confirmed_at": "2026-10-13T16:23:12.964596+08:00",
       "updated_at": "2026-10-13T16:23:12.964596+08:00"
+    },
+    {
+      "id": "uncomfortable-1b092f48f1f3",
+      "scope": "book",
+      "book_id": "night-floor",
+      "category": "uncomfortable",
+      "principle": "写熟人遇险时的劝离，先让读者看见对方正在做什么，再让提醒针对眼前动作、当下危险和说话者能提供的帮助。",
+      "applies_when": "本书邻里在楼道、住处等共同生活空间里临时应对险情时。",
+      "avoid": "不要为了每句急话都补一串动作；若对象和危险已经清楚，应让人物直接开口。",
+      "rationale": "这条原则可用于本书后续多次楼内险情，但目前证据只来自这一处，不宜上升为作者跨作品规则。",
+      "tags": [
+        "邻里关系",
+        "紧急疏散",
+        "对白"
+      ],
+      "recommended_scope": "book",
+      "confidence": "medium",
+      "evidence_feedback_ids": [
+        "20261018-115529-5530bce4"
+      ],
+      "evidence_count": 1,
+      "confirmed_at": "2026-10-18T12:09:11.921552+08:00",
+      "updated_at": "2026-10-18T12:09:11.921552+08:00"
+    },
+    {
+      "id": "uncomfortable-b597073c74a3",
+      "scope": "book",
+      "book_id": "night-floor",
+      "category": "uncomfortable",
+      "principle": "熟人临时商量住处或搬物时，先让回应落在对方刚提出的事上；随后让行程和物品安排由追问或眼前动作带出。",
+      "applies_when": "本书住户、家人面对突发限行，需要同时决定今晚住哪儿和东西怎么拿时。",
+      "avoid": "紧急撤离、交接记录或必须一次讲清的安全指令仍应直接说明；不要为了口语感拆散必要信息。",
+      "rationale": "本章两处对白共同暴露出同一问题，原则可用于本书后续的邻里协商场景，同时保留明确交代现实安排的写法。",
+      "tags": [
+        "祖孙关系",
+        "临时住宿",
+        "对白"
+      ],
+      "recommended_scope": "book",
+      "confidence": "high",
+      "evidence_feedback_ids": [
+        "20261018-122605-bbfdfc3c"
+      ],
+      "evidence_count": 1,
+      "confirmed_at": "2026-10-18T12:51:56.463431+08:00",
+      "updated_at": "2026-10-18T12:51:56.463431+08:00"
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "status": "applied",
+  "message": "最新正式稿已更新；旧版本已收入草稿箱，过期验收已撤销，重新验收前不得发布",
+  "updated_at": "2026-10-18T12:09:19.989365+08:00",
+  "run_id": "20261018-115529-f2c679ce",
+  "applied_at": "2026-10-18T12:09:19.987366+08:00",
+  "receipt": {
+    "chapter": 5,
+    "filename": "0005-灯下那张收条.md",
+    "applied_at": "2026-10-18T12:09:19.987366+08:00",
+    "word_count": 2962,
+    "revision_scope": "wording",
+    "revision_scope_label": "措辞级",
+    "previous_sha256": "2e85ccd5ddab085a37c44c4c34c59288b3a84219be5cf693749a3163267a1d72",
+    "current_sha256": "638705458cd13e3262f11bd15d78ca05744e54d1812cd0e6e0d635d91fdf42fa",
+    "backup": "reader_feedback\\20261018-115529-5530bce4\\original_before_apply.md",
+    "invalidated_checks": [],
+    "message": "最新正式稿已更新，页面已切回新正文；旧版本已收入草稿箱。"
+  }
+}
