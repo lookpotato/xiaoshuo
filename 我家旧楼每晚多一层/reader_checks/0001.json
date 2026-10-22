@@ -5,9 +5,9 @@
   "outline_blind": true,
   "reviewer": "codex-reader-gate",
   "status": "passed",
-  "reviewed_at": "2026-10-03T14:16:11+08:00",
+  "reviewed_at": "2026-10-22T22:23:08+08:00",
   "revision_rounds": 1,
-  "narrative_sha256": "c0141407bc703297997dc067f042e31e579478ae1202c7c17028ab9911ad1eca",
+  "narrative_sha256": "9f8ed50e07f6caec421df873509aa72429086153553524843dbf6ad237f3e471",
   "questions": {
     "previous_context": {
       "answer": "新书的生活起点是南梧柳北里一栋只有六层、周寻熟悉的旧居民楼。",
@@ -34,9 +34,9 @@
       ]
     },
     "result_and_cost": {
-      "answer": "母女借住七楼一晚，田小雨明确只是暂借，不让周寻替她决定住房。",
+      "answer": "田小雨决定带可可在七楼暂住一晚，六零三漏水和房东维修责任仍在；周寻也需守着未知线路的风险。",
       "evidence": [
-        "“就借一晚。”田小雨说，“门不锁。周寻，明早我还得给房东打电话，不能算你替我找了房。”"
+        "“先住一晚。”田小雨说，“门别锁。明早我还得跟房东吵那块漏水的板子。”"
       ]
     },
     "reader_hook": {
