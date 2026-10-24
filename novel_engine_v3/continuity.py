@@ -78,6 +78,21 @@ def validate_characters(project: Path, chapter: int, *, final: bool) -> None:
             raise V3ValidationError(f"第 {chapter} 章未回写 {name.strip()} 的状态")
 
 
+def validate_viewpoint_contract(root: Path, project: Path, chapter: int) -> None:
+    """Catch a plan/map viewpoint disagreement before drafting starts."""
+    plan = _object(plan_path(root, project, chapter))
+    if plan.get("schema_version", 1) < 3:
+        return  # Archived plans predate the explicit viewpoint contract.
+    contract = plan.get("viewpoint_contract")
+    if not isinstance(contract, str) or not contract.strip():
+        raise V3ValidationError(f"第 {chapter} 章章节合同缺少视角约定")
+    interaction = project / "character_threads" / f"{chapter:04d}" / "interaction_map.md"
+    if f"**视角合同**：{contract}" not in interaction.read_text(encoding="utf-8"):
+        raise V3ValidationError(
+            f"第 {chapter} 章交织表与章节合同的视角约定不一致，请在写正文前修正 interaction_map.md"
+        )
+
+
 def stamp_candidate(run: Path) -> None:
     digest = hashlib.sha256((run / "candidate.md").read_bytes()).hexdigest()
     (run / "candidate.sha256").write_text(digest + "\n", encoding="ascii")
@@ -145,6 +160,7 @@ def validate_unified_run(root: Path, run: Path, project: Path, chapter: int) -> 
         raise V3ValidationError("旧运行包没有完整统一流程，请重新准备章节")
     validate_director(root, project, chapter)
     validate_characters(project, chapter, final=True)
+    validate_viewpoint_contract(root, project, chapter)
     validate_review(run, chapter)
     if manifest.get("book_id") == "night-floor":
         state = validate_chronology(run, project, chapter)

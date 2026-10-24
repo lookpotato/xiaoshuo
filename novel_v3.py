@@ -15,7 +15,8 @@ from datetime import datetime
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.continuity import (
-    stamp_candidate, validate_characters, validate_director, validate_unified_run,
+    stamp_candidate, validate_characters, validate_director,
+    validate_unified_run, validate_viewpoint_contract,
 )
 
 
@@ -232,6 +233,7 @@ def main() -> int:
                 validate_director(ROOT, project, int(run.name[:4]))
             elif stage == "characters":
                 validate_characters(project, int(run.name[:4]), final=False)
+                validate_viewpoint_contract(ROOT, project, int(run.name[:4]))
         archived = review_and_archive(run, project, int(run.name[:4]))
         print(f"V3 已归档：{archived}")
         chapter = None

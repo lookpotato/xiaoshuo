@@ -82,6 +82,7 @@ class NovelStagePipelineTests(unittest.TestCase):
             "ending_pressure": {"visible_trigger": "门锁上时母亲喊妹妹乳名", "next_decision": "阿澄必须决定是否再开门", "why_now": "追兵正上楼"},
             "new_questions": ["妹妹能否带母亲上楼"],
             "irreversible_change": "兄妹被门分开",
+            "viewpoint_contract": "阿澄为主视角；妹妹离场后的行动只通过他能听到的喊声和后果进入正文。",
             "scene_plan": [
                 {"purpose": "争夺钥匙", "conflict": "两人都要出去", "turn": "钥匙交给妹妹"},
                 {"purpose": "锁门", "conflict": "追兵抵达", "turn": "妹妹留在门外"},
@@ -178,6 +179,16 @@ class NovelStagePipelineTests(unittest.TestCase):
                 self.write_plan(plan)
                 with self.assertRaisesRegex(pipeline.PipelineValidationError, field):
                     pipeline.validate_plan(self.root, self.project, 2)
+
+    def test_new_plan_requires_viewpoint_contract_but_old_plan_remains_valid(self) -> None:
+        plan = self.valid_plan()
+        del plan["viewpoint_contract"]
+        self.write_plan(plan)
+        with self.assertRaisesRegex(pipeline.PipelineValidationError, "viewpoint_contract"):
+            pipeline.validate_plan(self.root, self.project, 2)
+        plan["schema_version"] = 2
+        self.write_plan(plan)
+        self.assertEqual(pipeline.validate_plan(self.root, self.project, 2)["chapter_number"], 2)
 
     def test_existing_plan_remains_valid(self) -> None:
         plan = self.valid_plan()

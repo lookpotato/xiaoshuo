@@ -9,6 +9,7 @@ from novel_engine_v3 import V3ValidationError
 from novel_engine_v3 import AuthorEngine
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_chronology, validate_review,
+    validate_viewpoint_contract,
 )
 
 
@@ -94,6 +95,24 @@ class UnifiedContinuityTests(unittest.TestCase):
         with self.assertRaisesRegex(V3ValidationError, "正文发生变化"):
             validate_review(self.run, 10)
 
+    def test_viewpoint_mismatch_is_stopped_before_drafting(self):
+        plan = self.project / "chapter_plans" / "0010.json"
+        plan.write_text(json.dumps({
+            "schema_version": 3,
+            "viewpoint_contract": "田小雨为主视角；夜间楼内行动由电话获报。",
+        }, ensure_ascii=False), encoding="utf-8")
+        directory = self.project / "character_threads" / "0010"
+        directory.mkdir(parents=True)
+        interaction = directory / "interaction_map.md"
+        interaction.write_text("夜间直接跟随周寻上楼。", encoding="utf-8")
+        with self.assertRaisesRegex(V3ValidationError, "视角约定不一致"):
+            validate_viewpoint_contract(self.root, self.project, 10)
+        interaction.write_text(
+            "**视角合同**：田小雨为主视角；夜间楼内行动由电话获报。\n",
+            encoding="utf-8",
+        )
+        validate_viewpoint_contract(self.root, self.project, 10)
+
     def test_prepare_wires_director_characters_and_clock_into_one_run(self):
         home = self.root / "novel_engine_v3"
         home.mkdir()
@@ -113,6 +132,8 @@ class UnifiedContinuityTests(unittest.TestCase):
         self.assertEqual(manifest["workflow"][0:3], ["director", "characters", "author_room"])
         self.assertIn("story_clock", (run / "director.md").read_text(encoding="utf-8"))
         self.assertIn("state_update.md", (run / "continuity.md").read_text(encoding="utf-8"))
+        self.assertIn("viewpoint_contract", (run / "characters.md").read_text(encoding="utf-8"))
+        self.assertIn("viewpoint_contract", (run / "continuity.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
