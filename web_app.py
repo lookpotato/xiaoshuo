@@ -7,6 +7,7 @@ import argparse
 import json
 import mimetypes
 import os
+import signal
 import re
 import subprocess
 import sys
@@ -37,7 +38,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 7
+API_VERSION = 8
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -470,6 +471,7 @@ def launch_command(command: list[str], kind: str, label: str) -> dict:
             encoding="utf-8",
             errors="replace",
             creationflags=creationflags,
+            start_new_session=os.name != "nt",
             env=child_env,
         )
     finally:
@@ -487,6 +489,35 @@ def launch_command(command: list[str], kind: str, label: str) -> dict:
     write_json(run_metadata_path(run_id), meta)
     with RUN_LOCK:
         RUN_PROCESSES[run_id] = process
+    return meta
+
+
+def cancel_run(payload: dict) -> dict:
+    run_id = str(payload.get("run_id", ""))
+    if not SAFE_JOB_ID.fullmatch(run_id):
+        raise ValueError("任务 id 格式不正确")
+    path = run_metadata_path(run_id)
+    meta = read_json(path)
+    if not isinstance(meta, dict) or meta.get("id") != run_id:
+        raise ValueError("找不到任务")
+    with RUN_LOCK:
+        process = RUN_PROCESSES.get(run_id)
+        if meta.get("status") != "running" or process is None or process.poll() is not None:
+            raise ValueError("任务已结束或不属于当前服务，刷新状态后重试")
+        if os.name == "nt":
+            stopped = subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True, text=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            if stopped.returncode != 0 and process.poll() is None:
+                raise RuntimeError("停止任务进程失败")
+        else:
+            os.killpg(process.pid, signal.SIGTERM)
+        meta["status"] = "cancelled"
+        meta["finished_at"] = datetime.now().astimezone().isoformat()
+        meta["exit_code"] = process.poll()
+        write_json(path, meta)
+        RUN_PROCESSES.pop(run_id, None)
     return meta
 
 
@@ -829,6 +860,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
+                "/api/run/cancel": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
             if declared_length < 0:
@@ -841,6 +873,9 @@ class AppHandler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
             if parsed.path == "/api/run":
                 self.send_json({"ok": True, "run": launch_generation(payload)}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/run/cancel":
+                self.send_json({"ok": True, "run": cancel_run(payload)})
                 return
             if parsed.path == "/api/resume":
                 self.send_json({"ok": True, "run": launch_resume(payload)}, HTTPStatus.ACCEPTED)

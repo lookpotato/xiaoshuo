@@ -4,12 +4,28 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import web_app
 
 
 class WebAppDataTests(unittest.TestCase):
+    def test_cancel_run_stops_process_tree_and_records_cancellation(self) -> None:
+        with TemporaryDirectory() as temp, patch.object(web_app, "RUNS_ROOT", Path(temp)):
+            web_app.write_json(web_app.run_metadata_path("12345678"), {
+                "id": "12345678", "status": "running", "kind": "batch_rewrite", "pid": 4321,
+            })
+            process = Mock(pid=4321)
+            process.poll.return_value = None
+            with patch.dict(web_app.RUN_PROCESSES, {"12345678": process}, clear=True), \
+                 patch.object(web_app.os, "name", "nt"), \
+                 patch.object(web_app.subprocess, "run", return_value=Mock(returncode=0)) as stop:
+                result = web_app.cancel_run({"run_id": "12345678"})
+                self.assertNotIn("12345678", web_app.RUN_PROCESSES)
+            self.assertEqual(stop.call_args.args[0], ["taskkill", "/PID", "4321", "/T", "/F"])
+            self.assertEqual(result["status"], "cancelled")
+            self.assertEqual(web_app.read_json(web_app.run_metadata_path("12345678"))["status"], "cancelled")
+
     def test_batch_rewrite_launches_local_v3_tail(self) -> None:
         fake = {"id": "run-id", "status": "running"}
         with patch.object(web_app, "launch_command", return_value=fake) as launch, \

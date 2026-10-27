@@ -5,7 +5,7 @@ import ReaderFeedbackWorkspace from "./components/ReaderFeedbackWorkspace";
 
 const statusLabel = (status, result) => ({
   running: "运行中", queued: "排队中", finished: result === "success" ? "已完成" : "已结束",
-  success: "已完成", failed: "失败", blocked: "需处理",
+  success: "已完成", failed: "失败", cancelled: "已停止", blocked: "需处理",
 }[status] || status || "未知");
 
 function Sidebar({ books, selected, onSelect, view, onView }) {
@@ -101,16 +101,16 @@ function ChapterList({ book, onOpen, onDelete }) {
   </article>;
 }
 
-function Activity({ data, bookId, onResume, onResumeRewrite, onOpenLog, selectedRunId }) {
+function Activity({ data, bookId, onResume, onResumeRewrite, onOpenLog, onCancel, selectedRunId }) {
   const jobs = data.jobs.filter((job) => job.book_id === bookId).slice(0, 5);
   return <article className="panel jobs-panel">
     <div className="panel-head"><div><p className="eyebrow">ACTIVITY</p><h2>任务进度</h2></div></div>
-    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div>{run.progress && <><div className="progress" aria-label={`批量重写进度 ${run.progress.completed}/${run.progress.total} 章`}><i style={{ width: `${run.progress.percent}%` }} /></div><p>已完成 {run.progress.completed}/{run.progress.total} 章 · {run.progress.current_chapter ? `正在第 ${run.progress.current_chapter} 章：${run.progress.stage}` : run.progress.stage}</p></>}<p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>在控制台查看</button>{run.kind === "batch_rewrite" && run.status === "failed" && <button className="resume" onClick={() => onResumeRewrite(run.id)}>从失败章节续跑</button>}</div>) : <div className="empty">暂无网页启动记录</div>}</div>
+    <div className="run-list">{data.runs.length ? data.runs.slice(0, 4).map((run) => <div className={`activity ${run.id === selectedRunId ? "active-run" : ""}`} key={run.id}><div className="activity-top"><strong>{run.label}</strong><span className={`status ${run.status}`}>{statusLabel(run.status)}</span></div>{run.progress && <><div className="progress" aria-label={`批量重写进度 ${run.progress.completed}/${run.progress.total} 章`}><i style={{ width: `${run.progress.percent}%` }} /></div><p>已完成 {run.progress.completed}/{run.progress.total} 章 · {run.progress.current_chapter ? `正在第 ${run.progress.current_chapter} 章：${run.progress.stage}` : run.progress.stage}</p></>}<p>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</p><button className="log-button" onClick={() => onOpenLog(run.id)}>在控制台查看</button>{run.status === "running" && <button className="resume" onClick={() => onCancel(run)}>停止任务</button>}{run.kind === "batch_rewrite" && run.status === "failed" && <button className="resume" onClick={() => onResumeRewrite(run.id)}>从失败章节续跑</button>}</div>) : <div className="empty">暂无网页启动记录</div>}</div>
     <div className="job-list">{jobs.map((job) => { const ratio = job.target ? Math.min(100, Math.round(job.completed / job.target * 100)) : 0; const resumable = ["failed", "partial", "blocked"].includes(job.result); const delivery = [job.options?.publish_fanqie && "番茄", job.options?.sync_git && "Git"].filter(Boolean).join(" + ") || "仅本地"; return <div className="activity" key={job.id}><div className="activity-top"><strong>{job.id}</strong><span className={`status ${job.result || job.status}`}>{statusLabel(job.status, job.result)}</span></div><div className="progress"><i style={{ width: `${ratio}%` }} /></div><p>{job.completed}/{job.target} 章 · {delivery}{job.message ? ` · ${job.message}` : ""}</p>{resumable && <button className="resume" onClick={() => onResume(job.id)}>按原配置续跑</button>}</div>; })}</div>
   </article>;
 }
 
-function BackendLog({ run, runs, onSelect }) {
+function BackendLog({ run, runs, onSelect, onCancel }) {
   const [log, setLog] = useState(null);
   const [error, setError] = useState("");
   const [tailLimit, setTailLimit] = useState(300);
@@ -135,7 +135,7 @@ function BackendLog({ run, runs, onSelect }) {
   }, [log?.content]);
 
   return <article className="panel backend-log-panel" aria-label="后端实时控制台">
-    <div className="panel-head"><div><p className="eyebrow">BACKEND CONSOLE</p><h2>后端实时控制台</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}<label className="log-limit">显示行数<select aria-label="日志显示行数" value={tailLimit} onChange={(event) => setTailLimit(Number(event.target.value))}><option value="100">100 行</option><option value="300">300 行</option><option value="500">500 行</option></select></label><button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button></div></div>
+    <div className="panel-head"><div><p className="eyebrow">BACKEND CONSOLE</p><h2>后端实时控制台</h2></div><div className="log-actions">{run && <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>}{run?.status === "running" && <button className="resume" onClick={() => onCancel(run)}>停止任务</button>}<label className="log-limit">显示行数<select aria-label="日志显示行数" value={tailLimit} onChange={(event) => setTailLimit(Number(event.target.value))}><option value="100">100 行</option><option value="300">300 行</option><option value="500">500 行</option></select></label><button className="resume" disabled={!run} onClick={loadLog}>立即刷新</button></div></div>
     {runs.length > 0 && <select className="run-selector" aria-label="选择后端运行记录" value={run?.id || ""} onChange={(event) => onSelect(event.target.value)}>{runs.map((item) => <option value={item.id} key={item.id}>{statusLabel(item.status)} · {item.label} · {item.id}</option>)}</select>}
     {run ? <>{run.progress && <div className="run-summary"><span>批量重写进度</span><strong>已完成 {run.progress.completed}/{run.progress.total} 章 · {run.progress.current_chapter ? `第 ${run.progress.current_chapter} 章 ${run.progress.stage}` : run.progress.stage}</strong></div>}<p className="log-caption">{run.label} · {run.id}{log?.truncated ? " · 仅显示末尾日志，不影响任务执行" : ""}{log?.content_hidden ? " · 正文已过滤" : ""} · 最多显示 500 行 / 256 KB</p>{log?.error_summary && <div className="log-error-summary"><strong>失败原因</strong><span>{log.error_summary}</span></div>}<pre className="backend-log" ref={outputRef}>{error || log?.content || "任务刚启动，等待后端输出……"}</pre></> : <div className="empty">启动任务后，这里会持续显示 Python 输出和错误信息</div>}
   </article>;
@@ -159,7 +159,6 @@ export default function App() {
   const [selectedRunId, setSelectedRunId] = useState(null);
   const [notice, setNotice] = useState("");
   const [view, setView] = useState("workbench");
-  const announcedFailures = useRef(new Set());
 
   const loadOverview = useCallback(async (announce = false) => {
     try {
@@ -178,11 +177,14 @@ export default function App() {
   }, [data?.runs]);
   const selectedRun = useMemo(() => data?.runs.find((run) => run.id === selectedRunId) || data?.runs[0], [data, selectedRunId]);
   const openLog = useCallback((runId) => { setSelectedRunId(runId); }, []);
-  useEffect(() => {
-    const failed = data?.runs.find((run) => run.status === "failed" && !announcedFailures.current.has(run.id));
-    data?.runs.forEach((run) => { if (run.status === "failed") announcedFailures.current.add(run.id); });
-    if (failed) openLog(failed.id);
-  }, [data?.runs, openLog]);
+  async function cancelRun(run) {
+    if (!window.confirm(`停止“${run.label}”？正在执行的子进程也会关闭。`)) return;
+    try {
+      await api("/api/run/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ run_id: run.id }) });
+      setNotice("任务已停止");
+      await loadOverview();
+    } catch (error) { setNotice(error.message); }
+  }
 
   async function openChapter(bookId, number) { try { setChapter(await api(`/api/chapter?book_id=${encodeURIComponent(bookId)}&number=${number}`)); } catch (error) { setNotice(error.message); } }
   async function deleteChapterTail(targetBook, targetChapter) {
@@ -208,8 +210,8 @@ export default function App() {
       <Metrics book={book} />
       <section className="workspace-grid"><CreatePanel books={data.books} selectedBookId={book.id} generationVersion={data.generation_version || "v3"} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /><BatchRewritePanel book={book} generationVersion={data.generation_version || "v3"} apiVersion={data.api_version || 0} onNotice={setNotice} onRefresh={loadOverview} onRunStarted={(run) => openLog(run.id)} /></section>
       <section className="workspace-grid"><article className="panel note-panel"><div className="panel-head"><div><p className="eyebrow">NEXT</p><h2>下一章接力点</h2></div></div><p className="next-notes">{book.notes_for_next_chapter || "暂无下一章备注。"}</p></article></section>
-      <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} />
-      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onResumeRewrite={resumeRewrite} onOpenLog={openLog} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
+      <BackendLog run={selectedRun} runs={data.runs} onSelect={openLog} onCancel={cancelRun} />
+      <section className="content-grid"><ChapterList book={book} onOpen={openChapter} onDelete={deleteChapterTail} /><div className="right-stack"><Activity data={data} bookId={book.id} onResume={resume} onResumeRewrite={resumeRewrite} onOpenLog={openLog} onCancel={cancelRun} selectedRunId={selectedRunId} /><ValidationPanel validation={book.validation} /></div></section>
       </>}
     </main></div>
     <ReaderDialog chapter={chapter} onClose={() => setChapter(null)} />
