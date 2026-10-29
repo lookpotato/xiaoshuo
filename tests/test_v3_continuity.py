@@ -134,6 +134,33 @@ class UnifiedContinuityTests(unittest.TestCase):
         self.assertIn("state_update.md", (run / "continuity.md").read_text(encoding="utf-8"))
         self.assertIn("viewpoint_contract", (run / "characters.md").read_text(encoding="utf-8"))
         self.assertIn("viewpoint_contract", (run / "continuity.md").read_text(encoding="utf-8"))
+        self.assertIn("scene_seed", manifest["workflow"])
+        draft_prompt = (run / "draft.md").read_text(encoding="utf-8")
+        self.assertIn("scene_seed.md", draft_prompt)
+        self.assertIn("prose_brief.md", draft_prompt)
+        self.assertNotIn(str(self.project / "chapter_plans"), draft_prompt)
+
+    def test_prose_brief_keeps_story_facts_without_full_planning_context(self):
+        home = self.root / "novel_engine_v3"
+        home.mkdir()
+        (home / "system.json").write_text(json.dumps({
+            "schema_version": 3,
+            "books": {"night-floor": {"title": "旧楼", "project": "book", "sources": []}},
+        }, ensure_ascii=False), encoding="utf-8")
+        (self.project / "chapter_state.json").write_text('{"next_chapter_number":10}', encoding="utf-8")
+        run = AuthorEngine(self.root).prepare("night-floor")
+        (self.project / "chapter_plans" / "0010.json").write_text(json.dumps({
+            "immediate_goal": "找出新门", "central_choice": "先守住入口",
+            "scene_plan": [{"turn": "邻居先把门推开"}],
+            "reader_payoff": {"on_page_event": "两栋楼相通"},
+            "ending_pressure": {"visible_trigger": "有人带尺进入"},
+        }, ensure_ascii=False), encoding="utf-8")
+        path = AuthorEngine(self.root).write_prose_brief(run)
+        brief = path.read_text(encoding="utf-8")
+        self.assertIn("找出新门", brief)
+        self.assertIn("邻居先把门推开", brief)
+        self.assertIn("有人带尺进入", brief)
+        self.assertNotIn("character_drives", brief)
 
 
 if __name__ == "__main__":

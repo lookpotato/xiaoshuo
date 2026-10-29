@@ -16,6 +16,10 @@ from pathlib import Path
 from novel_stage_pipeline import director_prompt, plan_path, load_config
 
 
+WORKFLOW = ["director", "characters", "author_room", "scene_seed", "draft", "deep_edit", "reader", "continuity"]
+LEGACY_WORKFLOW = ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"]
+
+
 class V3ValidationError(ValueError):
     pass
 
@@ -96,7 +100,7 @@ class AuthorEngine:
             "sources": [str(p.resolve()) for p in sources],
             "recent_chapters": [str(p.resolve()) for p in recent],
             "original_chapter": str(original_chapter.resolve()) if original_chapter else None,
-            "workflow": ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"],
+            "workflow": WORKFLOW,
         }
         (run / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -172,15 +176,20 @@ class AuthorEngine:
 
 不要设计固定对白，不要列“人物应该说什么”，不要把人物属性写成标签。先让人物在没有主角帮助时各自行动，再让他们相遇。
 """
-        draft = f"""# 初稿：像作者写，不像系统填
+        latest_chapter = f"`{recent[-1].resolve()}`" if recent else "无历史正文"
+        seed = f"""# 场景粗稿：先找到小说的声音
 
-读取 `{run / 'author_room.md'}`、`{plan}`、`{thread_dir}`、manifest 中列出的作品资料和最近正文。
-{clock_check}
+读取 `{run / 'author_room.md'}`、`{plan}`、本章人物私线和最近一章正文（{latest_chapter}）。写入 `{run / 'scene_seed.md'}`。
+只写约 400—800 汉字的小说正文片段，不写提纲、分析、人物卡、解释或审稿意见。让人物在现场做事、互相说话；可以粗糙，但要有可继续扩写的动作、语气和关系。不要试图在这几百字里塞进全章所有事件。
+这份粗稿只为下一次独立调用提供真实的叙述起点；章节合同由后续事实核对把关。
+"""
+        draft = f"""# 从场景粗稿扩成完整章节
 
-先把场景写出来，再让信息从人的行动和关系里出现。中国人的自然感不靠方言词、口头词或短句数量，而来自人物正在办什么事、欠谁人情、怕什么后果、愿不愿意把话说死，以及公开和私下的不同。
-按章节合同和交织表一致的视角约定写。主角不在场的关键行动，若约定获报，就让电话、对讲或后果进入主角场景；若约定现场分场，就在正文清楚切场，并保持主角的知识边界。
+只读取 `{run / 'scene_seed.md'}` 与 `{run / 'prose_brief.md'}`。不要读取章节合同、作者房间、人物私线、风格规则、反馈知识库或审稿提示。
 
-不要把 author_room 改写成剧情说明。不要逐条兑现资料。允许人物误会、绕开、改口、心里有数却不说全、嘴上不客气但手上帮忙；也允许场景暂时没有效率，只要这种生活残留属于人物，并最终改变行动或关系。
+以粗稿已经建立的人物口气、动作顺序和叙述节奏为起点，写成完整章节。自然补足场景、因果和后果。事实边界只用于防止写错，不要把它们逐条改写成台词或说明。
+
+人物可以误会、绕开、改口、沉默，也可以暂时只顾自己的事。不要为了覆盖规划条目让他们轮流汇报情况。
 
 保存 `{run / 'candidate.md'}`，只含标题和正文；另存 `{run / 'state_delta.json'}`，记录本章真实改变。不要读取 reader.md，不要边写边自评。
 """
@@ -190,11 +199,10 @@ class AuthorEngine:
                             "把不符合当前设定、时间线或读感的部分重新创作。原文是参考材料，不能压过新章节合同和此前已重写的章节。\n")
             director += rewrite_note
             room += rewrite_note
-            draft += rewrite_note
+            seed += rewrite_note
         edit = f"""# 深层编辑：保留故事，恢复人的生活
 
-读取 `{run / 'candidate.md'}`、`{run / 'author_room.md'}`、`{plan}`、`{thread_dir}` 和最近正文。
-{clock_check}
+只读取 `{run / 'candidate.md'}`、`{run / 'scene_seed.md'}` 和 `{run / 'prose_brief.md'}`。事实核对另有独立阶段。
 
 不要做表面口语润色。检查每个关键场景：人物是否真的带着自己的生活进入；是否先处理了眼前的事、物品、面子或边界；是否把只有作者知道的信息提前说完；是否所有人都在高效配合剧情；是否有一句话只是为了传递设定。
 修订场景时遵守 `viewpoint_contract`，不要把原本获报的行动改成无标记的楼内镜头，也不要让主角在分场后忽然知道未获报的细节。
@@ -235,5 +243,43 @@ class AuthorEngine:
 "start_quote": "正文开头的时间依据原句", "end_quote": "正文结尾的时间依据原句"}}
 故事日从首次增层当天为第 1 天；每天 23:47 必增一层。先读取 `{project / 'timeline_state.json'}` 的上一章终点，crossed_2347 是从上一章终点到本章终点经过的次数；events 应逐次写出正文中明确交代的新楼层。引用必须来自候选正文；不确定故事日或跨夜次数就写入 blocking，不能猜。
 """
-        return {"director": director, "characters": characters, "author_room": room,
+        return {"director": director, "characters": characters, "author_room": room, "scene_seed": seed,
                 "draft": draft, "deep_edit": edit, "reader": reader, "continuity": continuity}
+
+    def write_prose_brief(self, run: Path) -> Path:
+        """Give the prose call a small factual boundary without planning prose."""
+        manifest = _json(run / "manifest.json")
+        plan = _json(plan_path(self.root, Path(manifest["project"]), manifest["chapter"]))
+        facts = [
+            f"# 第 {manifest['chapter']} 章事实边界",
+            "以下是写作边界，不是要逐条说出的对白或情节摘要。",
+        ]
+        for key, label in (
+            ("immediate_goal", "眼前目标"), ("central_choice", "关键选择"),
+            ("irreversible_change", "章末变化"), ("viewpoint_contract", "视角边界"),
+        ):
+            value = plan.get(key)
+            if isinstance(value, str) and value.strip():
+                facts.append(f"- {label}：{value.strip()}")
+        for index, scene in enumerate(plan.get("scene_plan", [])[:6], 1):
+            if isinstance(scene, dict) and isinstance(scene.get("turn"), str):
+                facts.append(f"- 场景 {index} 的变化：{scene['turn'].strip()}")
+        for key, label in (("reader_payoff", "当章可见回报"), ("ending_pressure", "结尾迫近事件")):
+            value = plan.get(key)
+            if isinstance(value, dict):
+                detail = value.get("on_page_event" if key == "reader_payoff" else "visible_trigger")
+                if isinstance(detail, str) and detail.strip():
+                    facts.append(f"- {label}：{detail.strip()}")
+        clock = plan.get("story_clock")
+        if isinstance(clock, dict):
+            facts.append("- 时间与最高楼层：" + json.dumps(clock, ensure_ascii=False))
+        for item in plan.get("forbidden_shortcuts", [])[:5]:
+            if isinstance(item, str) and item.strip():
+                facts.append(f"- 不可写错的事实：{item.strip()}")
+        recent = manifest.get("recent_chapters", [])
+        if recent:
+            latest = Path(recent[-1]).read_text(encoding="utf-8-sig").split("\n---", 1)[0]
+            facts.extend(("", "## 上章结尾参考", latest[-900:]))
+        path = run / "prose_brief.md"
+        path.write_text("\n".join(facts).strip() + "\n", encoding="utf-8")
+        return path

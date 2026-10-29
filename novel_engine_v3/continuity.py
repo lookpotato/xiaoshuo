@@ -9,7 +9,7 @@ from pathlib import Path
 
 from novel_stage_pipeline import PipelineValidationError, plan_path, validate_plan
 
-from .engine import V3ValidationError
+from .engine import V3ValidationError, WORKFLOW, LEGACY_WORKFLOW
 
 
 def _object(path: Path) -> dict:
@@ -156,7 +156,7 @@ def validate_chronology(run: Path, project: Path, chapter: int) -> dict | None:
 
 def validate_unified_run(root: Path, run: Path, project: Path, chapter: int) -> dict | None:
     manifest = _object(run / "manifest.json")
-    if manifest.get("workflow") != ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"]:
+    if manifest.get("workflow") not in (WORKFLOW, LEGACY_WORKFLOW):
         raise V3ValidationError("旧运行包没有完整统一流程，请重新准备章节")
     validate_director(root, project, chapter)
     validate_characters(project, chapter, final=True)

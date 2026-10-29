@@ -478,6 +478,67 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     return prompt, folder / "model_result.json"
 
 
+def write_prose_revision(book_id: str, feedback_id: str, analysis: dict) -> str:
+    """Revise in a fresh prose context after the author has chosen the scope."""
+    item = service.feedback_item(ROOT, book_id, feedback_id)
+    _, project = service._book(ROOT, book_id)
+    folder = project / "reader_feedback" / feedback_id
+    source = Path(item["chapter_file"])
+    if hashlib.sha256(source.read_text(encoding="utf-8").encode("utf-8")).hexdigest() != item["chapter_sha256"]:
+        raise ValueError("章节在反馈分析期间已变化，请针对当前版本重新提交反馈")
+    strategy = "；".join(analysis.get("revision_strategy", []))
+    scope = analysis["revision_scope"]
+
+    def call(name: str, instruction: str) -> Path:
+        prompt = folder / f"{name}_prompt.md"
+        output = folder / f"{name}_result.md"
+        prompt.write_text(instruction, encoding="utf-8")
+        command = [
+            *novel_codex_model.exec_prefix(resolve_codex(), book_id, ROOT),
+            "--ephemeral", "-C", str(ROOT), "--sandbox", "read-only",
+            "--config", 'approval_policy="never"',
+            "--output-last-message", str(output), "-",
+        ]
+        result = subprocess.run(command, cwd=ROOT, input=instruction,
+                                text=True, encoding="utf-8", errors="replace")
+        if result.returncode:
+            raise RuntimeError(f"正文修订进程退出码 {result.returncode}：{name}")
+        return output
+
+    seed_context = ""
+    if scope == "chapter":
+        seed = folder / "revision_scene_seed.md"
+        seed_result = call("revision_scene_seed", f"""# 整章返修的场景粗稿
+
+只读取当前章节 `{source}` 和本次读者意见 `{folder / 'feedback.json'}`。
+已确认的修改方向：{strategy}
+写 400—800 汉字的小说场景粗稿，重点找回人物的动作、说话方式和现场节奏。不要写提纲、审稿报告或规则说明；不必在粗稿里覆盖全章。最终只输出粗稿正文。
+""")
+        seed_text = seed_result.read_text(encoding="utf-8-sig").strip()
+        if sum("\u4e00" <= char <= "\u9fff" for char in seed_text) < 200:
+            raise ValueError("整章返修场景粗稿过短，未覆盖候选修订")
+        service.atomic_text(seed, seed_text + "\n")
+        seed_context = f"- 场景粗稿：`{seed}`；沿用它的人物口气与现场节奏。\n"
+
+    output = call("prose_revision", f"""# 依据当前正文修订小说
+
+只读取：
+- 当前正式章节：`{source}`；这是语言和已成立情节的底稿。
+- 读者意见：`{folder / 'feedback.json'}`。
+{seed_context}
+已确认的修改范围：{scope}。
+已确认的修改方向：{strategy}
+
+{('重写受影响的整章，但保留未被否定的人物选择、事实和原创表达。' if scope == 'chapter' else '只修改受影响的词句与必要衔接。' if scope == 'wording' else '只重写受影响的场景，保留其他场景原文。')}
+不要读取作者分析、长期反馈规则、人物卡或其他写作提示。人物说话与叙述应延续当前正文中自然的部分，不把修改方向写成台词。
+最终只输出完整 Markdown 章节，从 `# 第 N 章` 开始，保留 Metadata，不加说明或代码围栏。
+""")
+    revision = output.read_text(encoding="utf-8-sig").strip()
+    if not revision.startswith("# 第 ") or "## Metadata" not in revision:
+        raise ValueError("正文修订没有返回完整章节，保留原候选稿")
+    return revision
+
+
 def build_follow_up_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
     item = service.feedback_item(ROOT, book_id, feedback_id)
     _, project = service._book(ROOT, book_id)
@@ -557,6 +618,8 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
     )
     changed = bool(parsed["changed_judgment"])
     if changed:
+        if not learning_only and parsed["revision"] is not None:
+            parsed["revision"] = write_prose_revision(book_id, feedback_id, parsed["analysis"])
         previous = service.read_json(folder / "analysis.json")
         history = folder / "analysis_history"
         history.mkdir(parents=True, exist_ok=True)
@@ -743,6 +806,8 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False,
     if result.returncode:
         raise RuntimeError(f"作者分析进程退出码 {result.returncode}")
     parsed = parse_result(result_path.read_text(encoding="utf-8"))
+    if parsed["revision"] is not None:
+        parsed["revision"] = write_prose_revision(book_id, feedback_id, parsed["analysis"])
     folder = result_path.parent
     analysis = {
         "schema_version": 2,

@@ -15,10 +15,9 @@ from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.continuity import validate_characters, validate_director
-from novel_v3 import ROOT, execute, review_and_archive
+from novel_v3 import ROOT, execute, review_and_archive, validate_scene_seed
 
 WORK_ROOT = ROOT / ".batch_rewrites"
-STAGES = ("director", "characters", "author_room", "draft", "deep_edit", "reader")
 MAX_CONTINUITY_REPAIRS = 2
 EXCLUDED = {".chapter_trash", "reader_feedback", "logs", "drafts", "images", ".batch_rewrites"}
 
@@ -279,13 +278,17 @@ def run(book_id: str, start: int, *, resume_work: Path | None = None) -> Path:
                 prepared = engine.prepare(book_id, number, project_override=stage, original_chapter=original)
             print(f"批量重写：正在处理第 {number}/{last} 章；参考原文 {original.name}", flush=True)
             if not (prepared / "candidate.md").is_file():
-                for step in STAGES:
+                workflow = json.loads((prepared / "manifest.json").read_text(encoding="utf-8-sig"))["workflow"]
+                for step in workflow[:-1]:
                     execute(prepared / f"{step}.md", prepared / f"{step}.result.md", prepared,
                             capture_candidate=step == "deep_edit")
                     if step == "director":
                         validate_director(ROOT, stage, number)
+                        engine.write_prose_brief(prepared)
                     elif step == "characters":
                         validate_characters(stage, number, final=False)
+                    elif step == "scene_seed":
+                        validate_scene_seed(prepared)
             archived = review_with_repair(prepared, stage, number)
             review = json.loads((prepared / "continuity_review.json").read_text(encoding="utf-8-sig"))
             ledger = stage / "continuity_ledger.md"

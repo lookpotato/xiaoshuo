@@ -4,6 +4,8 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import reader_feedback_service as service
 from reader_feedback_worker import (
@@ -14,10 +16,53 @@ from reader_feedback_worker import (
     parse_chapter_interview_result,
     parse_follow_up_result,
     parse_result,
+    write_prose_revision,
 )
 
 
 class ReaderFeedbackServiceTests(unittest.TestCase):
+    def test_chapter_feedback_rewrites_from_scene_seed_and_current_version(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "整章节奏需要重写。",
+        })
+        outputs = []
+
+        def fake_run(command, **kwargs):
+            path = Path(command[command.index("--output-last-message") + 1])
+            outputs.append(path.name)
+            if path.name == "revision_scene_seed_result.md":
+                path.write_text("甲推开门，乙抬头看他。" * 35, encoding="utf-8")
+            else:
+                path.write_text(self.chapter.read_text(encoding="utf-8")
+                                + "\n---\n\n## Metadata\n\n- word_count: 600\n", encoding="utf-8")
+            return SimpleNamespace(returncode=0)
+
+        with patch("reader_feedback_worker.ROOT", self.root), \
+             patch("reader_feedback_worker.resolve_codex", return_value="codex"), \
+             patch("reader_feedback_worker.novel_codex_model.exec_prefix", return_value=["codex", "exec"]), \
+             patch("reader_feedback_worker.subprocess.run", side_effect=fake_run):
+            revision = write_prose_revision("demo", item["id"], {
+                "revision_scope": "chapter", "revision_strategy": ["让开门成为中心场景"],
+            })
+        self.assertTrue(revision.startswith("# 第 1 章"))
+        self.assertEqual(outputs, ["revision_scene_seed_result.md", "prose_revision_result.md"])
+        prompt = (self.project / "reader_feedback" / item["id"] / "prose_revision_prompt.md").read_text(encoding="utf-8")
+        self.assertIn("revision_scene_seed.md", prompt)
+        self.assertNotIn("style_guide.md", prompt)
+
+    def test_prose_revision_rejects_feedback_for_old_chapter_version(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "category": "pacing",
+            "quote": "甲把门推开。", "comment": "这句需要改。",
+        })
+        self.chapter.write_text(self.chapter.read_text(encoding="utf-8") + "\n人工修改。", encoding="utf-8")
+        with patch("reader_feedback_worker.ROOT", self.root):
+            with self.assertRaisesRegex(ValueError, "当前版本"):
+                write_prose_revision("demo", item["id"], {
+                    "revision_scope": "wording", "revision_strategy": ["改这句"],
+                })
+
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         self.root = Path(self.temp.name)

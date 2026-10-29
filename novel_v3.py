@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
+from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_director,
     validate_unified_run, validate_viewpoint_contract,
@@ -22,6 +23,17 @@ from novel_engine_v3.continuity import (
 
 ROOT = Path(__file__).resolve().parent
 MAX_READER_REPAIRS = 3
+
+
+def validate_scene_seed(run: Path) -> None:
+    path = run / "scene_seed.md"
+    try:
+        seed = path.read_text(encoding="utf-8-sig").strip()
+    except OSError as exc:
+        raise V3ValidationError("场景粗稿缺失，不能直接从章节合同扩写") from exc
+    hanzi = sum("\u4e00" <= char <= "\u9fff" for char in seed)
+    if hanzi < 200 or seed.startswith(("```", "# ", "- ", "1. ")):
+        raise V3ValidationError("场景粗稿必须是至少 200 汉字的小说正文")
 
 
 def accept_deep_edit(run_dir: Path, output: Path) -> None:
@@ -187,7 +199,7 @@ def review_and_archive(run: Path, project: Path, chapter: int) -> Path:
     manifest_path = run / "manifest.json"
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
-        if manifest.get("workflow") != ["director", "characters", "author_room", "draft", "deep_edit", "reader", "continuity"]:
+        if manifest.get("workflow") not in (WORKFLOW, LEGACY_WORKFLOW):
             raise V3ValidationError("旧运行包没有完整统一流程，请重新准备章节")
         stamp_candidate(run)
         execute(run / "continuity.md", run / "continuity.result.md", run)
@@ -226,14 +238,17 @@ def main() -> int:
         if args.command == "prepare":
             chapter = (chapter or 1) + 1
             continue
-        for stage in ("director", "characters", "author_room", "draft", "deep_edit", "reader"):
+        for stage in WORKFLOW[:-1]:
             execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
                     capture_candidate=stage == "deep_edit")
             if stage == "director":
                 validate_director(ROOT, project, int(run.name[:4]))
+                engine.write_prose_brief(run)
             elif stage == "characters":
                 validate_characters(project, int(run.name[:4]), final=False)
                 validate_viewpoint_contract(ROOT, project, int(run.name[:4]))
+            elif stage == "scene_seed":
+                validate_scene_seed(run)
         archived = review_and_archive(run, project, int(run.name[:4]))
         print(f"V3 已归档：{archived}")
         chapter = None

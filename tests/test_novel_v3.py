@@ -6,11 +6,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_v3 import accept_deep_edit, archive_chapter, review_and_archive
+from novel_v3 import accept_deep_edit, archive_chapter, review_and_archive, validate_scene_seed
 from novel_engine_v3 import V3ValidationError
 
 
 class DeepEditAcceptanceTests(unittest.TestCase):
+    def test_scene_seed_must_be_prose_before_expansion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            (run / "scene_seed.md").write_text("- 目标：开门", encoding="utf-8")
+            with self.assertRaises(V3ValidationError):
+                validate_scene_seed(run)
+            (run / "scene_seed.md").write_text("他推开门，先看见灯。" * 40, encoding="utf-8")
+            validate_scene_seed(run)
+
     def test_complete_revision_replaces_candidate(self):
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory)
