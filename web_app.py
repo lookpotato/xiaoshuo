@@ -974,7 +974,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 feedback_id = str(payload.get("feedback_id", ""))
                 answers = payload.get("answers", {})
                 saved = reader_feedback_service.save_chapter_interview_answers(
-                    ROOT, book_id, feedback_id, answers
+                    ROOT, book_id, feedback_id, answers, payload.get("response")
                 )
                 review = launch_interview_author_review({
                     "book_id": book_id, "feedback_id": feedback_id,

@@ -175,6 +175,22 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             "因为人物必须做这个选择。",
         )
 
+    def test_chapter_interview_accepts_one_numbered_reply(self) -> None:
+        item = service.create_feedback(self.root, {
+            "book_id": "demo", "chapter": 1, "review_mode": "chapter_interview",
+            "comment": "人物突然上楼，缺少原因。",
+        })
+        folder = self.project / "reader_feedback" / item["id"]
+        service.atomic_json(folder / "chapter_interview.json", {
+            "questions": [{"id": "Q1", "question": "为何上楼？"}],
+        })
+        response = "1. 不该上楼。\n2. 让他回六零三。"
+        saved = service.save_chapter_interview_answers(
+            self.root, "demo", item["id"], response=response,
+        )
+        self.assertEqual(saved["response"], response)
+        self.assertEqual(service.feedback_item(self.root, "demo", item["id"])["chapter_interview_response"], response)
+
     def test_chapter_interview_evidence_allows_punctuation_and_speaker_prefix(self) -> None:
         self.assertTrue(_evidence_in_text(
             "孟阿婆把门一关，说：‘行。不播放，不翻书。’",

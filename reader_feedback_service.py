@@ -251,6 +251,11 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
             if isinstance(chapter_interview_answers, dict)
             else {}
         ),
+        "chapter_interview_response": (
+            chapter_interview_answers.get("response", "")
+            if isinstance(chapter_interview_answers, dict)
+            else ""
+        ),
         "promotion": promotion if isinstance(promotion, dict) else None,
         "has_revision": (folder / "proposed_revision.md").is_file(),
         "applied_at": status.get("applied_at"),
@@ -267,14 +272,21 @@ def feedback_item(root: Path, book_id: str, feedback_id: str) -> dict:
 
 
 def save_chapter_interview_answers(
-    root: Path, book_id: str, feedback_id: str, answers: dict
+    root: Path, book_id: str, feedback_id: str, answers: dict | None = None,
+    response: str | None = None,
 ) -> dict:
     folder = _feedback_dir(root, book_id, feedback_id)
     interview = read_json(folder / "chapter_interview.json")
     if not isinstance(interview, dict):
         raise ValueError("整章提问尚未完成，暂时不能保存回答")
+    if answers is None:
+        answers = {}
     if not isinstance(answers, dict):
         raise ValueError("整章提问回答必须为对象")
+    if response is not None:
+        response = str(response).strip()
+        if not response or len(response) > 12000:
+            raise ValueError("一次回答须为1—12000字")
     question_ids = {
         str(item.get("id")) for item in interview.get("questions", [])
         if isinstance(item, dict) and item.get("id")
@@ -292,6 +304,7 @@ def save_chapter_interview_answers(
     payload = {
         "schema_version": 1,
         "answers": cleaned,
+        "response": response or "",
         "updated_at": datetime.now().astimezone().isoformat(),
     }
     atomic_json(folder / "chapter_interview_answers.json", payload)

@@ -7,7 +7,6 @@ const statusLabel = {
   queued: "已排队", analyzing: "分析中", reviewed: "作者已判断",
   blind_reviewed: "试读完成", interview_ready: "提问完成", applied: "已采用", failed: "分析失败",
 };
-const interviewLevelLabel = { wording: "措辞层", scene: "场景层", foundation: "底层设计" };
 const runStatusLabel = { running: "运行中", success: "已完成", finished: "已结束", failed: "失败" };
 const reviewModes = [
   { id: "blind", title: "陌生读者试读", note: "只看当前章，不读取设定；诊断真实读感，不改稿" },
@@ -31,7 +30,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [category, setCategory] = useState("uncomfortable");
   const [quote, setQuote] = useState("");
   const [comment, setComment] = useState("");
-  const [reviewMode, setReviewMode] = useState("combined");
+  const [reviewMode, setReviewMode] = useState("chapter_interview");
   const [dialogueDrafts, setDialogueDrafts] = useState({});
   const [learningDrafts, setLearningDrafts] = useState({});
   const [interviewAnswers, setInterviewAnswers] = useState({});
@@ -92,6 +91,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   }, [selectedFeedbackRun, onNotice]);
 
   function captureSelection() {
+    if (reviewMode === "chapter_interview") return;
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !readerRef.current) return;
     const range = selection.getRangeAt(0);
@@ -192,11 +192,12 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   }
 
   async function saveInterviewAnswers(item) {
-    const answers = interviewAnswers[item.id] || item.chapter_interview_answers || {};
+    const response = (interviewAnswers[item.id] ?? item.chapter_interview_response ?? "").trim();
+    if (!response) return;
     try {
       await api("/api/reader-feedback/interview-answers", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, answers }),
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id, response }),
       });
       onNotice("作者正在理解你的判断并生成候选修订稿，请稍候"); await load();
     } catch (error) { onNotice(error.message); }
@@ -210,7 +211,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
 
   return <section className="reader-feedback-page">
     <article className="panel feedback-intro">
-      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>陌生读者试读 × 作者审稿</h2><p>陌生读者只看当前正文，先判断问题属于措辞、场景还是整章结构；随后绑定作者结合设定与连续性决定改法。可复用意见仍需你确认后才进入长期规则。</p></div>
+      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>读者反馈</h2><p>你说读到哪里不对劲，作者会一次列出最多四个要点。你在一个框里按编号回复，再看修订建议。</p></div>
       <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setSelectedVersion("current"); setReceipt(null); setQuote(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
     </article>
 
@@ -247,18 +248,17 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         </section>
         <form className="panel feedback-form" onSubmit={submit}>
           <div className="panel-head"><div><p className="eyebrow">MARK</p><h2>哪里不舒服</h2></div></div>
-          <fieldset className="review-mode-picker">
-            <legend>选择怎么审</legend>
+          <details className="review-mode-picker">
+            <summary>审稿方式：{reviewModes.find((mode) => mode.id === reviewMode)?.title}（可选）</summary>
             <div className="review-mode-options">{reviewModes.map((mode) => <button type="button" className={reviewMode === mode.id ? "active" : ""} aria-pressed={reviewMode === mode.id} key={mode.id} onClick={() => { setReviewMode(mode.id); if (mode.id === "chapter_interview") setQuote(""); }}>
               <span>{mode.title}{mode.recommended && <em>推荐</em>}</span><small>{mode.note}</small>
             </button>)}</div>
-          </fieldset>
-          <label>问题感觉<select value={category} onChange={(event) => setCategory(event.target.value)}>{Object.entries(categories).map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select></label>
+            <label>问题感觉<select value={category} onChange={(event) => setCategory(event.target.value)}>{Object.entries(categories).map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select></label>
+          </details>
           {reviewMode !== "chapter_interview" && <label>选中的原文<textarea value={quote} onChange={(event) => setQuote(event.target.value.slice(0, 3000))} placeholder="可直接留言，也可以先在左侧圈选原文" rows="5" /></label>}
-          <label>你的真实感受<textarea value={comment} onChange={(event) => setComment(event.target.value.slice(0, 5000))} placeholder={reviewMode === "chapter_interview" ? "可留空：系统会读完整章后自行生成作者问题。" : "例如：我看到这里突然不相信这个人物了，但我不确定为什么。"} rows="7" required={reviewMode !== "chapter_interview"} /></label>
-          <div className="author-boundary"><strong>{reviewModes.find((item) => item.id === reviewMode)?.title}</strong><span>{reviewMode === "blind" ? "这次只报告陌生读感，不生成修改稿。" : reviewMode === "author" ? "这次由作者直接审稿，不会伪装成不知道设定的读者。" : reviewMode === "chapter_interview" ? "系统会先问设计问题，不会直接用修句掩盖底层问题。" : "陌生读者与作者使用不同上下文，报告分开显示。"}</span></div>
+          <label>你想说的问题<textarea value={comment} onChange={(event) => setComment(event.target.value.slice(0, 5000))} placeholder="例如：十三楼此前限行，周寻怎么突然提着工具包上去了？" rows="5" required /></label>
           {!isCurrent && <div className="stale-version-warning">你正在查看历史版本。请先切回“最新正式稿”再继续评审。</div>}
-          <button className="button primary" disabled={busy || (reviewMode !== "chapter_interview" && !comment.trim()) || !isCurrent}>{busy ? "正在提交" : `提交并开始${reviewModes.find((item) => item.id === reviewMode)?.title}`}<b>→</b></button>
+          <button className="button primary" disabled={busy || !comment.trim() || !isCurrent}>{busy ? "正在提交" : "发送反馈"}<b>→</b></button>
         </form>
       </aside>
     </div>
@@ -278,13 +278,11 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           <p className="scope-reason">{item.blind_reader.scope_rationale}</p>
         </div>}
         {item.chapter_interview && <div className="chapter-interview-review">
-          <div className="review-stage-head"><div><small>CHAPTER LANGUAGE REVIEW</small><h3>整章写法审校</h3></div><span>{item.chapter_interview.foundation_risks?.length ? `${item.chapter_interview.foundation_risks.length} 个底层风险` : "未发现明确底层风险"}</span></div>
-          <p><b>本章承诺：</b>{item.chapter_interview.chapter_promise}</p>
-          <p><b>整章读感：</b>{item.chapter_interview.reading_summary}</p>
-          {!!item.chapter_interview.foundation_risks?.length && <><h4>底层设计风险</h4><ul>{item.chapter_interview.foundation_risks.map((risk, index) => <li key={index}><strong>{risk.severity === "high" ? "高风险" : risk.severity === "medium" ? "中风险" : "低风险"} · {risk.risk}</strong><br />{risk.question}<br /><small>证据：{risk.evidence}</small></li>)}</ul></>}
-          <h4>给主作者的审校意见</h4>
-          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id} className={`interview-question ${question.level}`}><strong>{interviewLevelLabel[question.level]} · {question.question}</strong><p>{question.why_it_matters}</p>{question.suggested_fix && <p><b>建议写法：</b>{question.suggested_fix}</p>}{question.evidence?.map((evidence, index) => <blockquote key={index}>{evidence}</blockquote>)}<textarea rows="3" maxLength="5000" value={interviewAnswers[item.id]?.[question.id] ?? item.chapter_interview_answers?.[question.id] ?? ""} onChange={(event) => setInterviewAnswers((current) => ({ ...current, [item.id]: { ...(current[item.id] || item.chapter_interview_answers || {}), [question.id]: event.target.value } }))} placeholder="作者判断：采纳/不采纳；确认后可补充更自然的说法，作为中文经验沉淀。" /></li>)}</ol>
-          <button className="button" onClick={() => saveInterviewAnswers(item)}>保存审校判断</button>
+          <div className="review-stage-head"><div><small>AUTHOR REPLY</small><h3>作者回复</h3></div></div>
+          <p>{item.chapter_interview.reading_summary}</p>
+          <ol>{item.chapter_interview.questions?.map((question) => <li key={question.id}><strong>{question.question}</strong></li>)}</ol>
+          {item.status === "interview_ready" && <><label>一次回复以上问题<textarea rows="7" maxLength="12000" value={interviewAnswers[item.id] ?? item.chapter_interview_response ?? ""} onChange={(event) => setInterviewAnswers((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="1. ……\n2. ……\n3. ……\n4. ……（按实际问题数回答即可）" /></label><button className="button primary" disabled={!(interviewAnswers[item.id] ?? item.chapter_interview_response ?? "").trim()} onClick={() => saveInterviewAnswers(item)}>发送回答</button></>}
+          {item.chapter_interview_response && item.status !== "interview_ready" && <p><b>你的回答：</b>{item.chapter_interview_response}</p>}
         </div>}
         {item.analysis && <div className="author-review">
           <div className="review-stage-head"><div><small>AUTHOR REVIEW</small><h3>作者判断</h3></div><span>{scopeLabel[item.analysis.revision_scope] || "旧版局部判断"}</span></div>

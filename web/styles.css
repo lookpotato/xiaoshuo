@@ -285,7 +285,8 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .feedback-reader-head span { color: var(--red); font-weight: 800; letter-spacing: .08em; }
 .feedback-reader h2 { margin-bottom: 30px; font-size: 28px; }
 .feedback-reader p { margin-bottom: 1.1em; }
-.feedback-side { position: sticky; top: 20px; }
+.feedback-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
+.feedback-side .feedback-form { order: -1; }
 .feedback-runs .panel-copy { margin: -6px 0 12px; }
 .feedback-run-list { display: grid; gap: 8px; }
 .feedback-run-row { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.45); }
@@ -310,6 +311,8 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .feedback-form label { color: var(--muted); font-size: 11px; font-weight: 800; }
 .feedback-form textarea { resize: vertical; font: 13px/1.75 "Microsoft YaHei UI", sans-serif; }
 .review-mode-picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.review-mode-picker summary { cursor: pointer; color: var(--muted); font-size: 11px; font-weight: 800; }
+.review-mode-picker[open] .review-mode-options { margin-top: 10px; }
 .review-mode-picker legend { margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
 .review-mode-options { display: grid; gap: 8px; }
 .review-mode-options button { display: grid; gap: 4px; width: 100%; padding: 11px 12px; text-align: left; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }

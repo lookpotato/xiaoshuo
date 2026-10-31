@@ -131,7 +131,7 @@ def parse_chapter_interview_result(text: str) -> dict:
     if not isinstance(questions, list) or not questions:
         raise ValueError("整章提问 questions 不能为空")
     cleaned_questions = []
-    for index, question in enumerate(questions, 1):
+    for index, question in enumerate(questions[:4], 1):
         if not isinstance(question, dict):
             raise ValueError("整章提问 questions 必须为对象数组")
         for key in ("question", "why_it_matters"):
@@ -332,19 +332,20 @@ def build_chapter_interview_prompt(book_id: str, feedback_id: str) -> tuple[Path
     prompt.write_text(
         f"""# 整章写法审校
 
-你是绑定本书的副作者和中文语用审校员。主作者已经写完第 {chapter_number} 章，你的任务是审核成稿是否像真实的中国人会说、会做，而不是盘问主作者脑中的隐藏设定。请完整阅读本章，指出不自然、关系依据不足、像提纲或系统提示的地方，并给出可执行的改写方向。
+你是绑定本书的副作者和中文语用审校员。主作者已对第 {chapter_number} 章提出意见。先直接回应这条意见，再完整阅读本章，找出需要主作者决定的地方。像同伴聊天一样，一次列出 1—4 条简短、具体的问题，让主作者在一个回复里全部回答；不要分轮追问，也不要要求解释没有写出的幕后设定。
 
 必须读取：
 - 作者档案：`{author_path}`
 - 当前整章：`{chapter_path}`
+- 主作者刚提出的意见：`{folder / 'feedback.json'}`；优先回应其中的 comment 和 quote，不要把反馈改成无关的泛泛审校。
 - 本书设定与连续性资料：
 {context}
 
 审校原则：
-1. 先说明整章读感和本章承诺，再列出最值得修改的写法。不要把作者没有写出的幕后设定当成作者必须解释的答案。
+1. reading_summary 先用一两句直接回答主作者的意见，再列出最值得决定的写法。不要把作者没有写出的幕后设定当成作者必须解释的答案。
 2. 每条都要以“这段成稿是否像真人会这样说/做”为核心，不能只问“作者为什么这样设计”。例如不要只写“孟阿婆为什么强硬”，要写清“正文没有给出关系依据时，陌生长辈这样命令式说话是否自然；若不自然，建议改成怎样的试探、拒绝或提醒”。
 3. 每题标记层级：wording（局部说法）、scene（完整场景推进）、foundation（人物关系、核心冲突、世界规则、目标承诺或结局逻辑）。
-4. 每题必须给出 suggested_fix：可以是更自然的说话动作、语气方向、关系铺垫或一小段示例；不要只说“加强人物感情”。不要替主作者重写整章。
+4. questions 最多四题，按重要性排序；每题一句话问清一个决定，不凑数，不重复。每题仍须给出 suggested_fix 供修订使用；不要替主作者重写整章。
 5. 特别检查首次出现的人物，尤其客户、长辈、邻居和陌生人：称呼、语气、强硬程度是否有得罪、欠账、权力差、熟人默契或现场压力的依据。没有依据时，明确指出这是写法问题，并给出符合中国语用的替代方式。
 6. 重点检查对白是否被写成电报、操作口令、合同摘要或作者替人物总结。中文口语允许省略，但应有关系动作、停顿、改口、指代、回避或态度变化。
 7. foundation_risks 只填写有正文证据的风险；不要臆测世界观漏洞。证据必须是当前章节中的原文短句或明确事件。
@@ -408,7 +409,7 @@ def build_prompt(book_id: str, feedback_id: str) -> tuple[Path, Path]:
         interview_context = (
             f"- 整章写法审校报告：`{folder / 'chapter_interview.json'}`\n"
             f"- 主作者对审校意见的判断：`{interview_answers}`\n"
-            "主作者已经逐条填写判断。必须先理解这些判断，再决定采纳、部分采纳或不采纳；"
+            "主作者已一次回复所有编号问题。必须先理解整段回答及每个编号的取舍，再决定采纳、部分采纳或不采纳；"
             "不要把主作者的回答当成新的问题，也不要要求主作者再次解释。"
         )
     if blind_report.is_file():
