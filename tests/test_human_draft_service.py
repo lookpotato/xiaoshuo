@@ -44,6 +44,23 @@ class HumanDraftServiceTests(unittest.TestCase):
             service.save_draft(self.root, "book", 2, "覆盖", initial["draft_revision"])
         self.assertEqual(saved["draft_revision"], service.workspace(self.root, "book", 2)["draft_revision"])
 
+    def test_scene_explanation_is_hidden_when_plan_changes(self) -> None:
+        plan_path = self.project / "chapter_plans" / "0002.json"
+        revision = service.workspace(self.root, "book", 2)["plan_revision"]
+        guide_path = self.project / "human_guides" / "0002.md"
+        guide_path.parent.mkdir()
+        guide_path.write_text(f"<!-- plan-sha256: {revision} -->\n# 新说明\n", encoding="utf-8")
+        current = service.workspace(self.root, "book", 2)
+        self.assertIn("新说明", current["scene_explanation"])
+        self.assertFalse(current["guide_stale"])
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        plan["immediate_goal"] = "改后的目标"
+        plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+        changed = service.workspace(self.root, "book", 2)
+        self.assertEqual(changed["guide"]["goal"], "改后的目标")
+        self.assertEqual(changed["scene_explanation"], "")
+        self.assertTrue(changed["guide_stale"])
+
     def test_polish_produces_preview_without_replacing_original_or_archive(self) -> None:
         original = "# 第二章 新稿\n\n" + "他推门，先看见灯。" * 50
         revision = service.workspace(self.root, "book", 2)["draft_revision"]

@@ -20,6 +20,21 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
   }, [book.id, chapter]);
   useEffect(() => { setWorkspace(null); setReference(""); load(); }, [load]);
 
+  const refreshPlan = useCallback(async () => {
+    try {
+      const result = await api(`/api/human-draft?book_id=${encodeURIComponent(book.id)}&chapter=${chapter}`);
+      setWorkspace((current) => current?.book_id === book.id && current.chapter === chapter ? {
+        ...current, has_plan: result.has_plan, plan_revision: result.plan_revision,
+        guide: result.guide, guide_stale: result.guide_stale,
+        scene_explanation: result.scene_explanation, existing_chapter: result.existing_chapter,
+      } : current);
+    } catch (nextError) { setError(nextError.message); }
+  }, [book.id, chapter]);
+  useEffect(() => {
+    const timer = window.setInterval(refreshPlan, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshPlan]);
+
   useEffect(() => {
     if (!activeRun) return undefined;
     const timer = window.setInterval(async () => {
@@ -97,7 +112,8 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
       {apiVersion < 10 && <p className="feedback">请重启 Python 工作台服务，启用本章规划接口。</p>}
     </article>
     {guide ? <article className="panel human-guide">
-      <div className="panel-head"><div><p className="eyebrow">SCENE GUIDE</p><h2>第 {chapter} 章怎么发生</h2></div>{workspace.existing_chapter && <button className="button ghost" onClick={showReference}>查看现有章节</button>}</div>
+      <div className="panel-head"><div><p className="eyebrow">SCENE GUIDE</p><h2>第 {chapter} 章怎么发生</h2></div><div><button className="button ghost" onClick={refreshPlan}>刷新章节说明</button>{workspace.existing_chapter && <button className="button ghost" onClick={showReference}>查看现有章节</button>}</div></div>
+      {workspace.guide_stale && <p className="feedback" role="note">旧场景说明与当前规划不一致，已隐藏；下方显示的是最新章节规划。</p>}
       {guide.scenes.length > 2 && <p className="feedback" role="note">这份旧规划列了 {guide.scenes.length} 场，超过现在的单章场景上限；适合先收束主线，再用它指导手稿。</p>}
       {workspace.scene_explanation && <div className="human-explanation">{workspace.scene_explanation.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph.replace(/^#\s*/, "")}</p>)}</div>}
       <p><strong>这一章要办成什么：</strong>{guide.goal}</p>
@@ -110,7 +126,7 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
       <ol>{guide.scenes.map((scene, index) => <li key={index}><strong>{scene.purpose}</strong><span>阻力：{scene.conflict}</span><span>场景结束时的变化：{scene.turn}</span></li>)}</ol>
       <p className="human-boundary">场景说明只定冲突和结果，不规定人物说哪句话。你可以改场景顺序；成稿时再核对事实和时间线。</p>
       {reference && <details open><summary>现有归档参考</summary><pre>{reference}</pre></details>}
-    </article> : <article className="panel human-guide"><h2>第 {chapter} 章尚无规划</h2><p>点击下方按钮生成章节目标和场景说明，完成后直接在本页写手稿。生成可能需要几分钟。</p>{chapter === book.next_chapter_number ? <button className="button primary" disabled={busy || !!activeRun || apiVersion < 10} onClick={plan}>{activeRun?.kind === "plan" ? "正在生成规划……" : `生成第 ${chapter} 章规划`}</button> : <p>目前只能为下一章（第 {book.next_chapter_number} 章）生成规划；可在上方选择已有规划的章节。</p>}</article>}
+    </article> : <article className="panel human-guide"><h2>第 {chapter} 章尚无规划</h2><p>点击下方按钮生成章节目标和场景说明，完成后直接在本页写手稿。生成可能需要几分钟。</p><button className="button ghost" onClick={refreshPlan}>刷新章节说明</button>{chapter === book.next_chapter_number ? <button className="button primary" disabled={busy || !!activeRun || apiVersion < 10} onClick={plan}>{activeRun?.kind === "plan" ? "正在生成规划……" : `生成第 ${chapter} 章规划`}</button> : <p>目前只能为下一章（第 {book.next_chapter_number} 章）生成规划；可在上方选择已有规划的章节。</p>}</article>}
     <article className="panel human-editor">
       <div className="panel-head"><div><p className="eyebrow">YOUR DRAFT</p><h2>你的原稿</h2></div><span>{draft.length} 字符</span></div>
       <textarea aria-label="手写章节正文" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`# 第 ${chapter} 章 标题\n\n从你认为最有生命力的现场写起……`} />

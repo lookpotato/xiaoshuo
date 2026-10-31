@@ -36,7 +36,9 @@ def _read(path: Path) -> str:
 
 def workspace(root: Path, book_id: str, chapter: int) -> dict:
     project, plan_path, draft_path, preview_path = _paths(root, book_id, chapter)
-    plan = json.loads(plan_path.read_text(encoding="utf-8-sig")) if plan_path.is_file() else None
+    plan_bytes = plan_path.read_bytes() if plan_path.is_file() else None
+    plan = json.loads(plan_bytes.decode("utf-8-sig")) if plan_bytes is not None else None
+    plan_revision = _hash(json.dumps(plan, ensure_ascii=False, sort_keys=True, separators=(",", ":"))) if plan else None
     draft = _read(draft_path)
     preview = _read(preview_path)
     meta_path = preview_path.with_suffix(".json")
@@ -50,8 +52,15 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
     ]
     existing = sorted((project / "chapters").glob(f"{chapter:04d}-*.md"))
     notes = _read(project / "human_guides" / f"{chapter:04d}.md")
+    guide_header = re.match(r"\A<!-- plan-sha256: ([0-9a-f]{64}) -->\s*\n", notes)
+    guide_stale = bool(notes) and (not guide_header or guide_header.group(1) != plan_revision)
+    if guide_stale:
+        notes = ""
+    elif guide_header:
+        notes = notes[guide_header.end():]
     return {
         "book_id": book_id, "chapter": chapter, "has_plan": bool(plan),
+        "plan_revision": plan_revision, "guide_stale": guide_stale,
         "guide": None if not plan else {
             "goal": plan.get("immediate_goal", ""), "conflict": plan.get("central_conflict", ""),
             "choice": plan.get("central_choice", ""), "payoff": plan.get("reader_payoff", {}).get("on_page_event", ""),
