@@ -36,6 +36,19 @@ def validate_director(root: Path, project: Path, chapter: int) -> None:
         _validate_clock(clock, previous, chapter)
 
 
+def validate_timeline_head(project: Path, chapter: int) -> None:
+    """Reject a stale chapter reset before the expensive director stage."""
+    state_path = project / "timeline_state.json"
+    if not state_path.is_file():
+        return
+    timeline = _object(state_path)
+    chapter_state = _object(project / "chapter_state.json")
+    if timeline.get("last_chapter") != chapter - 1 or chapter_state.get("last_completed_chapter") != chapter - 1:
+        raise V3ValidationError(
+            f"第 {chapter} 章开始前，章节状态与时间线未同步；请先回退 timeline_state.json 到第 {chapter - 1} 章终点"
+        )
+
+
 def _validate_clock(clock: dict, previous: dict, chapter: int) -> None:
     if previous.get("last_chapter") != chapter - 1:
         raise V3ValidationError("时间线状态没有接上上一章")

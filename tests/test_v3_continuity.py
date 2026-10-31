@@ -9,7 +9,7 @@ from novel_engine_v3 import V3ValidationError
 from novel_engine_v3 import AuthorEngine
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_chronology, validate_review,
-    validate_viewpoint_contract,
+    validate_viewpoint_contract, validate_timeline_head,
 )
 
 
@@ -50,6 +50,17 @@ class UnifiedContinuityTests(unittest.TestCase):
             "# 第十章\n\n第五天早晨，她出门。\n23:47，十一楼出现了。",
             encoding="utf-8",
         )
+
+    def test_timeline_head_rejects_stale_reset_before_planning(self):
+        (self.project / "chapter_state.json").write_text(json.dumps({
+            "last_completed_chapter": 9, "next_chapter_number": 10,
+        }), encoding="utf-8")
+        validate_timeline_head(self.project, 10)
+        (self.project / "timeline_state.json").write_text(json.dumps({
+            "last_chapter": 10, "day": 5, "floor": 10, "after_2347": False,
+        }), encoding="utf-8")
+        with self.assertRaisesRegex(V3ValidationError, "章节状态与时间线未同步"):
+            validate_timeline_head(self.project, 10)
 
     def test_chronology_advances_only_when_night_and_floor_match(self):
         self.write_clock()

@@ -50,6 +50,7 @@ OPERATIONAL_LOG_PREFIXES = (
     "已记录",
     "本次运行失败",
     "项目校验失败",
+    "V3 错误：",
     "本地归档门禁",
     "人物线门禁",
     "并行人物线门禁",
@@ -424,6 +425,13 @@ def run_log(run_id: str, tail_lines: int = 240) -> dict:
         clipped_lines.append(line)
     error_summary = ""
     for line in reversed(clipped_lines):
+        stripped = line.strip()
+        if stripped.startswith("V3 错误："):
+            error_summary = stripped
+            break
+    for line in reversed(clipped_lines):
+        if error_summary:
+            break
         stripped = line.strip()
         if (
             "本次运行失败" in stripped

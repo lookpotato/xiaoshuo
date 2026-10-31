@@ -9,7 +9,7 @@ from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine
 from novel_v3 import execute
-from novel_engine_v3.continuity import validate_director
+from novel_engine_v3.continuity import validate_director, validate_timeline_head
 
 
 def _project(root: Path, book_id: str) -> Path:
@@ -98,6 +98,7 @@ def validate_plan_request(root: Path, book_id: str, chapter: int) -> None:
     state = json.loads((project / "chapter_state.json").read_text(encoding="utf-8-sig"))
     if chapter != state.get("next_chapter_number"):
         raise ValueError("只能为当前下一章生成规划")
+    validate_timeline_head(project, chapter)
 
 
 def plan_chapter(root: Path, book_id: str, chapter: int) -> Path:

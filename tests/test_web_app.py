@@ -259,6 +259,16 @@ class WebAppDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "格式"):
             web_app.run_log("../outside")
 
+    def test_run_log_prefers_root_cause_over_batch_exit_code(self) -> None:
+        with TemporaryDirectory() as temp, patch.object(web_app, "RUNS_ROOT", Path(temp)):
+            (Path(temp) / "12345678.log").write_text(
+                "V3 错误：时间线状态没有接上上一章\n"
+                "night-floor 执行失败，退出码 1；继续处理剩余小说。\n",
+                encoding="utf-8",
+            )
+            payload = web_app.run_log("12345678", 20)
+        self.assertEqual(payload["error_summary"], "V3 错误：时间线状态没有接上上一章")
+
     def test_batch_rewrite_progress_is_visible_without_prose(self) -> None:
         lines, hidden = web_app.operational_log_lines(
             "批量重写：正在处理第 3/9 章\n小说正文一段\n"

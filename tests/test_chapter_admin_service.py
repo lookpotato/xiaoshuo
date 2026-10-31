@@ -90,6 +90,28 @@ class ChapterAdminServiceTests(unittest.TestCase):
             )
         self.assertTrue((self.project / "chapters" / "0002-chapter.md").is_file())
 
+    def test_deletion_rewinds_timeline_to_surviving_chapter(self) -> None:
+        for number in (1, 2, 3):
+            (self.project / "chapter_plans" / f"{number:04d}.json").write_text(json.dumps({
+                "chapter_number": number,
+                "story_clock": {"end_day": number, "end_floor": 5 + number, "end_after_2347": False},
+            }), encoding="utf-8")
+        timeline = self.project / "timeline_state.json"
+        timeline.write_text(json.dumps({"last_chapter": 3, "day": 3, "floor": 8, "after_2347": False}), encoding="utf-8")
+        result = service.delete_chapter_tail(self.project, "demo", 2, confirmed_chapter=2)
+        self.assertEqual(json.loads(timeline.read_text(encoding="utf-8")), {
+            "last_chapter": 1, "day": 1, "floor": 6, "after_2347": False,
+        })
+        self.assertTrue((self.project / ".chapter_trash" / result["trash_id"] / "before" / "timeline_state.json").is_file())
+
+    def test_missing_timeline_checkpoint_rejects_before_deletion(self) -> None:
+        timeline = self.project / "timeline_state.json"
+        timeline.write_text(json.dumps({"last_chapter": 3}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "章节尚未删除"):
+            service.delete_chapter_tail(self.project, "demo", 2, confirmed_chapter=2)
+        self.assertTrue((self.project / "chapters" / "0002-chapter.md").is_file())
+        self.assertEqual(json.loads(timeline.read_text(encoding="utf-8"))["last_chapter"], 3)
+
     def test_requires_exact_confirmation(self) -> None:
         with self.assertRaisesRegex(ValueError, "确认信息不一致"):
             service.delete_chapter_tail(

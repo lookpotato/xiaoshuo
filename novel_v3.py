@@ -16,7 +16,7 @@ from datetime import datetime
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
 from novel_engine_v3.continuity import (
-    stamp_candidate, validate_characters, validate_director,
+    stamp_candidate, validate_characters, validate_director, validate_timeline_head,
     validate_unified_run, validate_viewpoint_contract,
 )
 
@@ -239,6 +239,10 @@ def main() -> int:
         return 0
     chapter = args.chapter
     for _ in range(args.count):
+        requested_chapter = chapter if chapter is not None else json.loads(
+            (project / "chapter_state.json").read_text(encoding="utf-8-sig")
+        )["next_chapter_number"]
+        validate_timeline_head(project, requested_chapter)
         run = engine.prepare(args.book, chapter)
         print(f"V3 运行包：{run}")
         if args.command == "prepare":

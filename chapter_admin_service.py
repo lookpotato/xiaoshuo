@@ -90,6 +90,21 @@ def _remaining_chapters(project: Path, from_chapter: int) -> list[int]:
     return sorted(set(numbers))
 
 
+def _rewound_timeline(project: Path, highest: int) -> dict | None:
+    if not (project / "timeline_state.json").is_file():
+        return None
+    if highest == 0:
+        return {"last_chapter": 0, "day": 1, "floor": 6, "after_2347": False}
+    plan = _read_json(project / "chapter_plans" / f"{highest:04d}.json")
+    clock = plan.get("story_clock") if isinstance(plan, dict) else None
+    if not isinstance(clock, dict) or plan.get("chapter_number") != highest:
+        raise ValueError(f"第 {highest} 章缺少可用于回退时间线的章节规划；章节尚未删除")
+    day, floor, after = (clock.get("end_day"), clock.get("end_floor"), clock.get("end_after_2347"))
+    if type(day) is not int or type(floor) is not int or type(after) is not bool or floor != 5 + day + int(after):
+        raise ValueError(f"第 {highest} 章规划的时间终点无效；章节尚未删除")
+    return {"last_chapter": highest, "day": day, "floor": floor, "after_2347": after}
+
+
 def _truncate_ledger(content: str, from_chapter: int) -> tuple[str, bool]:
     for match in LEDGER_HEADING.finditer(content):
         if int(match.group(1)) >= from_chapter:
@@ -138,6 +153,11 @@ def delete_chapter_tail(
     if not deleted_chapters:
         raise ValueError(f"第 {from_chapter} 章没有可删除的正文")
 
+    remaining = _remaining_chapters(project, from_chapter)
+    highest = remaining[-1] if remaining else 0
+    timeline_path = project / "timeline_state.json"
+    rewound_timeline = _rewound_timeline(project, highest)
+
     trash_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
     trash = project / ".chapter_trash" / trash_id
     trash.mkdir(parents=True, exist_ok=False)
@@ -146,7 +166,7 @@ def delete_chapter_tail(
     warnings: list[str] = []
 
     try:
-        for mutable in (state_path, project / "continuity_ledger.md", project / "images" / "catalog.json"):
+        for mutable in (state_path, timeline_path, project / "continuity_ledger.md", project / "images" / "catalog.json"):
             originals[mutable] = mutable.read_bytes() if mutable.is_file() else None
             if mutable.is_file():
                 backup = trash / "before" / mutable.relative_to(project)
@@ -159,8 +179,6 @@ def delete_chapter_tail(
             shutil.move(str(source), str(destination))
             moved.append((source, destination))
 
-        remaining = _remaining_chapters(project, from_chapter)
-        highest = remaining[-1] if remaining else 0
         next_state = dict(state)
         next_state["last_completed_chapter"] = highest
         next_state["next_chapter_number"] = highest + 1
@@ -172,6 +190,8 @@ def delete_chapter_tail(
         )
         next_state["status"] = f"chapter_{highest:04d}_archived" if highest else "ready"
         _atomic_json(state_path, next_state)
+        if rewound_timeline is not None:
+            _atomic_json(timeline_path, rewound_timeline)
 
         ledger_path = project / "continuity_ledger.md"
         if ledger_path.is_file():
