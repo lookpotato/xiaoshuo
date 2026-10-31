@@ -59,6 +59,12 @@ def accept_deep_edit(run_dir: Path, output: Path) -> None:
 
 def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: bool = False) -> None:
     codex = shutil.which("codex")
+    if not codex and os.name == "nt":
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            app_bins = Path(local_app_data) / "OpenAI" / "Codex" / "bin"
+            candidates = app_bins.glob("*/codex.exe") if app_bins.is_dir() else ()
+            codex = next(iter(sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)), None)
     if not codex:
         raise V3ValidationError("找不到 codex CLI；请先安装并登录")
     # Keep the subprocess outside the repository.  It can read/write only the

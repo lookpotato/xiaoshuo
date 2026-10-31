@@ -1,16 +1,33 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_v3 import accept_deep_edit, archive_chapter, review_and_archive, validate_scene_seed
+from novel_v3 import accept_deep_edit, archive_chapter, execute, review_and_archive, validate_scene_seed
 from novel_engine_v3 import V3ValidationError
 
 
 class DeepEditAcceptanceTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Codex desktop CLI fallback is Windows-only")
+    def test_execute_finds_desktop_cli_when_path_is_stale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cli = root / "OpenAI" / "Codex" / "bin" / "current" / "codex.exe"
+            cli.parent.mkdir(parents=True)
+            cli.touch()
+            prompt = root / "prompt.md"
+            prompt.write_text("Write a chapter.", encoding="utf-8")
+            with patch("novel_v3.shutil.which", return_value=None), \
+                    patch.dict("novel_v3.os.environ", {"LOCALAPPDATA": str(root)}), \
+                    patch("novel_v3.subprocess.run") as run:
+                run.return_value.returncode = 0
+                execute(prompt, root / "output.md", root)
+            self.assertEqual(run.call_args.args[0][0], cli)
+
     def test_scene_seed_must_be_prose_before_expansion(self):
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory)
