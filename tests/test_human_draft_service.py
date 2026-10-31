@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import human_draft_service as service
+from novel_reader_gate import narrative_sha256
 
 
 class HumanDraftServiceTests(unittest.TestCase):
@@ -68,6 +69,20 @@ class HumanDraftServiceTests(unittest.TestCase):
         plan["scene_explanation"] = "人物在门前遇到阻力，决定谁留下。"
         plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
         self.assertEqual(service.workspace(self.root, "book", 2)["scene_explanation"], plan["scene_explanation"])
+
+    def test_archived_review_only_follows_its_chapter_version(self) -> None:
+        chapter_path = self.project / "chapters" / "0002-旧稿.md"
+        review_path = self.project / "chapter_reviews" / "0002.json"
+        review_path.parent.mkdir()
+        review_path.write_text(json.dumps({
+            "chapter_number": 2, "narrative_sha256": narrative_sha256(chapter_path),
+            "reader": {"summary": "主线清楚"},
+        }, ensure_ascii=False), encoding="utf-8")
+        self.assertEqual(service.workspace(self.root, "book", 2)["final_review"]["reader"]["summary"], "主线清楚")
+        chapter_path.write_text("# 旧稿\n\n改过的正文", encoding="utf-8")
+        changed = service.workspace(self.root, "book", 2)
+        self.assertIsNone(changed["final_review"])
+        self.assertTrue(changed["final_review_stale"])
 
     def test_polish_produces_preview_without_replacing_original_or_archive(self) -> None:
         original = "# 第二章 新稿\n\n" + "他推门，先看见灯。" * 50

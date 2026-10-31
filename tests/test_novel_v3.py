@@ -100,6 +100,10 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             (run / "continuity_review.json").write_text(
                 '{"next_hook":"新楼层已出现","unresolved":["尚未勘验"]}', encoding="utf-8"
             )
+            (run / "reader_review.json").write_text(
+                '{"verdict":"pass","summary":"楼层变化在场","nonblocking":[{"quote":"新楼层出现。","reason":"可更具体"}]}',
+                encoding="utf-8",
+            )
             (project / "chapter_state.json").write_text(
                 '{"last_completed_chapter":1,"next_chapter_number":2}', encoding="utf-8"
             )
@@ -109,6 +113,9 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             state = json.loads((project / "chapter_state.json").read_text(encoding="utf-8"))
             self.assertIn("新楼层已出现", state["notes_for_next_chapter"])
             self.assertNotIn("错误的旧时间", state["notes_for_next_chapter"])
+            archived_review = json.loads((project / "chapter_reviews" / "0002.json").read_text(encoding="utf-8"))
+            self.assertEqual(archived_review["reader"]["summary"], "楼层变化在场")
+            self.assertEqual(archived_review["continuity"]["next_hook"], "新楼层已出现")
 
     def test_review_and_archive_accepts_utf8_bom_from_powershell(self):
         with tempfile.TemporaryDirectory() as directory:

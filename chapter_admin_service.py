@@ -16,6 +16,7 @@ NUMBERED_ARTIFACT_DIRS = (
     "reader_checks",
     "dialogue_reviews",
     "literary_reviews",
+    "chapter_reviews",
     "module_plans",
     "module_reports",
 )

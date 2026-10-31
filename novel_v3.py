@@ -16,6 +16,7 @@ from datetime import datetime
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
 from novel_stage_pipeline import plan_path
+from novel_reader_gate import narrative_sha256
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_director, validate_timeline_head,
     validate_unified_run, validate_viewpoint_contract,
@@ -49,6 +50,35 @@ def ensure_director_plan(run: Path, project: Path, chapter: int) -> None:
             return
     execute(run / "director.md", run / "director.result.md", run)
     validate_director(ROOT, project, chapter)
+
+
+def save_chapter_review(run: Path, project: Path, chapter: int, final_path: Path) -> Path:
+    reader_path = run / "reader_review.json"
+    continuity_path = run / "continuity_review.json"
+    if not reader_path.is_file() or not continuity_path.is_file():
+        raise V3ValidationError(f"第 {chapter} 章归档前缺少成稿审读记录")
+    reader = json.loads(reader_path.read_text(encoding="utf-8-sig"))
+    continuity = json.loads(continuity_path.read_text(encoding="utf-8-sig"))
+    review = {
+        "schema_version": 1,
+        "chapter_number": chapter,
+        "narrative_sha256": narrative_sha256(final_path),
+        "reader": {
+            "verdict": reader.get("verdict", ""),
+            "summary": reader.get("summary", ""),
+            "nonblocking": reader.get("nonblocking", []),
+        },
+        "continuity": {
+            "next_hook": continuity.get("next_hook", ""),
+            "unresolved": continuity.get("unresolved", []),
+        },
+    }
+    destination = project / "chapter_reviews" / f"{chapter:04d}.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text(json.dumps(review, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(destination)
+    return destination
 
 
 def accept_deep_edit(run_dir: Path, output: Path) -> None:
@@ -152,6 +182,8 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     project.joinpath("drafts").mkdir(parents=True, exist_ok=True)
     final_path.write_text(final, encoding="utf-8")
     draft_path.write_text(final, encoding="utf-8")
+    if manifest_path.is_file():
+        save_chapter_review(run, project, chapter, final_path)
     state_path = project / "chapter_state.json"
     state = json.loads(state_path.read_text(encoding="utf-8"))
     state["last_completed_chapter"] = max(int(state.get("last_completed_chapter", 0)), chapter)

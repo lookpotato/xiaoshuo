@@ -10,6 +10,7 @@ from pathlib import Path
 from novel_engine_v3 import AuthorEngine
 from novel_v3 import execute
 from novel_engine_v3.continuity import validate_director, validate_timeline_head
+from novel_reader_gate import narrative_sha256
 
 
 def _project(root: Path, book_id: str) -> Path:
@@ -72,6 +73,11 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         for item in plan.get("scene_plan", []) if isinstance(item, dict)
     ]
     existing = sorted((project / "chapters").glob(f"{chapter:04d}-*.md"))
+    review_path = project / "chapter_reviews" / f"{chapter:04d}.json"
+    archived_review = json.loads(review_path.read_text(encoding="utf-8-sig")) if review_path.is_file() else None
+    review_current = bool(existing and archived_review and
+                          archived_review.get("chapter_number") == chapter and
+                          archived_review.get("narrative_sha256") == narrative_sha256(existing[0]))
     notes = _read(project / "human_guides" / f"{chapter:04d}.md")
     guide_header = re.match(r"\A<!-- plan-sha256: ([0-9a-f]{64}) -->\s*\n", notes)
     guide_stale = bool(notes) and (not guide_header or guide_header.group(1) != plan_revision)
@@ -92,6 +98,8 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
             "scenes": scenes,
         },
         "existing_chapter": existing[0].name if existing else None,
+        "final_review": archived_review if review_current else None,
+        "final_review_stale": bool(archived_review) and not review_current,
         "scene_explanation": notes,
         "draft": draft, "draft_revision": _hash(draft),
         "preview": preview if meta.get("draft_sha256") == _hash(draft) else "",

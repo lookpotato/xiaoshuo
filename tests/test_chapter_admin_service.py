@@ -14,7 +14,7 @@ class ChapterAdminServiceTests(unittest.TestCase):
         self.project = Path(self.temp.name) / "book"
         for folder in (
             "chapters", "drafts", "chapter_plans", "reader_checks",
-            "dialogue_reviews", "literary_reviews", "character_threads",
+            "dialogue_reviews", "literary_reviews", "chapter_reviews", "character_threads",
             "reader_feedback", "images",
         ):
             (self.project / folder).mkdir(parents=True, exist_ok=True)
@@ -22,7 +22,7 @@ class ChapterAdminServiceTests(unittest.TestCase):
             (self.project / "chapters" / f"{number:04d}-chapter.md").write_text(
                 f"# 第 {number} 章\n\n正文", encoding="utf-8"
             )
-            for folder in ("chapter_plans", "reader_checks", "dialogue_reviews", "literary_reviews"):
+            for folder in ("chapter_plans", "reader_checks", "dialogue_reviews", "literary_reviews", "chapter_reviews"):
                 (self.project / folder / f"{number:04d}.json").write_text(
                     "{}", encoding="utf-8"
                 )
@@ -65,6 +65,7 @@ class ChapterAdminServiceTests(unittest.TestCase):
         self.assertFalse((self.project / "chapters" / "0002-chapter.md").exists())
         self.assertFalse((self.project / "chapters" / "0003-chapter.md").exists())
         self.assertFalse((self.project / "reader_checks" / "0002.json").exists())
+        self.assertFalse((self.project / "chapter_reviews" / "0002.json").exists())
         self.assertFalse((self.project / "character_threads" / "0003").exists())
         state = json.loads((self.project / "chapter_state.json").read_text(encoding="utf-8"))
         self.assertEqual(state["last_completed_chapter"], 1)

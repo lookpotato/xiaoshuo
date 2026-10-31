@@ -39,7 +39,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 10
+API_VERSION = 11
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
