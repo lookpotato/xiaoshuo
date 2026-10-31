@@ -135,6 +135,8 @@ class UnifiedContinuityTests(unittest.TestCase):
         self.assertIn("viewpoint_contract", (run / "characters.md").read_text(encoding="utf-8"))
         self.assertIn("viewpoint_contract", (run / "continuity.md").read_text(encoding="utf-8"))
         self.assertIn("scene_seed", manifest["workflow"])
+        self.assertIn("报清单", (run / "scene_seed.md").read_text(encoding="utf-8"))
+        self.assertIn("人物状态表", (run / "reader.md").read_text(encoding="utf-8"))
         draft_prompt = (run / "draft.md").read_text(encoding="utf-8")
         self.assertIn("scene_seed.md", draft_prompt)
         self.assertIn("prose_brief.md", draft_prompt)

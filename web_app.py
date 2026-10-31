@@ -27,6 +27,7 @@ import generation_version
 import author_registry
 import reader_feedback_service
 import chapter_admin_service
+import human_draft_service
 
 
 ROOT = Path(__file__).resolve().parent
@@ -38,7 +39,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 8
+API_VERSION = 9
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -611,6 +612,20 @@ def launch_batch_rewrite(payload: dict) -> dict:
                            "--from-chapter", str(start)], "batch_rewrite", label)
 
 
+def launch_human_polish(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    book = registered_book(book_id)
+    chapter = int(payload.get("chapter"))
+    human_draft_service.validate_polish_request(ROOT, book_id, chapter)
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待后再润色")
+    return launch_command(
+        [sys.executable, str(ROOT / "human_draft_worker.py"), "--book", book_id,
+         "--chapter", str(chapter)],
+        "human_polish", f"《{book.get('title', book_id)}》第 {chapter} 章手写稿润色预览",
+    )
+
+
 def resume_batch_rewrite(payload: dict) -> dict:
     run_id = str(payload.get("run_id", ""))
     if not SAFE_JOB_ID.fullmatch(run_id):
@@ -805,6 +820,13 @@ class AppHandler(BaseHTTPRequestHandler):
                 number = int(query.get("number", ["0"])[0])
                 self.send_json(chapter_document(book_id, number))
                 return
+            if parsed.path == "/api/human-draft":
+                query = parse_qs(parsed.query)
+                book_id = query.get("book_id", [""])[0]
+                chapter = int(query.get("chapter", ["0"])[0])
+                registered_book(book_id)
+                self.send_json(human_draft_service.workspace(ROOT, book_id, chapter))
+                return
             if parsed.path == "/api/reader-feedback":
                 query = parse_qs(parsed.query)
                 book_id = query.get("book_id", [""])[0]
@@ -860,6 +882,8 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
+                "/api/human-draft/save": 256 * 1024,
+                "/api/human-draft/polish": 16 * 1024,
                 "/api/run/cancel": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
@@ -947,6 +971,18 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/chapter/batch-rewrite/resume":
                 self.send_json({"ok": True, "run": resume_batch_rewrite(payload)}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/human-draft/save":
+                book_id = str(payload.get("book_id", ""))
+                registered_book(book_id)
+                chapter = int(payload.get("chapter"))
+                result = human_draft_service.save_draft(
+                    ROOT, book_id, chapter, payload.get("content"), str(payload.get("revision", ""))
+                )
+                self.send_json({"ok": True, **result})
+                return
+            if parsed.path == "/api/human-draft/polish":
+                self.send_json({"ok": True, "run": launch_human_polish(payload)}, HTTPStatus.ACCEPTED)
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

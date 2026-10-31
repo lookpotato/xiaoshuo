@@ -10,6 +10,7 @@ __pycache__/
 .novel_runs_v2/
 .novel_runs_v3/
 .batch_rewrites/
+human_drafts/
 .chapter_trash/
 .book_trash/
 web/node_modules/
