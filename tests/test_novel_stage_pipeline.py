@@ -87,6 +87,7 @@ class NovelStagePipelineTests(unittest.TestCase):
                 {"purpose": "争夺钥匙", "conflict": "两人都要出去", "turn": "钥匙交给妹妹"},
                 {"purpose": "锁门", "conflict": "追兵抵达", "turn": "妹妹留在门外"},
             ],
+            "scene_explanation": "兄妹在门口争夺钥匙。母亲尚未回来，追兵已经上楼；阿澄交出钥匙后，妹妹留在门外。",
             "tone_risks": ["家人可能死亡时不拿其处境开玩笑"],
             "forbidden_shortcuts": ["不得突然出现救兵"],
         }
@@ -154,6 +155,7 @@ class NovelStagePipelineTests(unittest.TestCase):
         self.assertNotIn("道友你这天命与我有缘", prompt)
         self.assertIn("不得运行 git add、commit 或 push", prompt)
         self.assertIn("reader_payoff", prompt)
+        self.assertIn("scene_explanation", prompt)
         self.assertIn("不能只留下", prompt)
         self.assertIn("新增悬念超过", str(self._new_question_error()))
 
@@ -239,6 +241,13 @@ class NovelStagePipelineTests(unittest.TestCase):
         plan["scene_plan"].append({"purpose": "另办一件事", "conflict": "新的阻力", "turn": "另一个结果"})
         self.write_plan(plan)
         with self.assertRaisesRegex(pipeline.PipelineValidationError, "最多规划两场"):
+            pipeline.validate_plan(self.root, self.project, 2)
+
+    def test_new_plan_requires_human_scene_explanation(self) -> None:
+        plan = self.valid_plan()
+        plan.pop("scene_explanation")
+        self.write_plan(plan)
+        with self.assertRaisesRegex(pipeline.PipelineValidationError, "给手写作者的场景说明"):
             pipeline.validate_plan(self.root, self.project, 2)
 
     def test_independent_reviewer_cannot_see_plan_or_book_bible(self) -> None:

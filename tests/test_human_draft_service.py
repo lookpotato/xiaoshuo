@@ -58,8 +58,16 @@ class HumanDraftServiceTests(unittest.TestCase):
         plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
         changed = service.workspace(self.root, "book", 2)
         self.assertEqual(changed["guide"]["goal"], "改后的目标")
-        self.assertEqual(changed["scene_explanation"], "")
+        self.assertNotIn("新说明", changed["scene_explanation"])
+        self.assertIn("改后的目标", changed["scene_explanation"])
         self.assertTrue(changed["guide_stale"])
+
+    def test_new_plan_embedded_explanation_is_displayed_without_guide_file(self) -> None:
+        plan_path = self.project / "chapter_plans" / "0002.json"
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        plan["scene_explanation"] = "人物在门前遇到阻力，决定谁留下。"
+        plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+        self.assertEqual(service.workspace(self.root, "book", 2)["scene_explanation"], plan["scene_explanation"])
 
     def test_polish_produces_preview_without_replacing_original_or_archive(self) -> None:
         original = "# 第二章 新稿\n\n" + "他推门，先看见灯。" * 50

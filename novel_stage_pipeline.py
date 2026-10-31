@@ -13,7 +13,7 @@ from novel_reader_gate import chapter_narrative_text, narrative_sha256
 
 CONFIG_NAME = "novel_pipeline.json"
 SCHEMA_VERSION = 1
-PLAN_SCHEMA_VERSION = 4
+PLAN_SCHEMA_VERSION = 5
 REVIEW_SCHEMA_VERSION = 1
 REVIEW_MODE = "independent-literary-reader"
 DIALOGUE_REVIEW_SCHEMA_VERSION = 1
@@ -278,6 +278,7 @@ def director_prompt(
   "irreversible_change": "结尾相对开头无法原样复位的变化",
   "viewpoint_contract": "本章主要视角是谁；主角不在场的关键行动通过亲见、电话或现场回报进入正文，还是以明确分场的现场镜头呈现；分场后主角实际知道什么",
   "scene_plan": [{{"purpose": "场景任务", "conflict": "现场阻力", "turn": "结束时发生的改变"}}],
+  "scene_explanation": "给亲自写正文的作者看的自然语言场景说明：用两到四段话讲清本章在什么现场开始、人物为什么现在要行动、阻力如何迫使选择、第二场怎样由第一场引出以及结尾留下什么。只解释 scene_plan 中的一至两场，不增添新场景或事实，不列清单或规定对白",
   "tone_risks": ["哪些人物、关系或处境不适合被拿来开玩笑"],
   "forbidden_shortcuts": ["本章不得采用的重复解法、巧合或新设定救场"]
 }}
@@ -302,7 +303,7 @@ concrete_gain 仍须给读者实质变化。优先复用旧人物、旧关系、
 def validate_plan(root: Path, project: Path, number: int) -> dict:
     data = _read_object(plan_path(root, project, number))
     version = data.get("schema_version")
-    if version not in (1, 2, 3, PLAN_SCHEMA_VERSION):
+    if version not in (1, 2, 3, 4, PLAN_SCHEMA_VERSION):
         raise PipelineValidationError(f"第 {number} 章章节合同版本错误")
     if data.get("chapter_number") != number:
         raise PipelineValidationError(f"第 {number} 章章节合同章号错误")
@@ -360,6 +361,8 @@ def validate_plan(root: Path, project: Path, number: int) -> dict:
         raise PipelineValidationError(f"第 {number} 章至少需要一个有转折的场景")
     if version >= 4 and len(scenes) > 2:
         raise PipelineValidationError(f"第 {number} 章最多规划两场；请把独立事件拆到下一章")
+    if version >= 5 and not _text(data.get("scene_explanation")):
+        raise PipelineValidationError(f"第 {number} 章缺少给手写作者的场景说明")
     for scene in scenes:
         if not isinstance(scene, dict) or not all(
             _text(scene.get(key)) for key in ("purpose", "conflict", "turn")

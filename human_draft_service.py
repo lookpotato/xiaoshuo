@@ -34,6 +34,27 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig") if path.is_file() else ""
 
 
+def _plan_explanation(plan: dict | None, scenes: list[dict]) -> str:
+    if not plan:
+        return ""
+    explanation = plan.get("scene_explanation")
+    if isinstance(explanation, str) and explanation.strip():
+        return explanation.strip()
+    paragraphs = [
+        f"这一章围绕一件事展开：{plan.get('immediate_goal', '')}"
+        f"真正挡在人物面前的是：{plan.get('central_conflict', '')}"
+    ]
+    for index, scene in enumerate(scenes, 1):
+        paragraphs.append(
+            f"第{index}场，{scene['purpose']}。现场阻力是：{scene['conflict']}。"
+            f"这场结束时，{scene['turn']}。"
+        )
+    ending = plan.get("ending_pressure", {}).get("visible_trigger", "")
+    if ending:
+        paragraphs.append(f"结尾由这件事继续施压：{ending}。")
+    return "\n\n".join(paragraphs)
+
+
 def workspace(root: Path, book_id: str, chapter: int) -> dict:
     project, plan_path, draft_path, preview_path = _paths(root, book_id, chapter)
     plan_bytes = plan_path.read_bytes() if plan_path.is_file() else None
@@ -58,6 +79,8 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         notes = ""
     elif guide_header:
         notes = notes[guide_header.end():]
+    if not notes:
+        notes = _plan_explanation(plan, scenes)
     return {
         "book_id": book_id, "chapter": chapter, "has_plan": bool(plan),
         "plan_revision": plan_revision, "guide_stale": guide_stale,
