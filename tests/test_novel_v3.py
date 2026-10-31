@@ -7,11 +7,19 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_v3 import accept_deep_edit, archive_chapter, ensure_director_plan, execute, review_and_archive, validate_scene_seed
+from novel_v3 import accept_deep_edit, archive_chapter, ensure_director_plan, execute, normalize_plan_json, review_and_archive, validate_scene_seed
 from novel_engine_v3 import V3ValidationError
 
 
 class DeepEditAcceptanceTests(unittest.TestCase):
+    def test_plan_json_literal_newlines_are_escaped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            plan = Path(directory) / "0016.json"
+            plan.write_text('{"scene_explanation":"第一段\n\n第二段"}', encoding="utf-8")
+            self.assertTrue(normalize_plan_json(plan))
+            self.assertEqual(json.loads(plan.read_text(encoding="utf-8"))["scene_explanation"], "第一段\n\n第二段")
+            self.assertFalse(normalize_plan_json(plan))
+
     def test_valid_existing_plan_skips_expensive_director_call(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

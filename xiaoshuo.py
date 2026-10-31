@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import uuid
+from datetime import datetime
 from pathlib import Path
 
 import generation_version
+import xiaoshuo_auto_repair
 
 
 ROOT = Path(__file__).resolve().parent
@@ -54,18 +58,51 @@ def selected_books(book_id: str | None, all_books: bool, feature: str) -> list[d
     raise ValueError(f"未知书籍 id: {target}")
 
 
-def run_commands(commands: list[tuple[dict, list[str]]]) -> int:
+def run_book(command: list[str], book_id: str) -> tuple[int, Path]:
+    """Keep a per-book failure log while preserving live console output."""
+    xiaoshuo_auto_repair.REPAIR_ROOT.mkdir(parents=True, exist_ok=True)
+    log = xiaoshuo_auto_repair.REPAIR_ROOT / (
+        f"{datetime.now():%Y%m%d-%H%M%S}-{book_id}-{uuid.uuid4().hex[:8]}.log"
+    )
+    with log.open("w", encoding="utf-8") as saved:
+        with subprocess.Popen(
+            command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
+        ) as process:
+            assert process.stdout is not None
+            for line in process.stdout:
+                print(line, end="", flush=True)
+                saved.write(line)
+            return process.wait(), log
+
+
+def run_commands(commands: list[tuple[dict, list[str]]], *, auto_repair: bool = False) -> int:
     failures: list[tuple[str, int]] = []
     for index, (book, command) in enumerate(commands, 1):
         print(
             f"\n[{index}/{len(commands)}] {book['title']} ({book['id']})",
             flush=True,
         )
-        result = subprocess.run(command, cwd=ROOT).returncode
+        result, failure_log = run_book(command, book["id"])
+        recovery_attempted = False
+        if result and auto_repair and os.environ.get("XIAOSHUO_AUTO_REPAIR_ACTIVE") != "1":
+            recovery_attempted = True
+            print(f"{book['id']} 失败，正在自动调用 Codex 检查日志并修复……", flush=True)
+            try:
+                repaired = xiaoshuo_auto_repair.repair_failed_book(
+                    book["id"], command, failure_log
+                )
+            except Exception as exc:
+                repaired = False
+                print(f"{book['id']} 自动修复未启动：{exc}", file=sys.stderr, flush=True)
+            if repaired:
+                print(f"{book['id']} 自动修复结束，重试原任务一次……", flush=True)
+                result, failure_log = run_book(command, book["id"])
         if result:
             failures.append((book["id"], result))
             print(
-                f"{book['id']} 执行失败，退出码 {result}；继续处理剩余小说。",
+                f"{book['id']} 自动修复后仍执行失败，退出码 {result}；日志：{failure_log}；继续处理剩余小说。"
+                if recovery_attempted else f"{book['id']} 执行失败，退出码 {result}；日志：{failure_log}；继续处理剩余小说。",
                 file=sys.stderr,
             )
     if failures:
@@ -106,6 +143,7 @@ def main() -> int:
     target.add_argument("--all", action="store_true", help="依优先级更新全部已启用小说")
     parser.add_argument("--dry-run", action="store_true", help="只显示计划，不启动 Codex")
     parser.add_argument("--check", action="store_true", help="检查 Codex、Chrome 与书籍绑定")
+    parser.add_argument("--no-auto-repair", action="store_true", help="失败后不自动调用 Codex 修复")
     parser.add_argument(
         "--setup-browser",
         action="store_true",
@@ -251,7 +289,7 @@ def main() -> int:
             if args.publish_fanqie is not None:
                 command.append("--publish-fanqie" if args.publish_fanqie else "--no-publish-fanqie")
         commands.append((book, command))
-    return run_commands(commands)
+    return run_commands(commands, auto_repair=not args.no_auto_repair and not args.dry_run)
 
 
 if __name__ == "__main__":

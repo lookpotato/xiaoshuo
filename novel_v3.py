@@ -42,6 +42,7 @@ def ensure_director_plan(run: Path, project: Path, chapter: int) -> None:
     existing = plan_path(ROOT, project, chapter)
     if existing.is_file():
         try:
+            normalize_plan_json(existing)
             validate_director(ROOT, project, chapter)
         except V3ValidationError:
             pass
@@ -49,7 +50,27 @@ def ensure_director_plan(run: Path, project: Path, chapter: int) -> None:
             print(f"复用已校验的第 {chapter} 章规划：{existing}", flush=True)
             return
     execute(run / "director.md", run / "director.result.md", run)
+    normalize_plan_json(existing)
     validate_director(ROOT, project, chapter)
+
+
+def normalize_plan_json(path: Path) -> bool:
+    """Escape literal newlines a model placed inside JSON strings."""
+    raw = path.read_text(encoding="utf-8-sig")
+    try:
+        json.loads(raw)
+        return False
+    except json.JSONDecodeError:
+        try:
+            value = json.loads(raw, strict=False)
+        except json.JSONDecodeError as exc:
+            raise V3ValidationError(f"章节合同 JSON 无法自动修复：{path}: {exc}") from exc
+    if not isinstance(value, dict):
+        return False
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+    return True
 
 
 def save_chapter_review(run: Path, project: Path, chapter: int, final_path: Path) -> Path:
