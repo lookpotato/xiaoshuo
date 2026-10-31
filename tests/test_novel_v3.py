@@ -7,11 +7,22 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_v3 import accept_deep_edit, archive_chapter, execute, review_and_archive, validate_scene_seed
+from novel_v3 import accept_deep_edit, archive_chapter, ensure_director_plan, execute, review_and_archive, validate_scene_seed
 from novel_engine_v3 import V3ValidationError
 
 
 class DeepEditAcceptanceTests(unittest.TestCase):
+    def test_valid_existing_plan_skips_expensive_director_call(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = root / "0015.json"
+            plan.write_text("{}", encoding="utf-8")
+            with patch("novel_v3.plan_path", return_value=plan), \
+                 patch("novel_v3.validate_director"), \
+                 patch("novel_v3.execute") as run_model:
+                ensure_director_plan(root, root, 15)
+            run_model.assert_not_called()
+
     @unittest.skipUnless(os.name == "nt", "Codex desktop CLI fallback is Windows-only")
     def test_execute_finds_desktop_cli_when_path_is_stale(self):
         with tempfile.TemporaryDirectory() as directory:

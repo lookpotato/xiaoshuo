@@ -15,6 +15,7 @@ from datetime import datetime
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
+from novel_stage_pipeline import plan_path
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_director, validate_timeline_head,
     validate_unified_run, validate_viewpoint_contract,
@@ -34,6 +35,20 @@ def validate_scene_seed(run: Path) -> None:
     hanzi = sum("\u4e00" <= char <= "\u9fff" for char in seed)
     if hanzi < 200 or seed.startswith(("```", "# ", "- ", "1. ")):
         raise V3ValidationError("场景粗稿必须是至少 200 汉字的小说正文")
+
+
+def ensure_director_plan(run: Path, project: Path, chapter: int) -> None:
+    existing = plan_path(ROOT, project, chapter)
+    if existing.is_file():
+        try:
+            validate_director(ROOT, project, chapter)
+        except V3ValidationError:
+            pass
+        else:
+            print(f"复用已校验的第 {chapter} 章规划：{existing}", flush=True)
+            return
+    execute(run / "director.md", run / "director.result.md", run)
+    validate_director(ROOT, project, chapter)
 
 
 def accept_deep_edit(run_dir: Path, output: Path) -> None:
@@ -238,23 +253,25 @@ def main() -> int:
         print(f"V3 已归档：{archived}")
         return 0
     chapter = args.chapter
-    for _ in range(args.count):
-        requested_chapter = chapter if chapter is not None else json.loads(
-            (project / "chapter_state.json").read_text(encoding="utf-8-sig")
-        )["next_chapter_number"]
-        validate_timeline_head(project, requested_chapter)
+    for index in range(args.count):
+        if args.command != "prepare" or index == 0:
+            requested_chapter = chapter if chapter is not None else json.loads(
+                (project / "chapter_state.json").read_text(encoding="utf-8-sig")
+            )["next_chapter_number"]
+            validate_timeline_head(project, requested_chapter)
         run = engine.prepare(args.book, chapter)
         print(f"V3 运行包：{run}")
         if args.command == "prepare":
             chapter = (chapter or 1) + 1
             continue
         for stage in WORKFLOW[:-1]:
+            if stage == "director":
+                ensure_director_plan(run, project, int(run.name[:4]))
+                engine.write_prose_brief(run)
+                continue
             execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
                     capture_candidate=stage == "deep_edit")
-            if stage == "director":
-                validate_director(ROOT, project, int(run.name[:4]))
-                engine.write_prose_brief(run)
-            elif stage == "characters":
+            if stage == "characters":
                 validate_characters(project, int(run.name[:4]), final=False)
                 validate_viewpoint_contract(ROOT, project, int(run.name[:4]))
             elif stage == "scene_seed":
