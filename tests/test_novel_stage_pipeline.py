@@ -234,6 +234,13 @@ class NovelStagePipelineTests(unittest.TestCase):
             pipeline.validate_plan(self.root, self.project, 2)["chapter_number"], 2
         )
 
+    def test_new_plan_rejects_three_scenes(self) -> None:
+        plan = self.valid_plan()
+        plan["scene_plan"].append({"purpose": "另办一件事", "conflict": "新的阻力", "turn": "另一个结果"})
+        self.write_plan(plan)
+        with self.assertRaisesRegex(pipeline.PipelineValidationError, "最多规划两场"):
+            pipeline.validate_plan(self.root, self.project, 2)
+
     def test_independent_reviewer_cannot_see_plan_or_book_bible(self) -> None:
         self.write_plan()
         prompt = pipeline.reviewer_prompt(self.root, self.project, 2)

@@ -13,7 +13,7 @@ from novel_reader_gate import chapter_narrative_text, narrative_sha256
 
 CONFIG_NAME = "novel_pipeline.json"
 SCHEMA_VERSION = 1
-PLAN_SCHEMA_VERSION = 3
+PLAN_SCHEMA_VERSION = 4
 REVIEW_SCHEMA_VERSION = 1
 REVIEW_MODE = "independent-literary-reader"
 DIALOGUE_REVIEW_SCHEMA_VERSION = 1
@@ -282,7 +282,10 @@ def director_prompt(
   "forbidden_shortcuts": ["本章不得采用的重复解法、巧合或新设定救场"]
 }}
 
-要求：character_drives 至少一人，scene_plan 至少一场；多人场景分别写清诉求，独角戏则把
+要求：character_drives 至少一人，scene_plan 只能一至两场。每章只解决一个眼前问题；
+第二场必须由第一场的行动直接引出，不能另开一条待办线。其他人物的处境可作为同一场的
+阻力或反应出现，不为兑现全部未解问题而切换地点、视角或时间。约两千字的篇幅要留给
+动作、误判、选择和余波；若两个独立事件都值得写，应拆为两章。多人场景分别写清诉求，独角戏则把
 人物与环境、身体或自身选择的冲突写具体；new_questions 最多
 {config['max_new_questions_per_chapter']} 项。hold 只允许既有期待确有剧情理由暂缓，
 concrete_gain 仍须给读者实质变化。优先复用旧人物、旧关系、旧物件和旧问题；不得用新名词冒充推进。
@@ -299,7 +302,7 @@ concrete_gain 仍须给读者实质变化。优先复用旧人物、旧关系、
 def validate_plan(root: Path, project: Path, number: int) -> dict:
     data = _read_object(plan_path(root, project, number))
     version = data.get("schema_version")
-    if version not in (1, 2, PLAN_SCHEMA_VERSION):
+    if version not in (1, 2, 3, PLAN_SCHEMA_VERSION):
         raise PipelineValidationError(f"第 {number} 章章节合同版本错误")
     if data.get("chapter_number") != number:
         raise PipelineValidationError(f"第 {number} 章章节合同章号错误")
@@ -355,6 +358,8 @@ def validate_plan(root: Path, project: Path, number: int) -> dict:
     scenes = data.get("scene_plan")
     if not isinstance(scenes, list) or not scenes:
         raise PipelineValidationError(f"第 {number} 章至少需要一个有转折的场景")
+    if version >= 4 and len(scenes) > 2:
+        raise PipelineValidationError(f"第 {number} 章最多规划两场；请把独立事件拆到下一章")
     for scene in scenes:
         if not isinstance(scene, dict) or not all(
             _text(scene.get(key)) for key in ("purpose", "conflict", "turn")

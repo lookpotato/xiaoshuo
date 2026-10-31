@@ -98,6 +98,7 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
     </article>
     {guide ? <article className="panel human-guide">
       <div className="panel-head"><div><p className="eyebrow">SCENE GUIDE</p><h2>第 {chapter} 章怎么发生</h2></div>{workspace.existing_chapter && <button className="button ghost" onClick={showReference}>查看现有章节</button>}</div>
+      {guide.scenes.length > 2 && <p className="feedback" role="note">这份旧规划列了 {guide.scenes.length} 场，超过现在的单章场景上限；适合先收束主线，再用它指导手稿。</p>}
       {workspace.scene_explanation && <div className="human-explanation">{workspace.scene_explanation.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph.replace(/^#\s*/, "")}</p>)}</div>}
       <p><strong>这一章要办成什么：</strong>{guide.goal}</p>
       <p><strong>真正的冲突：</strong>{guide.conflict}</p>
