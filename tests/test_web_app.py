@@ -10,6 +10,17 @@ import web_app
 
 
 class WebAppDataTests(unittest.TestCase):
+    def test_human_plan_launches_director_worker(self) -> None:
+        fake = {"id": "run-id", "status": "running"}
+        with patch.object(web_app, "launch_command", return_value=fake) as launch, \
+             patch.object(web_app, "list_runs", return_value=[]), \
+             patch.object(web_app.human_draft_service, "validate_plan_request"):
+            result = web_app.launch_human_plan({"book_id": "night-floor", "chapter": 16})
+        self.assertEqual(result, fake)
+        command = launch.call_args.args[0]
+        self.assertTrue(command[1].endswith("human_draft_worker.py"))
+        self.assertEqual(command[-5:], ["--book", "night-floor", "--chapter", "16", "--plan"])
+
     def test_human_polish_launches_preview_worker_without_archive(self) -> None:
         fake = {"id": "run-id", "status": "running"}
         with patch.object(web_app, "launch_command", return_value=fake) as launch, \

@@ -39,7 +39,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 9
+API_VERSION = 10
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -626,6 +626,20 @@ def launch_human_polish(payload: dict) -> dict:
     )
 
 
+def launch_human_plan(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    book = registered_book(book_id)
+    chapter = int(payload.get("chapter"))
+    human_draft_service.validate_plan_request(ROOT, book_id, chapter)
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待后再生成规划")
+    return launch_command(
+        [sys.executable, str(ROOT / "human_draft_worker.py"), "--book", book_id,
+         "--chapter", str(chapter), "--plan"],
+        "human_plan", f"《{book.get('title', book_id)}》第 {chapter} 章手写前规划",
+    )
+
+
 def resume_batch_rewrite(payload: dict) -> dict:
     run_id = str(payload.get("run_id", ""))
     if not SAFE_JOB_ID.fullmatch(run_id):
@@ -883,6 +897,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
                 "/api/human-draft/save": 256 * 1024,
+                "/api/human-draft/plan": 16 * 1024,
                 "/api/human-draft/polish": 16 * 1024,
                 "/api/run/cancel": 16 * 1024,
             }
@@ -983,6 +998,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/human-draft/polish":
                 self.send_json({"ok": True, "run": launch_human_polish(payload)}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/human-draft/plan":
+                self.send_json({"ok": True, "run": launch_human_plan(payload)}, HTTPStatus.ACCEPTED)
                 return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:

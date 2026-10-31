@@ -9,6 +9,7 @@ from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine
 from novel_v3 import execute
+from novel_engine_v3.continuity import validate_director
 
 
 def _project(root: Path, book_id: str) -> Path:
@@ -88,6 +89,25 @@ def validate_polish_request(root: Path, book_id: str, chapter: int) -> None:
     draft = _read(draft_path)
     if sum("\u4e00" <= char <= "\u9fff" for char in draft) < 200:
         raise ValueError("请先保存至少 200 汉字的手写正文")
+
+
+def validate_plan_request(root: Path, book_id: str, chapter: int) -> None:
+    project, plan_path, _, _ = _paths(root, book_id, chapter)
+    if plan_path.exists():
+        raise ValueError("本章已有规划，请重新载入")
+    state = json.loads((project / "chapter_state.json").read_text(encoding="utf-8-sig"))
+    if chapter != state.get("next_chapter_number"):
+        raise ValueError("只能为当前下一章生成规划")
+
+
+def plan_chapter(root: Path, book_id: str, chapter: int) -> Path:
+    validate_plan_request(root, book_id, chapter)
+    engine = AuthorEngine(root)
+    project, _ = engine.book(book_id)
+    run = engine.prepare(book_id, chapter)
+    execute(run / "director.md", run / "director.result.md", run)
+    validate_director(root, project, chapter)
+    return project / "chapter_plans" / f"{chapter:04d}.json"
 
 
 def polish(root: Path, book_id: str, chapter: int) -> Path:

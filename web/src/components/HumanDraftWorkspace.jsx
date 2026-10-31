@@ -7,7 +7,7 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
   const [draft, setDraft] = useState("");
   const [savedDraft, setSavedDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [polishRunId, setPolishRunId] = useState(null);
+  const [activeRun, setActiveRun] = useState(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
 
@@ -21,20 +21,36 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
   useEffect(() => { setWorkspace(null); setReference(""); load(); }, [load]);
 
   useEffect(() => {
-    if (!polishRunId) return undefined;
+    if (!activeRun) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const result = await api("/api/runs");
-        const run = result.runs.find((item) => item.id === polishRunId);
+        const run = result.runs.find((item) => item.id === activeRun.id);
         if (run && run.status !== "running") {
-          window.clearInterval(timer); setPolishRunId(null);
-          if (run.status === "success") { await load(); onNotice("润色预览已生成，原稿未被替换"); }
-          else setError("润色未完成，请在后端控制台查看原因");
+          window.clearInterval(timer); setActiveRun(null);
+          if (run.status === "success") {
+            await load();
+            onNotice(activeRun.kind === "plan" ? "章节规划已生成，请阅读场景说明后写手稿" : "润色预览已生成，原稿未被替换");
+          } else setError(activeRun.kind === "plan" ? "规划未完成，请在后端控制台查看原因" : "润色未完成，请在后端控制台查看原因");
         }
       } catch (nextError) { setError(nextError.message); }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [polishRunId, load, onNotice]);
+  }, [activeRun, load, onNotice]);
+
+  async function plan() {
+    if (busy || activeRun || chapter !== book.next_chapter_number) return;
+    setBusy(true); setError("");
+    try {
+      const result = await api("/api/human-draft/plan", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, chapter }),
+      });
+      setActiveRun({ id: result.run.id, kind: "plan" });
+      onRunStarted(result.run); onNotice(`第 ${chapter} 章规划已启动，完成后这里会显示场景说明`);
+    } catch (nextError) { setError(nextError.message); }
+    finally { setBusy(false); }
+  }
 
   async function save() {
     if (!workspace || busy) return;
@@ -51,14 +67,14 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
   }
 
   async function polish() {
-    if (busy || !workspace || draft !== savedDraft) return;
+    if (busy || activeRun || !workspace || draft !== savedDraft) return;
     setBusy(true); setError("");
     try {
       const result = await api("/api/human-draft/polish", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, chapter }),
       });
-      setPolishRunId(result.run.id); onRunStarted(result.run); onNotice("润色已启动；完成后在这里对照原稿与预览");
+      setActiveRun({ id: result.run.id, kind: "polish" }); onRunStarted(result.run); onNotice("润色已启动；完成后在这里对照原稿与预览");
     } catch (nextError) { setError(nextError.message); }
     finally { setBusy(false); }
   }
@@ -77,8 +93,8 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
     <article className="panel human-intro">
       <div className="panel-head"><div><p className="eyebrow">HUMAN FIRST</p><h2>手写章节接力</h2></div><span className="local-badge">本地试验</span></div>
       <p>先看场景说明，再由你写正文。润色只生成预览，保留原稿和现有归档；你可以逐段比较，决定哪些改动值得采用。</p>
-      <label>选择章节 <select value={chapter} onChange={(event) => setChapter(Number(event.target.value))}>{available.map((item) => <option value={item.number} key={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
-      {apiVersion < 9 && <p className="feedback">请重启 Python 工作台服务，启用手写接力接口。</p>}
+      <label>选择章节 <select value={chapter} disabled={!!activeRun} onChange={(event) => setChapter(Number(event.target.value))}>{available.map((item) => <option value={item.number} key={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
+      {apiVersion < 10 && <p className="feedback">请重启 Python 工作台服务，启用本章规划接口。</p>}
     </article>
     {guide ? <article className="panel human-guide">
       <div className="panel-head"><div><p className="eyebrow">SCENE GUIDE</p><h2>第 {chapter} 章怎么发生</h2></div>{workspace.existing_chapter && <button className="button ghost" onClick={showReference}>查看现有章节</button>}</div>
@@ -93,11 +109,11 @@ export default function HumanDraftWorkspace({ book, apiVersion, onNotice, onRunS
       <ol>{guide.scenes.map((scene, index) => <li key={index}><strong>{scene.purpose}</strong><span>阻力：{scene.conflict}</span><span>场景结束时的变化：{scene.turn}</span></li>)}</ol>
       <p className="human-boundary">场景说明只定冲突和结果，不规定人物说哪句话。你可以改场景顺序；成稿时再核对事实和时间线。</p>
       {reference && <details open><summary>现有归档参考</summary><pre>{reference}</pre></details>}
-    </article> : <article className="panel human-guide"><h2>本章尚无章节规划</h2><p>先在 V3 流程中准备这一章的章节合同，再回来写手稿。第 15 章已有规划，可直接用它试验。</p></article>}
+    </article> : <article className="panel human-guide"><h2>第 {chapter} 章尚无规划</h2><p>点击下方按钮生成章节目标和场景说明，完成后直接在本页写手稿。生成可能需要几分钟。</p>{chapter === book.next_chapter_number ? <button className="button primary" disabled={busy || !!activeRun || apiVersion < 10} onClick={plan}>{activeRun?.kind === "plan" ? "正在生成规划……" : `生成第 ${chapter} 章规划`}</button> : <p>目前只能为下一章（第 {book.next_chapter_number} 章）生成规划；可在上方选择已有规划的章节。</p>}</article>}
     <article className="panel human-editor">
       <div className="panel-head"><div><p className="eyebrow">YOUR DRAFT</p><h2>你的原稿</h2></div><span>{draft.length} 字符</span></div>
       <textarea aria-label="手写章节正文" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`# 第 ${chapter} 章 标题\n\n从你认为最有生命力的现场写起……`} />
-      <div className="human-actions"><button className="button primary" disabled={busy || !workspace || draft === savedDraft} onClick={save}>保存手写稿</button><button className="button ghost" disabled={busy || !!polishRunId || !workspace?.has_plan || !savedDraft || draft !== savedDraft} onClick={polish}>{polishRunId ? "润色中……" : "生成润色预览"}</button><button className="button ghost" onClick={load}>重新载入</button></div>
+      <div className="human-actions"><button className="button primary" disabled={busy || !workspace || draft === savedDraft} onClick={save}>保存手写稿</button><button className="button ghost" disabled={busy || !!activeRun || !workspace?.has_plan || !savedDraft || draft !== savedDraft} onClick={polish}>{activeRun?.kind === "polish" ? "润色中……" : "生成润色预览"}</button><button className="button ghost" onClick={load}>重新载入</button></div>
       {draft !== savedDraft && <p className="feedback">有未保存修改；先保存再润色。</p>}
       {workspace?.preview_stale && <p className="feedback">旧预览对应之前的手稿，重新润色后才能对照当前稿。</p>}
       {error && <p className="feedback" role="alert">{error}</p>}

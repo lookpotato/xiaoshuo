@@ -21,6 +21,9 @@ class HumanDraftServiceTests(unittest.TestCase):
         self.project = self.root / "book"
         (self.project / "chapter_plans").mkdir(parents=True)
         (self.project / "chapters").mkdir()
+        (self.project / "chapter_state.json").write_text(
+            json.dumps({"last_completed_chapter": 2, "next_chapter_number": 3}), encoding="utf-8"
+        )
         (self.project / "chapter_plans" / "0002.json").write_text(json.dumps({
             "chapter_number": 2, "immediate_goal": "先找到能住的屋",
             "central_conflict": "两人争一把钥匙", "central_choice": "谁留下",
@@ -68,6 +71,13 @@ class HumanDraftServiceTests(unittest.TestCase):
             service.validate_polish_request(self.root, "book", 2)
         with self.assertRaisesRegex(ValueError, "未知 V3 作品"):
             service.workspace(self.root, "unknown", 2)
+
+    def test_plan_request_only_allows_unplanned_next_chapter(self) -> None:
+        service.validate_plan_request(self.root, "book", 3)
+        with self.assertRaisesRegex(ValueError, "已有规划"):
+            service.validate_plan_request(self.root, "book", 2)
+        with self.assertRaisesRegex(ValueError, "当前下一章"):
+            service.validate_plan_request(self.root, "book", 4)
 
 
 if __name__ == "__main__":
