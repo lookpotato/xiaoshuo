@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 import json
+import os
 
 import novel_codex_model
 import xiaoshuo_on_demand
@@ -44,3 +45,15 @@ class NovelCodexModelTest(TestCase):
                 runner.execute_prompt(root, prompt, root / "result.md")
         command = process.call_args.args[0]
         self.assertEqual(command[:6], novel_codex_model.exec_prefix("codex"))
+
+    def test_feedback_runner_finds_desktop_cli_without_path(self):
+        if os.name != "nt":
+            self.skipTest("Windows desktop CLI fallback")
+        with TemporaryDirectory() as temporary:
+            local_app_data = Path(temporary)
+            cli = local_app_data / "OpenAI" / "Codex" / "bin" / "current" / "codex.exe"
+            cli.parent.mkdir(parents=True)
+            cli.touch()
+            with mock.patch.object(runner.shutil, "which", return_value=None), \
+                 mock.patch.dict(runner.os.environ, {"LOCALAPPDATA": str(local_app_data)}):
+                self.assertEqual(runner.resolve_codex(), str(cli))

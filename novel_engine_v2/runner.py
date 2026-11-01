@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,9 +14,15 @@ from .engine import NovelEngine, ValidationError
 
 def resolve_codex() -> str:
     path = shutil.which("codex")
+    if not path and os.name == "nt":
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            app_bins = Path(local_app_data) / "OpenAI" / "Codex" / "bin"
+            candidates = app_bins.glob("*/codex.exe") if app_bins.is_dir() else ()
+            path = next(iter(sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)), None)
     if not path:
-        raise ValidationError("找不到 codex CLI；请先安装并登录")
-    return path
+        raise ValidationError("找不到 Codex CLI；已检查 PATH 和桌面版安装目录")
+    return str(path)
 
 
 def execute_prompt(root: Path, prompt_path: Path, result_path: Path, book_id: str | None = None) -> None:
