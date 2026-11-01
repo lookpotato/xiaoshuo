@@ -210,6 +210,24 @@ class NovelEngineV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "第 2 章"):
             engine.validate_candidate(run, 2)
 
+    def test_finalize_rejects_duplicate_title_before_archiving(self) -> None:
+        engine = NovelEngine(self.root)
+        run = engine.prepare("demo", set())
+        (run / "candidate.md").write_text(
+            "# 第 2 章 开 门！\n" + "正文" * 900, encoding="utf-8"
+        )
+        (run / "reader_review.json").write_text(
+            json.dumps({"decision": "pass", "blocking_issues": [],
+                        "nonblocking_notes": [], "evidence": []}), encoding="utf-8"
+        )
+        (run / "state_delta.json").write_text(
+            json.dumps({"characters": [], "resources": [], "revealed_facts": [],
+                        "unresolved": [], "next_opening": "下一章"}), encoding="utf-8"
+        )
+        with self.assertRaisesRegex(ValueError, "0001-开门.md"):
+            engine.finalize("demo", run)
+        self.assertFalse(list((self.root / "book" / "chapters").glob("0002-*.md")))
+
     def test_repository_free_sky_rewrite_is_a_separate_authored_book(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
         engine = NovelEngine(project_root)

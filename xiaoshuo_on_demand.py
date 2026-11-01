@@ -21,6 +21,7 @@ import author_registry
 import novel_stage_pipeline as stage_pipeline
 import novel_codex_model
 from chapter_length_policy import chapter_length_instruction
+from chapter_titles import title_key
 from fanqie_browser_worker import (
     FanqieBlocked,
     FanqieRetryable,
@@ -673,7 +674,8 @@ def collect_local_archive_errors(
     if len(chapter_paths) == 1:
         try:
             normalize_chapter_heading(chapter_paths[0], chapter_number)
-        except (OSError, ValueError) as exc:
+            ensure_unique_chapter_title(project, parse_chapter(chapter_paths[0]))
+        except (OSError, ValueError, RuntimeError) as exc:
             errors.append(str(exc))
     elif len(chapter_paths) > 1:
         errors.append(f"第 {chapter_number} 章存在多个归档文件")
@@ -1387,7 +1389,7 @@ def pending_chapter(project: Path) -> tuple[Path, dict, Path] | None:
 
 
 def _title_key(title: str) -> str:
-    return re.sub(r"[\s，。！？、：；‘’“”《》【】（）()\[\]{}]+", "", title).casefold()
+    return title_key(title)
 
 
 def duplicate_title_paths(project: Path, chapter) -> list[Path]:

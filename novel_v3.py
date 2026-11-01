@@ -17,6 +17,7 @@ from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
 from novel_stage_pipeline import plan_path
 from novel_reader_gate import narrative_sha256
+from chapter_titles import duplicate_title_message, duplicate_title_paths
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_director, validate_timeline_head,
     validate_unified_run, validate_viewpoint_contract,
@@ -190,6 +191,9 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     existing = list((project / "chapters").glob(f"{chapter:04d}-*.md"))
     if existing:
         raise V3ValidationError(f"第 {chapter} 章已有归档，已保留现有正文")
+    duplicates = duplicate_title_paths(project, title)
+    if duplicates:
+        raise V3ValidationError(duplicate_title_message(chapter, title, duplicates))
     delta_path = run / "state_delta.json"
     if manifest_path.is_file():
         delta = json.loads((run / "continuity_review.json").read_text(encoding="utf-8-sig"))

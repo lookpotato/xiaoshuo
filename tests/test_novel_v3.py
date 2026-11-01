@@ -95,6 +95,23 @@ class DeepEditAcceptanceTests(unittest.TestCase):
             with self.assertRaises(V3ValidationError):
                 archive_chapter(run, project, 2)
 
+    def test_archive_rejects_duplicate_title_before_writing_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, project = root / "run", root / "book"
+            run.mkdir()
+            (project / "chapters").mkdir(parents=True)
+            (project / "chapters" / "0001-墙脚.md").write_text(
+                "# 第 1 章 墙脚\n\n旧章", encoding="utf-8"
+            )
+            (run / "candidate.md").write_text(
+                "# 第 2 章 墙 脚！\n\n新章", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(V3ValidationError, "0001-墙脚.md"):
+                archive_chapter(run, project, 2)
+            self.assertFalse(list((project / "chapters").glob("0002-*.md")))
+            self.assertFalse((project / "drafts").exists())
+
     def test_unified_archive_uses_final_continuity_hook(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

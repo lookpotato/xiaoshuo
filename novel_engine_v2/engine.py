@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from chapter_titles import duplicate_title_message, duplicate_title_paths
 from .chinese_language import render, retrieve
 
 
@@ -460,6 +461,9 @@ class NovelEngine:
         chapter_path = book.project / "chapters" / f"{number:04d}-{safe_title}.md"
         if chapter_path.exists() or list((book.project / "chapters").glob(f"{number:04d}-*.md")):
             raise ValidationError(f"第 {number} 章已经存在，拒绝覆盖")
+        duplicates = duplicate_title_paths(book.project, title)
+        if duplicates:
+            raise ValidationError(duplicate_title_message(number, title, duplicates))
         draft_path = book.project / "drafts" / f"{datetime.now():%Y-%m-%d}-chapter-{number:04d}.md"
         continuity_dir = book.project / "continuity_v2"
         continuity_dir.mkdir(exist_ok=True)
