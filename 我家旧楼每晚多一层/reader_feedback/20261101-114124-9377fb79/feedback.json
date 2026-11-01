@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "20261101-114124-9377fb79",
+  "book_id": "night-floor",
+  "book_title": "我家旧楼每晚多一层",
+  "chapter": 17,
+  "chapter_file": "C:\\Users\\16007\\Desktop\\小说\\xiaoshuo\\我家旧楼每晚多一层\\chapters\\0017-墙脚.md",
+  "chapter_sha256": "d8148985ece6552e5b8db71c82ca8e6a556cf7630b529209e26e7aee1793da75",
+  "category": "uncomfortable",
+  "category_label": "读着不舒服",
+  "quote": "",
+  "comment": "露出来才准,准这个词不合适,这里应该说知道",
+  "review_mode": "chapter_interview",
+  "review_mode_label": "整章写法审校",
+  "created_at": "2026-11-01T11:41:24.678082+08:00",
+  "original_chapter_sha256": "492b3ca17d102151561af854ddb6770fb73ee54b5250f767ea49683bce8b044e",
+  "direct_fix": {
+    "original": "露出来才准",
+    "replacement": "露出来才知道"
+  }
+}
