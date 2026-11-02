@@ -10,6 +10,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,49 @@ from novel_engine_v2.runner import resolve_codex
 
 ROOT = Path(__file__).resolve().parent
 REVISION_SCOPES = set(service.REVISION_SCOPES)
+CODEX_RETRY_DELAYS = (15, 45)
+TRANSIENT_CODEX_ERRORS = (
+    "workspace routing discovery timed out",
+    "request timed out",
+    "http/request failed",
+    "error sending request",
+    "reconnecting...",
+    "connection reset",
+    "http 429",
+    "http 502",
+    "http 503",
+    "http 504",
+)
+
+
+def run_codex(command: list[str], *, cwd: Path, prompt: str,
+              output: Path, label: str) -> None:
+    """Retry transport failures while preserving the actionable CLI error."""
+    for attempt in range(len(CODEX_RETRY_DELAYS) + 1):
+        output.unlink(missing_ok=True)
+        result = subprocess.run(
+            command, cwd=cwd, input=prompt, text=True,
+            encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        detail = str(getattr(result, "stdout", "") or "")
+        if detail:
+            print(detail, end="" if detail.endswith("\n") else "\n", flush=True)
+        if result.returncode == 0 and output.is_file():
+            return
+        if result.returncode == 0:
+            raise RuntimeError(f"{label}进程未生成结果文件：{output.name}")
+        reason = next((line.strip() for line in reversed(detail.splitlines())
+                       if line.strip() and not line.startswith("ERROR: Reconnecting")), "")
+        transient = any(marker in detail.casefold() for marker in TRANSIENT_CODEX_ERRORS)
+        if transient and attempt < len(CODEX_RETRY_DELAYS):
+            delay = CODEX_RETRY_DELAYS[attempt]
+            print(f"{label}遇到暂时性连接故障，{delay} 秒后自动重试"
+                  f"（{attempt + 2}/{len(CODEX_RETRY_DELAYS) + 1}）：{reason}", flush=True)
+            time.sleep(delay)
+            continue
+        suffix = f"：{reason}" if reason else ""
+        raise RuntimeError(f"{label}进程退出码 {result.returncode}{suffix}")
 
 
 def _evidence_in_text(chapter_text: str, evidence: str) -> bool:
@@ -500,10 +544,8 @@ def write_prose_revision(book_id: str, feedback_id: str, analysis: dict) -> str:
             "--config", 'approval_policy="never"',
             "--output-last-message", str(output), "-",
         ]
-        result = subprocess.run(command, cwd=ROOT, input=instruction,
-                                text=True, encoding="utf-8", errors="replace")
-        if result.returncode:
-            raise RuntimeError(f"正文修订进程退出码 {result.returncode}：{name}")
+        run_codex(command, cwd=ROOT, prompt=instruction, output=output,
+                  label=f"正文修订（{name}）")
         return output
 
     seed_context = ""
@@ -603,10 +645,8 @@ def run_follow_up(book_id: str, feedback_id: str) -> None:
         "--sandbox", "read-only", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]
-    result = subprocess.run(command, cwd=ROOT, input=prompt.read_text(encoding="utf-8"),
-                            text=True, encoding="utf-8", errors="replace")
-    if result.returncode:
-        raise RuntimeError(f"作者连续对话进程退出码 {result.returncode}")
+    run_codex(command, cwd=ROOT, prompt=prompt.read_text(encoding="utf-8"),
+              output=result_path, label="作者连续对话")
     latest_messages = service.read_json(folder / "author_dialogue.json", {}).get("messages", [])
     latest_user = latest_messages[-1] if latest_messages else {}
     learning_only = str(latest_user.get("content", "")).startswith(
@@ -667,16 +707,8 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False,
             "--sandbox", "read-only", "--config", 'approval_policy="never"',
             "--output-last-message", str(result_path), "-",
         ]
-        result = subprocess.run(
-            command,
-            cwd=ROOT,
-            input=prompt.read_text(encoding="utf-8"),
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        if result.returncode:
-            raise RuntimeError(f"整章提问进程退出码 {result.returncode}")
+        run_codex(command, cwd=ROOT, prompt=prompt.read_text(encoding="utf-8"),
+                  output=result_path, label="整章提问")
         interview = parse_chapter_interview_result(
             result_path.read_text(encoding="utf-8")
         )
@@ -743,16 +775,9 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False,
                     "--sandbox", "read-only", "--config", 'approval_policy="never"',
                     "--output-last-message", str(isolated_result), "-",
                 ]
-                blind_process = subprocess.run(
-                    blind_command,
-                    cwd=isolated,
-                    input=blind_prompt.read_text(encoding="utf-8"),
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                )
-                if blind_process.returncode:
-                    raise RuntimeError(f"陌生读者试读进程退出码 {blind_process.returncode}")
+                run_codex(blind_command, cwd=isolated,
+                          prompt=blind_prompt.read_text(encoding="utf-8"),
+                          output=isolated_result, label="陌生读者试读")
                 blind_result_text = isolated_result.read_text(encoding="utf-8")
             service.atomic_text(blind_result_path, blind_result_text)
         blind = parse_blind_reader_result(blind_result_text)
@@ -796,16 +821,8 @@ def run(book_id: str, feedback_id: str, from_interview: bool = False,
         "--sandbox", "read-only", "--config", 'approval_policy="never"',
         "--output-last-message", str(result_path), "-",
     ]
-    result = subprocess.run(
-        command,
-        cwd=ROOT,
-        input=prompt.read_text(encoding="utf-8"),
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if result.returncode:
-        raise RuntimeError(f"作者分析进程退出码 {result.returncode}")
+    run_codex(command, cwd=ROOT, prompt=prompt.read_text(encoding="utf-8"),
+              output=result_path, label="作者分析")
     parsed = parse_result(result_path.read_text(encoding="utf-8"))
     if parsed["revision"] is not None:
         parsed["revision"] = write_prose_revision(book_id, feedback_id, parsed["analysis"])

@@ -16,11 +16,44 @@ from reader_feedback_worker import (
     parse_chapter_interview_result,
     parse_follow_up_result,
     parse_result,
+    run_codex,
     write_prose_revision,
 )
 
 
 class ReaderFeedbackServiceTests(unittest.TestCase):
+    def test_codex_transport_failure_retries_and_discards_stale_result(self) -> None:
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "result.json"
+            output.write_text("stale", encoding="utf-8")
+            attempts = []
+
+            def fake_run(command, **kwargs):
+                attempts.append(output.exists())
+                if len(attempts) == 1:
+                    return SimpleNamespace(returncode=1, stdout="ERROR: workspace routing discovery timed out")
+                output.write_text("fresh", encoding="utf-8")
+                return SimpleNamespace(returncode=0, stdout="")
+
+            with patch("reader_feedback_worker.subprocess.run", side_effect=fake_run), \
+                 patch("reader_feedback_worker.time.sleep") as sleep:
+                run_codex(["codex"], cwd=Path(directory), prompt="审稿",
+                          output=output, label="整章提问")
+            self.assertEqual(attempts, [False, False])
+            self.assertEqual(output.read_text(encoding="utf-8"), "fresh")
+            sleep.assert_called_once_with(15)
+
+    def test_codex_nontransient_error_reports_cause_without_retry(self) -> None:
+        with TemporaryDirectory() as directory:
+            with patch("reader_feedback_worker.subprocess.run", return_value=SimpleNamespace(
+                returncode=1, stdout="ERROR: invalid model name")) as run, \
+                 patch("reader_feedback_worker.time.sleep") as sleep:
+                with self.assertRaisesRegex(RuntimeError, "invalid model name"):
+                    run_codex(["codex"], cwd=Path(directory), prompt="审稿",
+                              output=Path(directory) / "result.json", label="整章提问")
+            run.assert_called_once()
+            sleep.assert_not_called()
+
     def test_chapter_feedback_rewrites_from_scene_seed_and_current_version(self) -> None:
         item = service.create_feedback(self.root, {
             "book_id": "demo", "chapter": 1, "category": "pacing",

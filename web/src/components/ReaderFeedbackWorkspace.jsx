@@ -115,6 +115,16 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     finally { setBusy(false); }
   }
 
+  async function retryFeedback(item) {
+    try {
+      await api("/api/reader-feedback/retry", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, feedback_id: item.id }),
+      });
+      onNotice("已重新启动这条审稿任务"); await load();
+    } catch (error) { onNotice(error.message); }
+  }
+
   async function apply(item) {
     if (!window.confirm("采用后会修改本地章节，并在反馈目录保存原文备份；不会自动发布。继续吗？")) return;
     try {
@@ -270,7 +280,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
         {item.quote && <><small className="quote-label">当时选中的原文（留档，不随正文变化）</small><blockquote>{item.quote}</blockquote></>}
         <p className="reader-comment">“{item.comment}”</p>
         {item.status === "analyzing" && <p className="feedback-progress">{item.status_message}</p>}
-        {item.status === "failed" && <p className="feedback-error">{item.status_message}</p>}
+        {item.status === "failed" && <><p className="feedback-error">{item.status_message}</p><button className="button" onClick={() => retryFeedback(item)}>重新审稿</button></>}
         {item.blind_reader && <div className="blind-reader-review">
           <div className="review-stage-head"><div><small>FIRST-TIME READER</small><h3>陌生读者试读</h3></div><span>{scopeLabel[item.blind_reader.recommended_scope] || item.blind_reader.recommended_scope}</span></div>
           <p>{item.blind_reader.reader_experience}</p>

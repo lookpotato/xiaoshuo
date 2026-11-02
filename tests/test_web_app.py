@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -10,6 +11,26 @@ import web_app
 
 
 class WebAppDataTests(unittest.TestCase):
+    def test_retry_failed_feedback_reuses_record_and_rejects_changed_chapter(self) -> None:
+        with TemporaryDirectory() as temp:
+            chapter = Path(temp) / "chapter.md"
+            chapter.write_bytes("原章节\r\n第二行".encode("utf-8"))
+            item = {
+                "status": "failed", "chapter_file": str(chapter),
+                "chapter_sha256": hashlib.sha256(chapter.read_text(encoding="utf-8").encode("utf-8")).hexdigest(),
+                "book_title": "测试书", "chapter": 18,
+            }
+            with patch.object(web_app.reader_feedback_service, "feedback_item", return_value=item), \
+                 patch.object(web_app.reader_feedback_service, "update_status") as update, \
+                 patch.object(web_app, "launch_command", return_value={"id": "new-run"}) as launch:
+                result = web_app.retry_reader_feedback({"book_id": "demo", "feedback_id": "feedback-id"})
+                self.assertEqual(result["run"]["id"], "new-run")
+                self.assertIn("--feedback-id", launch.call_args.args[0])
+                self.assertEqual(update.call_args.kwargs["status"], "queued")
+                chapter.write_text("改过的章节", encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "章节已变化"):
+                    web_app.retry_reader_feedback({"book_id": "demo", "feedback_id": "feedback-id"})
+
     def test_human_plan_launches_director_worker(self) -> None:
         fake = {"id": "run-id", "status": "running"}
         with patch.object(web_app, "launch_command", return_value=fake) as launch, \

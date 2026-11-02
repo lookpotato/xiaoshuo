@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -268,9 +269,9 @@ def refresh_run(meta: dict) -> dict:
                         handle.seek(max(0, log_path.stat().st_size - 64 * 1024))
                         log_tail = handle.read().decode("utf-8", errors="replace")
                 rewrite = meta.get("kind") == "batch_rewrite"
-                if (rewrite and "批量重写失败：" in log_tail) or '"result": "failed"' in log_tail or "本次运行失败" in log_tail:
+                if (rewrite and "批量重写失败：" in log_tail) or '"result": "failed"' in log_tail or "本次运行失败" in log_tail or "真实读者反馈审稿失败：" in log_tail:
                     meta["status"] = "failed"
-                elif (rewrite and "批量重写：完成第 " in log_tail) or '"result": "success"' in log_tail:
+                elif (rewrite and "批量重写：完成第 " in log_tail) or '"result": "success"' in log_tail or "真实读者反馈分析完成" in log_tail:
                     meta["status"] = "success"
                 else:
                     meta["status"] = "finished"
@@ -726,6 +727,29 @@ def launch_reader_feedback(payload: dict) -> dict:
     }
 
 
+def retry_reader_feedback(payload: dict) -> dict:
+    book_id = str(payload.get("book_id", ""))
+    feedback_id = str(payload.get("feedback_id", ""))
+    item = reader_feedback_service.feedback_item(ROOT, book_id, feedback_id)
+    if item["status"] != "failed":
+        raise ValueError("只有失败的审稿任务可以重新运行")
+    source = Path(item["chapter_file"])
+    if not source.is_file() or hashlib.sha256(
+        source.read_text(encoding="utf-8").encode("utf-8")
+    ).hexdigest() != item["chapter_sha256"]:
+        raise ValueError("章节已变化，请针对当前版本重新提交反馈")
+    command = [sys.executable, str(ROOT / "reader_feedback_worker.py"),
+               "--book", book_id, "--feedback-id", feedback_id]
+    run = launch_command(command, "reader_feedback",
+                         f"《{item['book_title']}》第 {item['chapter']} 章重新审稿")
+    reader_feedback_service.update_status(
+        ROOT, book_id, feedback_id, status="queued",
+        message="正在重新运行失败的审稿任务", run_id=run["id"],
+    )
+    return {"feedback": reader_feedback_service.feedback_item(ROOT, book_id, feedback_id),
+            "run": run}
+
+
 def launch_author_dialogue(payload: dict) -> dict:
     book_id = str(payload.get("book_id", "")).strip()
     feedback_id = str(payload.get("feedback_id", "")).strip()
@@ -897,6 +921,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/book/delete": 16 * 1024,
                 "/api/character-story": 256 * 1024,
                 "/api/reader-feedback": 64 * 1024,
+                "/api/reader-feedback/retry": 16 * 1024,
                 "/api/reader-feedback/apply": 16 * 1024,
                 "/api/reader-feedback/promote": 16 * 1024,
                 "/api/reader-feedback/dialogue": 16 * 1024,
@@ -941,6 +966,9 @@ class AppHandler(BaseHTTPRequestHandler):
                     {"ok": True, **launch_reader_feedback(payload)},
                     HTTPStatus.ACCEPTED,
                 )
+                return
+            if parsed.path == "/api/reader-feedback/retry":
+                self.send_json({"ok": True, **retry_reader_feedback(payload)}, HTTPStatus.ACCEPTED)
                 return
             if parsed.path == "/api/reader-feedback/apply":
                 book_id = str(payload.get("book_id", ""))
