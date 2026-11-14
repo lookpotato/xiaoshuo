@@ -29,6 +29,7 @@ import author_registry
 import reader_feedback_service
 import chapter_admin_service
 import human_draft_service
+import overview_handoff_service
 
 
 ROOT = Path(__file__).resolve().parent
@@ -40,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 11
+API_VERSION = 12
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -649,6 +650,27 @@ def launch_human_plan(payload: dict) -> dict:
     )
 
 
+def launch_overview_handoff(payload: dict, action: str) -> dict:
+    book_id = str(payload.get("book_id", "")).strip()
+    book = registered_book(book_id)
+    chapter = int(payload.get("chapter"))
+    if any(run.get("status") == "running" for run in list_runs(100)):
+        raise ValueError("当前有后台任务正在运行，请等待任务结束")
+    command = [sys.executable, str(ROOT / "overview_handoff_service.py"), action,
+               "--book", book_id, "--chapter", str(chapter)]
+    if action == "prepare":
+        overview_handoff_service.validate_prepare(ROOT, book_id, chapter)
+        label = f"《{book.get('title', book_id)}》第 {chapter} 章生成写前总览"
+    else:
+        overview_handoff_service.validate_pending(ROOT, book_id, chapter, action,
+                                                   payload.get("revision"), payload.get("question"))
+        command.extend(["--revision", str(payload.get("revision", ""))])
+        if action == "ask":
+            command.extend(["--question", str(payload.get("question", ""))])
+        label = f"《{book.get('title', book_id)}》第 {chapter} 章" + ("作者答疑" if action == "ask" else "按总览扩写")
+    return launch_command(command, f"overview_{action}", label)
+
+
 def resume_batch_rewrite(payload: dict) -> dict:
     run_id = str(payload.get("run_id", ""))
     if not SAFE_JOB_ID.fullmatch(run_id):
@@ -873,6 +895,13 @@ class AppHandler(BaseHTTPRequestHandler):
                 registered_book(book_id)
                 self.send_json(human_draft_service.workspace(ROOT, book_id, chapter))
                 return
+            if parsed.path == "/api/overview-handoff":
+                query = parse_qs(parsed.query)
+                book_id = query.get("book_id", [""])[0]
+                chapter = int(query.get("chapter", ["0"])[0])
+                registered_book(book_id)
+                self.send_json(overview_handoff_service.workspace(ROOT, book_id, chapter))
+                return
             if parsed.path == "/api/reader-feedback":
                 query = parse_qs(parsed.query)
                 book_id = query.get("book_id", [""])[0]
@@ -932,6 +961,10 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/human-draft/save": 256 * 1024,
                 "/api/human-draft/plan": 16 * 1024,
                 "/api/human-draft/polish": 16 * 1024,
+                "/api/overview-handoff/save": 256 * 1024,
+                "/api/overview-handoff/prepare": 16 * 1024,
+                "/api/overview-handoff/ask": 16 * 1024,
+                "/api/overview-handoff/expand": 16 * 1024,
                 "/api/run/cancel": 16 * 1024,
             }
             body_limit = body_limits.get(parsed.path, 64 * 1024)
@@ -1038,6 +1071,17 @@ class AppHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/human-draft/plan":
                 self.send_json({"ok": True, "run": launch_human_plan(payload)}, HTTPStatus.ACCEPTED)
                 return
+            if parsed.path == "/api/overview-handoff/save":
+                book_id = str(payload.get("book_id", ""))
+                registered_book(book_id)
+                result = overview_handoff_service.save(ROOT, book_id, int(payload.get("chapter")),
+                                                       payload.get("content"), str(payload.get("revision", "")))
+                self.send_json({"ok": True, **result})
+                return
+            for action in ("prepare", "ask", "expand"):
+                if parsed.path == f"/api/overview-handoff/{action}":
+                    self.send_json({"ok": True, "run": launch_overview_handoff(payload, action)}, HTTPStatus.ACCEPTED)
+                    return
             self.send_error_json("接口不存在", HTTPStatus.NOT_FOUND)
         except settings_service.SettingsConflict as exc:
             self.send_error_json(str(exc), HTTPStatus.CONFLICT)

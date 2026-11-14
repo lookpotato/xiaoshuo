@@ -124,7 +124,8 @@ def accept_deep_edit(run_dir: Path, output: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: bool = False) -> None:
+def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: bool = False,
+            read_only: bool = False) -> None:
     codex = shutil.which("codex")
     if not codex and os.name == "nt":
         local_app_data = os.environ.get("LOCALAPPDATA")
@@ -143,7 +144,7 @@ def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: boo
             [codex, "exec", "--ephemeral", "--skip-git-repo-check",
              "-C", str(isolated_cwd),
              "--add-dir", str(ROOT), "--add-dir", str(run_dir),
-             "--sandbox", "read-only" if capture_candidate else "workspace-write",
+             "--sandbox", "read-only" if capture_candidate or read_only else "workspace-write",
              "--config", 'approval_policy="never"',
              "--output-last-message", str(output), "-"],
             cwd=isolated_cwd,

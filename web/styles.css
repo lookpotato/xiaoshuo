@@ -500,3 +500,7 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .human-guide details { margin-top: 16px; }
 .human-guide summary { cursor: pointer; font-size: 13px; font-weight: 700; }
 @media (max-width: 800px) { .human-compare { grid-template-columns: 1fr; } .human-workspace > .panel { padding: 18px; } }
+.overview-question { width: 100%; min-height: 100px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; font: 14px/1.8 "Microsoft YaHei UI", sans-serif; resize: vertical; }
+.overview-answers { display: grid; gap: 12px; margin-top: 18px; }
+.overview-answers > div { padding: 15px; border-radius: 8px; background: #f4f7f1; white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
+.overview-answers p { margin: 8px 0 0; }
