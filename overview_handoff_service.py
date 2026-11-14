@@ -14,6 +14,12 @@ from novel_v3 import ensure_director_plan, execute, review_and_archive, validate
 
 
 ROOT = Path(__file__).resolve().parent
+ORIGINAL_TABLE_NOTE = (
+    "这里的‘原表’是街道手里的二零二旧登记表：二零二一栏写着‘已退出’，"
+    "但刘桂芳仍实际居住。街道已暂停按空户处理，原表尚未改正。"
+    "表上的旧凭据号与郭冬梅母亲的收条末四位相同，错记的来历还没查清。"
+    "扩写时让读者从当场可见的表格、条目和人物对话中理解这些关系，不要只用‘原表’这个简称带过。"
+)
 
 
 def _hash(text: str) -> str:
@@ -61,6 +67,7 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         "overview": overview, "revision": _hash(overview),
         "plan_stale": plan_revision != meta["plan_revision"],
         "questions": meta.get("questions", []),
+        "term_note": ORIGINAL_TABLE_NOTE if book_id == "night-floor" and "原表" in overview else "",
         "run_dir": str(run),
     }
 
@@ -174,11 +181,19 @@ def ask(root: Path, book_id: str, chapter: int, question: str, revision: str) ->
         f"用户的问题：\n{question.strip()}\n",
         encoding="utf-8",
     )
-    execute(prompt, answer, run, read_only=True)
-    response = _read(answer).strip()
-    if not response:
-        raise ValueError("作者没有返回回答，请重试")
-    meta["questions"].append({"question": question.strip(), "answer": response})
+    exchange = {"question": question.strip(), "answer": "", "status": "running"}
+    meta.setdefault("questions", []).append(exchange)
+    _write_meta(run, meta)
+    try:
+        execute(prompt, answer, run, read_only=True)
+        response = _read(answer).strip()
+        if not response:
+            raise ValueError("作者没有返回回答，请重试")
+    except Exception:
+        exchange["status"] = "failed"
+        _write_meta(run, meta)
+        raise
+    exchange.update({"answer": response, "status": "answered"})
     _write_meta(run, meta)
     return response
 
@@ -190,7 +205,10 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
         raise ValueError("总览版本已变化，请刷新后再扩写")
     if len(overview.strip()) < 50:
         raise ValueError("请先完成写前总览")
-    (run / "approved_overview.md").write_text(overview, encoding="utf-8")
+    approved = overview
+    if book_id == "night-floor" and "原表" in overview:
+        approved += "\n\n## 扩写时需要讲清的旧表\n" + ORIGINAL_TABLE_NOTE + "\n"
+    (run / "approved_overview.md").write_text(approved, encoding="utf-8")
     meta["status"] = "expanding"
     meta["approved_revision"] = revision
     _write_meta(run, meta)

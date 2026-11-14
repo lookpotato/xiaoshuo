@@ -56,6 +56,7 @@ class OverviewHandoffTests(unittest.TestCase):
         def fake_execute(prompt, output, run, **kwargs):
             self.assertTrue(kwargs["read_only"])
             self.assertIn("钥匙", prompt.read_text(encoding="utf-8"))
+            self.assertEqual(service.workspace(self.root, "book", 3)["questions"][-1]["status"], "running")
             output.write_text("钥匙先交给她，动机才成立。", encoding="utf-8")
 
         with patch.object(service, "execute", side_effect=fake_execute):
@@ -63,6 +64,14 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertIn("动机", answer)
         self.assertEqual(service.workspace(self.root, "book", 3)["revision"], initial["revision"])
         self.assertEqual(len(service.workspace(self.root, "book", 3)["questions"]), 1)
+        self.assertEqual(service.workspace(self.root, "book", 3)["questions"][0]["status"], "answered")
+
+    def test_failed_question_is_visible_for_retry(self):
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        with patch.object(service, "execute", side_effect=RuntimeError("模型失败")):
+            with self.assertRaisesRegex(RuntimeError, "模型失败"):
+                service.ask(self.root, "book", 3, "钥匙呢？", revision)
+        self.assertEqual(service.workspace(self.root, "book", 3)["questions"][0]["status"], "failed")
 
     def test_changed_plan_blocks_expansion(self):
         initial = service.workspace(self.root, "book", 3)

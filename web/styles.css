@@ -502,5 +502,12 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 @media (max-width: 800px) { .human-compare { grid-template-columns: 1fr; } .human-workspace > .panel { padding: 18px; } }
 .overview-question { width: 100%; min-height: 100px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; font: 14px/1.8 "Microsoft YaHei UI", sans-serif; resize: vertical; }
 .overview-answers { display: grid; gap: 12px; margin-top: 18px; }
-.overview-answers > div { padding: 15px; border-radius: 8px; background: #f4f7f1; white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
-.overview-answers p { margin: 8px 0 0; }
+.overview-answers { max-height: 620px; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #fafbf8; }
+.overview-exchange { display: grid; gap: 10px; white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
+.overview-exchange + .overview-exchange { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.overview-exchange p { display: grid; gap: 4px; margin: 0; padding: 12px 15px; border-radius: 8px; }
+.overview-exchange strong { font-size: 11px; }
+.overview-user { justify-self: end; max-width: 88%; background: #e8f0e8; }
+.overview-author { justify-self: start; max-width: 94%; background: #fff; border: 1px solid var(--line); }
+.overview-term-note { margin: 12px 0 16px; padding: 14px 16px; border-left: 3px solid var(--green); background: #f4f7f1; border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.8; }
+.overview-term-note p { margin: 5px 0 0; }
