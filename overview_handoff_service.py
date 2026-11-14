@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from novel_engine_v3 import AuthorEngine
+from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.continuity import validate_characters, validate_timeline_head, validate_viewpoint_contract
 from novel_v3 import ensure_director_plan, execute, review_and_archive, validate_scene_seed
 
@@ -208,14 +208,25 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     approved = overview
     if book_id == "night-floor" and "原表" in overview:
         approved += "\n\n## 扩写时需要讲清的旧表\n" + ORIGINAL_TABLE_NOTE + "\n"
+    resume_candidate = (
+        meta.get("candidate_revision") == revision
+        and (run / "candidate.md").is_file()
+    )
     (run / "approved_overview.md").write_text(approved, encoding="utf-8")
     meta["status"] = "expanding"
     meta["approved_revision"] = revision
     _write_meta(run, meta)
     try:
-        for stage in ("draft", "deep_edit"):
-            execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
-                    capture_candidate=stage == "deep_edit")
+        if resume_candidate:
+            print(f"复用第 {chapter:04d} 章候选稿，重新审读后归档。", flush=True)
+            for stale_review in ("reader_review.json", "continuity_review.json", "chronology.json"):
+                (run / stale_review).unlink(missing_ok=True)
+        else:
+            for stage in ("draft", "deep_edit"):
+                execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
+                        capture_candidate=stage == "deep_edit")
+            meta["candidate_revision"] = revision
+            _write_meta(run, meta)
         archived = review_and_archive(run, project, chapter)
     except Exception:
         meta["status"] = "pending"
@@ -243,4 +254,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except V3ValidationError as exc:
+        raise SystemExit(f"V3 错误：{exc}")

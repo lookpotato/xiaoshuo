@@ -73,6 +73,27 @@ class OverviewHandoffTests(unittest.TestCase):
                 service.ask(self.root, "book", 3, "钥匙呢？", revision)
         self.assertEqual(service.workspace(self.root, "book", 3)["questions"][0]["status"], "failed")
 
+    def test_failed_expansion_reuses_candidate_and_reviews_it_again(self):
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        (self.run / "candidate.md").write_text("# 第三章\n候选正文\n", encoding="utf-8")
+        (self.run / "reader_review.json").write_text('{"blocking": ["旧问题"]}', encoding="utf-8")
+        (self.run / "continuity_review.json").write_text('{"blocking": ["旧问题"]}', encoding="utf-8")
+        meta = json.loads((self.run / "overview_handoff.json").read_text(encoding="utf-8"))
+        meta["candidate_revision"] = revision
+        service._write_meta(self.run, meta)
+
+        def review(run, project, chapter):
+            self.assertFalse((run / "reader_review.json").exists())
+            self.assertFalse((run / "continuity_review.json").exists())
+            self.assertEqual((run / "candidate.md").read_text(encoding="utf-8"), "# 第三章\n候选正文\n")
+            return project / "chapters" / "0003.md"
+
+        with patch.object(service, "execute") as execute, patch.object(
+            service, "review_and_archive", side_effect=review
+        ):
+            service.expand(self.root, "book", 3, revision)
+        execute.assert_not_called()
+
     def test_changed_plan_blocks_expansion(self):
         initial = service.workspace(self.root, "book", 3)
         (self.project / "chapter_plans" / "0003.json").write_text("{}", encoding="utf-8")

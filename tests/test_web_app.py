@@ -290,6 +290,18 @@ class WebAppDataTests(unittest.TestCase):
             payload = web_app.run_log("12345678", 20)
         self.assertEqual(payload["error_summary"], "V3 错误：时间线状态没有接上上一章")
 
+    def test_run_log_shows_validation_exception_from_traceback(self) -> None:
+        with TemporaryDirectory() as temp, patch.object(web_app, "RUNS_ROOT", Path(temp)):
+            (Path(temp) / "12345678.log").write_text(
+                "Traceback (most recent call last):\n"
+                "  File \"overview_handoff_service.py\", line 219, in expand\n"
+                "novel_engine_v3.engine.V3ValidationError: 第 0024 章自动返修 3 次后仍有 1 项阻塞\n",
+                encoding="utf-8",
+            )
+            payload = web_app.run_log("12345678", 20)
+        self.assertIn("自动返修 3 次", payload["content"])
+        self.assertIn("自动返修 3 次", payload["error_summary"])
+
     def test_batch_rewrite_progress_is_visible_without_prose(self) -> None:
         lines, hidden = web_app.operational_log_lines(
             "批量重写：正在处理第 3/9 章\n小说正文一段\n"

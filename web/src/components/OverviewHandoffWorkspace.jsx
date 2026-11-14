@@ -39,7 +39,10 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
           window.clearInterval(timer); setRun(null);
           await load();
           if (current.status === "success") onNotice(run.action === "prepare" ? "写前总览已生成，请先审阅和修改" : run.action === "ask" ? "作者已回答问题" : "章节扩写与归档已完成");
-          else setError("任务未完成，请在控制台查看失败原因");
+          else {
+            const failedLog = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=100`);
+            setError(failedLog.error_summary || "任务未完成，请在控制台查看失败原因");
+          }
         }
       } catch (failure) { setError(failure.message); }
     }, 3000);

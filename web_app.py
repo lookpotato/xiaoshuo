@@ -375,6 +375,7 @@ def operational_log_lines(content: str) -> tuple[list[str], bool]:
             or "已由 AI 自动修复" in stripped
             or stripped.startswith("检测到上一轮遗留")
             or "Exception:" in stripped
+            or re.match(r"^[A-Za-z_][\w.]*(?:Error|Exception):", stripped) is not None
             or re.search(r"\b(?:ERROR|WARN)\b", stripped) is not None
             or re.match(
                 r"(?i)^(?:password|passwd|token|cookie|authorization)\b", stripped
@@ -428,7 +429,9 @@ def run_log(run_id: str, tail_lines: int = 240) -> dict:
     error_summary = ""
     for line in reversed(clipped_lines):
         stripped = line.strip()
-        if stripped.startswith("V3 错误："):
+        if stripped.startswith("V3 错误：") or re.match(
+            r"^[A-Za-z_][\w.]*(?:Error|Exception):", stripped
+        ):
             error_summary = stripped
             break
     for line in reversed(clipped_lines):
