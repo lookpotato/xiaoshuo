@@ -62,6 +62,29 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     finally { setBusy(false); }
   }
 
+  async function askAuthor() {
+    if (busy || run || question.trim().length < 2 || data?.plan_stale) return;
+    setBusy(true); setError("");
+    try {
+      let revision = data.revision;
+      if (text !== data.overview) {
+        const saved = await api("/api/overview-handoff/save", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ book_id: book.id, chapter, content: text, revision }),
+        });
+        revision = saved.revision;
+        setData((current) => ({ ...current, overview: text, revision }));
+      }
+      const result = await api("/api/overview-handoff/ask", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, chapter, revision, question }),
+      });
+      setRun({ id: result.run.id, action: "ask" }); onRunStarted(result.run);
+      setQuestion(""); onNotice("当前总览已保存，作者正在回答");
+    } catch (failure) { setError(failure.message); }
+    finally { setBusy(false); }
+  }
+
   const dirty = data?.status === "pending" && text !== data.overview;
   return <div className="human-workspace overview-handoff">
     <article className="panel human-intro">
@@ -74,13 +97,13 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}
         <textarea aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />
         <div className="human-actions"><button className="button primary" disabled={busy || !!run || !dirty || data.plan_stale} onClick={save}>保存总览</button><button className="button ghost" disabled={busy || !!run || dirty || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>确认总览并扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
-        {dirty && <p className="feedback">有未保存修改；保存后才能提问或扩写。</p>}
+        {dirty && <p className="feedback">有未保存修改；提问时会自动保存，扩写前请先保存。</p>}
         {data.status === "expanding" && <p className="feedback">已交给 AI 扩写。若任务已停止或失败，可用保存的总览重试。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("expand")}>重试扩写</button></p>}
         {data.status === "archived" && <p className="feedback">本章已按确认的总览完成归档。</p>}
       </article>
-      {data.status === "pending" && <article className="panel human-guide"><h2>问作者 AI</h2><p>指出逻辑、人物动机或场景安排的问题。作者会简短回答；你决定是否把建议写回总览。</p>
+      {data.status === "pending" && <article className="panel human-guide"><h2>问作者 AI</h2><p>指出逻辑、人物动机或场景安排的问题。提问时会自动保存当前总览；作者会简短回答，你决定是否把建议写回总览。</p>
         <textarea className="overview-question" aria-label="向作者提问" placeholder="例如：这个人物为什么此时愿意交出钥匙？" value={question} onChange={(event) => setQuestion(event.target.value)} />
-        <div className="human-actions"><button className="button ghost" disabled={busy || !!run || dirty || data.plan_stale || question.trim().length < 2} onClick={() => launch("ask")}>询问作者</button></div>
+        <div className="human-actions"><button className="button ghost" disabled={busy || !!run || data.plan_stale || question.trim().length < 2} onClick={askAuthor}>询问作者</button></div>
         {!!data.questions?.length && <div className="overview-answers">{data.questions.map((item, index) => <div key={index}><strong>你：{item.question}</strong><p>作者：{item.answer}</p></div>)}</div>}
       </article>}
     </>}
