@@ -21,6 +21,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
   const [chapter, setChapter] = useState(null);
   const [items, setItems] = useState([]);
   const [versions, setVersions] = useState([]);
+  const [manualEdits, setManualEdits] = useState([]);
   const [selectedVersion, setSelectedVersion] = useState("current");
   const [receipt, setReceipt] = useState(null);
   const [feedbackRuns, setFeedbackRuns] = useState([]);
@@ -45,7 +46,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
   useEffect(() => {
     const available = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
     setChapterNumber(available[0]?.number || 0);
-    setChapter(null); setItems([]); setVersions([]); setSelectedVersion("current");
+    setChapter(null); setItems([]); setVersions([]); setManualEdits([]); setSelectedVersion("current");
     setReceipt(null); setQuote(""); setComment(""); setFeedbackRuns([]); setSelectedFeedbackRun(null); setFeedbackRunLog(null);
     setInterviewAnswers({});
     setLearningDrafts({});
@@ -59,7 +60,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
         api(`/api/chapter?book_id=${encodeURIComponent(book.id)}&number=${chapterNumber}`),
         api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`),
       ]);
-      setChapter(feedback.current || latestChapter); setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
+      setChapter(feedback.current || latestChapter); setItems(feedback.items); setVersions(feedback.versions || []); setManualEdits(feedback.manual_edits || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
     } catch (error) { onNotice(error.message); }
   }, [book.id, chapterNumber, onNotice]);
 
@@ -69,7 +70,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
     const timer = window.setInterval(async () => {
       try {
         const feedback = await api(`/api/reader-feedback?book_id=${encodeURIComponent(book.id)}&chapter=${chapterNumber}`);
-        setItems(feedback.items); setVersions(feedback.versions || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
+        setItems(feedback.items); setVersions(feedback.versions || []); setManualEdits(feedback.manual_edits || []); setCategories(feedback.categories); setFeedbackRuns(feedback.runs || []);
         if (selectedVersion === "current") setChapter(feedback.current);
       } catch { /* 下一次轮询继续 */ }
     }, 3000);
@@ -159,18 +160,32 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
   }
 
   async function saveEdit() {
-    if (busy || !editing || apiVersion < 13 || editText === chapter?.content) return;
+    if (busy || !editing || apiVersion < 14 || editText === chapter?.content) return;
     setBusy(true); setEditError("");
     try {
       const result = await api("/api/reader-feedback/manual-edit", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, content: editText, sha256: editSha }),
       });
-      setChapter(result.current); setVersions(result.versions || []);
+      setChapter(result.current); setVersions(result.versions || []); setManualEdits(result.manual_edits || []);
       setReceipt(result.receipt); setSelectedVersion("current"); setEditing(false);
-      onNotice(`第 ${chapterNumber} 章已保存，修改前版本可在草稿箱查看`);
+      onNotice(result.analysis_error ? `正文已保存，AI 分析未启动：${result.analysis_error}` : `第 ${chapterNumber} 章已保存，AI 正在对比修改前后正文`);
       await load();
     } catch (error) { setEditError(error.message); }
+    finally { setBusy(false); }
+  }
+
+  async function retryManualAnalysis(edit) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await api("/api/reader-feedback/manual-edit/retry", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, edit_id: edit.id }),
+      });
+      setManualEdits(result.manual_edits || []);
+      onNotice("已重新启动这次修改的 AI 分析");
+    } catch (error) { onNotice(error.message); }
     finally { setBusy(false); }
   }
 
@@ -248,7 +263,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
 
   return <section className="reader-feedback-page">
     <article className="panel feedback-intro">
-      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>读者反馈</h2><p>你说读到哪里不对劲，作者会一次列出最多四个要点。你在一个框里按编号回复，再看修订建议。</p></div>
+      <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>读者反馈</h2><p>你可以直接修改正文；保存后会自动对比原文，由 AI 分析修改效果和可吸收的写法。也可以留言，让作者给出修订建议。</p></div>
       <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setSelectedVersion("current"); setReceipt(null); setQuote(""); setEditing(false); setEditError(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
     </article>
 
@@ -256,11 +271,13 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
       <div><strong>第 {receipt.chapter} 章更新完成</strong><span>{new Date(receipt.applied_at).toLocaleString("zh-CN")} · 当前已显示最新正式稿</span></div>
       <p>旧版本已收入草稿箱；{receipt.word_count ? `正文现为 ${receipt.word_count} 字。` : "最新正式稿已经重新载入。"}{receipt.invalidated_checks?.length ? `已撤销过期的${receipt.invalidated_checks.join("、")}，重新验收前不会发布。` : "本次没有需要撤销的旧验收。"}</p>
     </article>}
-    {apiVersion < 13 && <div className="stale-version-warning" role="alert">请重启工作台服务，启用正文直接编辑功能。</div>}
+    {apiVersion < 14 && <div className="stale-version-warning" role="alert">请重启工作台服务，启用保存后的自动对比分析。</div>}
+
+    {manualEdits.length > 0 && <article className="panel manual-edit-history"><div className="panel-head"><div><p className="eyebrow">YOUR EDITS</p><h2>手动修改与 AI 复盘</h2></div><span className="count-label">{manualEdits.length} 次</span></div><p>每次保存都保留当时的原文和修改稿。以下分析只供你判断，不会自动写入长期规则。</p>{manualEdits.slice(0, 6).map((edit, index) => <details key={edit.id} defaultOpen={index === 0}><summary>{new Date(edit.receipt.applied_at).toLocaleString("zh-CN")} · {edit.status === "completed" ? "分析完成" : edit.status === "failed" ? "分析失败" : edit.status === "unavailable" ? "旧记录无分析" : "AI 正在分析"}</summary><div className="manual-edit-analysis"><h3>原文对比</h3><pre>{edit.comparison || "此记录保存时尚未生成逐行对比。"}{edit.comparison_truncated ? "\n…对比过长，已截取前段" : ""}</pre><h3>写法复盘</h3>{edit.status === "completed" ? <pre>{edit.analysis}</pre> : <p>{edit.status === "failed" || edit.status === "unavailable" ? edit.error || "分析失败，可在运行记录查看日志。" : "AI 正在阅读本次修改，完成后会显示在这里。"}</p>}{["failed", "unavailable"].includes(edit.status) && edit.can_analyze && <button className="button ghost" disabled={busy} onClick={() => retryManualAnalysis(edit)}>{edit.status === "unavailable" ? "补做分析" : "重新分析"}</button>}</div></details>)}</article>}
 
     <div className="feedback-workspace">
       <article className="panel feedback-reader" onMouseUp={captureSelection} ref={readerRef}>
-        <div className="feedback-reader-head"><span>{editing ? "正在编辑最新正式稿" : isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><div className="feedback-reader-tools"><small>{isCurrent ? (reviewMode === "chapter_interview" ? "整章阅读，不针对单句圈选" : "拖动选中文字，即可带入右侧反馈") : "历史版本仅供对照，不能在旧稿上继续留言"}</small>{isCurrent && !editing && <button className="button ghost" disabled={apiVersion < 13} onClick={beginEdit}>编辑正文</button>}</div></div>
+        <div className="feedback-reader-head"><span>{editing ? "正在编辑最新正式稿" : isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><div className="feedback-reader-tools"><small>{isCurrent ? (reviewMode === "chapter_interview" ? "整章阅读，不针对单句圈选" : "拖动选中文字，即可带入右侧反馈") : "历史版本仅供对照，不能在旧稿上继续留言"}</small>{isCurrent && !editing && <button className="button ghost" disabled={apiVersion < 14} onClick={beginEdit}>编辑正文</button>}</div></div>
         {editing ? <div className="feedback-manual-editor"><p>直接修改正文并保存。章节标题保持原样；修改前版本会放入草稿箱，过期验收会撤销。</p><textarea aria-label="编辑章节正文" value={editText} onChange={(event) => setEditText(event.target.value)} /><div className="feedback-manual-actions"><button className="button primary" disabled={busy || editText === chapter?.content} onClick={saveEdit}>{busy ? "保存中…" : "保存修改"}</button><button className="button ghost" disabled={busy} onClick={() => { setEditing(false); setEditError(""); }}>取消</button></div>{editError && <p className="feedback-error" role="alert">{editError}</p>}</div> : <><h2>{lines[0]?.replace(/^#\s*/, "")}</h2>{lines.slice(1).filter((line) => line.trim() && !/^---$/.test(line.trim()) && !/^## Metadata/.test(line)).map((line, index) => <p key={index}>{line.replace(/^#+\s*/, "")}</p>)}</>}
       </article>
 
@@ -269,7 +286,7 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
           <div className="panel-head"><div><p className="eyebrow">FEEDBACK RUNS</p><h2>读者反馈运行记录</h2></div><span className="count-label">{feedbackRuns.length} 条</span></div>
           <p className="panel-copy">这里显示本章的整章提问、作者判断和连续对话正在运行什么。</p>
           <div className="feedback-run-list">{feedbackRuns.length ? feedbackRuns.map((run) => <div className={`feedback-run-row ${run.id === selectedFeedbackRun?.id ? "active" : ""}`} key={run.id}>
-            <div className="feedback-run-top"><strong>{run.kind === "reader_feedback" ? "首次审稿" : run.kind === "reader_feedback_dialogue" ? "作者连续对话" : "作者生成修订"}</strong><span className={`status ${run.status}`}>{runStatusLabel[run.status] || run.status}</span></div>
+            <div className="feedback-run-top"><strong>{run.kind === "reader_feedback" ? "首次审稿" : run.kind === "reader_feedback_dialogue" ? "作者连续对话" : run.kind === "manual_edit_analysis" ? "手动修改分析" : "作者生成修订"}</strong><span className={`status ${run.status}`}>{runStatusLabel[run.status] || run.status}</span></div>
             <small>{run.started_at}{run.exit_code != null ? ` · 退出码 ${run.exit_code}` : ""}</small>
             <button className="log-button" onClick={() => openFeedbackRun(run)}>{run.id === selectedFeedbackRun?.id ? "刷新日志" : "查看日志"}</button>
           </div>) : <div className="empty">本章暂无后台运行记录</div>}</div>

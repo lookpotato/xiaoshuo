@@ -41,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 13
+API_VERSION = 14
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -805,6 +805,26 @@ def launch_author_dialogue(payload: dict) -> dict:
     return {"dialogue": queued["dialogue"], "run": run}
 
 
+def launch_manual_edit_analysis(book_id: str, chapter: int, edit_id: str) -> dict:
+    reader_feedback_service.prepare_manual_edit_analysis(ROOT, book_id, chapter, edit_id)
+    book = registered_book(book_id)
+    reader_feedback_service.update_manual_edit_status(
+        ROOT, book_id, chapter, edit_id, "queued",
+    )
+    try:
+        return launch_command(
+            [sys.executable, str(ROOT / "manual_edit_learning_worker.py"),
+             "--book", book_id, "--chapter", str(chapter), "--edit-id", edit_id],
+            "manual_edit_analysis",
+            f"《{book.get('title', book_id)}》第 {chapter} 章手动修改分析",
+        )
+    except Exception as exc:
+        reader_feedback_service.update_manual_edit_status(
+            ROOT, book_id, chapter, edit_id, "failed", str(exc),
+        )
+        raise
+
+
 def launch_interview_author_review(payload: dict) -> dict:
     book_id = str(payload.get("book_id", "")).strip()
     feedback_id = str(payload.get("feedback_id", "")).strip()
@@ -914,7 +934,8 @@ class AppHandler(BaseHTTPRequestHandler):
                 title = str(book.get("title", book_id))
                 feedback_runs = [
                     run for run in list_runs(60)
-                    if str(run.get("kind", "")).startswith("reader_feedback")
+                    if (str(run.get("kind", "")).startswith("reader_feedback")
+                        or run.get("kind") == "manual_edit_analysis")
                     and title in str(run.get("label", ""))
                     and (chapter is None or f"第 {chapter} 章" in str(run.get("label", "")))
                 ]
@@ -929,6 +950,9 @@ class AppHandler(BaseHTTPRequestHandler):
                     payload.update(reader_feedback_service.chapter_versions(
                         ROOT, book_id, chapter
                     ))
+                    payload["manual_edits"] = reader_feedback_service.manual_edit_history(
+                        ROOT, book_id, chapter
+                    )
                 self.send_json(payload)
                 return
             self.serve_static(parsed.path)
@@ -959,6 +983,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/dialogue": 16 * 1024,
                 "/api/reader-feedback/interview-answers": 64 * 1024,
                 "/api/reader-feedback/manual-edit": 1024 * 1024,
+                "/api/reader-feedback/manual-edit/retry": 16 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
@@ -1019,13 +1044,38 @@ class AppHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/reader-feedback/manual-edit":
                 book_id = str(payload.get("book_id", ""))
-                self.send_json({
-                    "ok": True,
-                    **reader_feedback_service.save_manual_revision(
-                        ROOT, book_id, int(payload.get("chapter")),
-                        payload.get("content"), payload.get("sha256"),
-                    ),
-                })
+                chapter = int(payload.get("chapter"))
+                saved = reader_feedback_service.save_manual_revision(
+                    ROOT, book_id, chapter, payload.get("content"), payload.get("sha256"),
+                )
+                edit_id = saved["receipt"]["edit_id"]
+                run = None
+                analysis_error = ""
+                try:
+                    run = launch_manual_edit_analysis(book_id, chapter, edit_id)
+                except Exception as exc:
+                    analysis_error = str(exc)
+                    reader_feedback_service.update_manual_edit_status(
+                        ROOT, book_id, chapter, edit_id, "failed", analysis_error,
+                    )
+                self.send_json({"ok": True, **saved, "run": run,
+                                "analysis_error": analysis_error,
+                                "manual_edits": reader_feedback_service.manual_edit_history(
+                                    ROOT, book_id, chapter,
+                                )})
+                return
+            if parsed.path == "/api/reader-feedback/manual-edit/retry":
+                book_id = str(payload.get("book_id", ""))
+                chapter = int(payload.get("chapter"))
+                edit_id = str(payload.get("edit_id", ""))
+                record = reader_feedback_service.manual_edit_record(ROOT, book_id, chapter, edit_id)
+                if record["status"] not in {"failed", "unavailable"}:
+                    raise ValueError("只有失败或旧版手动修改记录可以重新分析")
+                run = launch_manual_edit_analysis(book_id, chapter, edit_id)
+                self.send_json({"ok": True, "run": run,
+                                "manual_edits": reader_feedback_service.manual_edit_history(
+                                    ROOT, book_id, chapter,
+                                )}, HTTPStatus.ACCEPTED)
                 return
             if parsed.path == "/api/reader-feedback/promote":
                 book_id = str(payload.get("book_id", ""))

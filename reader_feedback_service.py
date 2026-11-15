@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import difflib
 import json
 import os
 import re
@@ -101,6 +102,13 @@ def _body_text(value: str) -> str:
 
 def _body_hanzi_count(value: str) -> int:
     return sum("\u4e00" <= char <= "\u9fff" for char in _body_text(value))
+
+
+def _manual_diff(before: str, after: str) -> str:
+    return "\n".join(difflib.unified_diff(
+        _narrative(before).splitlines(), _narrative(after).splitlines(),
+        fromfile="修改前", tofile="修改后", lineterm="",
+    )) + "\n"
 
 
 def _validate_revision_scope(
@@ -491,6 +499,10 @@ def save_manual_revision(root: Path, book_id: str, chapter: int,
         edit_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
         folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
         atomic_text(folder / "before.md", current)
+        atomic_text(folder / "after.md", revised)
+        comparison = _manual_diff(current, revised)
+        atomic_text(folder / "diff.md", comparison)
+        atomic_json(folder / "analysis_status.json", {"status": "queued", "error": ""})
         atomic_text(chapter_path, revised)
         invalidated = []
         for directory, label in (
@@ -510,10 +522,72 @@ def save_manual_revision(root: Path, book_id: str, chapter: int,
             "previous_sha256": current_sha,
             "current_sha256": hashlib.sha256(revised.encode("utf-8")).hexdigest(),
             "backup": str((folder / "before.md").relative_to(project)),
+            "edit_id": edit_id,
             "invalidated_checks": invalidated,
         }
         atomic_json(folder / "receipt.json", receipt)
     return {"receipt": receipt, **chapter_versions(root, book_id, chapter)}
+
+
+def manual_edit_record(root: Path, book_id: str, chapter: int, edit_id: str) -> dict:
+    if not SAFE_ID.fullmatch(edit_id):
+        raise ValueError("手动修改记录编号无效")
+    _, project = _book(root, book_id)
+    folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
+    receipt = read_json(folder / "receipt.json")
+    if not isinstance(receipt, dict) or receipt.get("chapter") != chapter:
+        raise ValueError("找不到手动修改记录")
+    state = read_json(folder / "analysis_status.json", {}) or {}
+    analysis = (folder / "analysis.md").read_text(encoding="utf-8") if (folder / "analysis.md").is_file() else ""
+    comparison = (folder / "diff.md").read_text(encoding="utf-8") if (folder / "diff.md").is_file() else ""
+    after = folder / "after.md"
+    before = folder / "before.md"
+    recoverable = after.is_file()
+    if not recoverable and before.is_file():
+        current = _chapter(project, chapter).read_text(encoding="utf-8")
+        recoverable = hashlib.sha256(current.encode("utf-8")).hexdigest() == receipt.get("current_sha256")
+        if recoverable and not comparison:
+            comparison = _manual_diff(before.read_text(encoding="utf-8"), current)
+    return {
+        "id": edit_id, "receipt": receipt,
+        "status": state.get("status", "unavailable"),
+        "error": state.get("error", "此记录保存于自动分析功能启用前。"),
+        "comparison": comparison[:30_000], "comparison_truncated": len(comparison) > 30_000,
+        "analysis": analysis[:16_000],
+        "can_analyze": recoverable,
+    }
+
+
+def manual_edit_history(root: Path, book_id: str, chapter: int) -> list[dict]:
+    _, project = _book(root, book_id)
+    base = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}"
+    return [manual_edit_record(root, book_id, chapter, folder.name)
+            for folder in sorted(base.iterdir(), reverse=True)[:20]
+            if folder.is_dir() and SAFE_ID.fullmatch(folder.name)] if base.is_dir() else []
+
+
+def update_manual_edit_status(root: Path, book_id: str, chapter: int,
+                              edit_id: str, status: str, error: str = "") -> None:
+    manual_edit_record(root, book_id, chapter, edit_id)
+    _, project = _book(root, book_id)
+    folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
+    atomic_json(folder / "analysis_status.json", {"status": status, "error": error[:1500]})
+
+
+def prepare_manual_edit_analysis(root: Path, book_id: str, chapter: int,
+                                 edit_id: str) -> None:
+    record = manual_edit_record(root, book_id, chapter, edit_id)
+    if not record["can_analyze"]:
+        raise ValueError("这次修改后的原文已变化，无法准确补做分析")
+    _, project = _book(root, book_id)
+    folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
+    after = folder / "after.md"
+    if not after.is_file():
+        current = _chapter(project, chapter).read_text(encoding="utf-8")
+        atomic_text(after, current)
+        atomic_text(folder / "diff.md", _manual_diff(
+            (folder / "before.md").read_text(encoding="utf-8"), current,
+        ))
 
 
 def _learning_candidate(analysis: dict) -> dict:

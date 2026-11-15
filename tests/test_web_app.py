@@ -302,6 +302,18 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("自动返修 3 次", payload["content"])
         self.assertIn("自动返修 3 次", payload["error_summary"])
 
+    def test_manual_edit_analysis_launches_background_worker(self) -> None:
+        with patch.object(web_app.reader_feedback_service, "prepare_manual_edit_analysis"), patch.object(
+            web_app.reader_feedback_service, "update_manual_edit_status"
+        ) as update, patch.object(web_app, "registered_book", return_value={"title": "测试书"}), patch.object(
+            web_app, "launch_command", return_value={"id": "run-12345"}
+        ) as launch:
+            result = web_app.launch_manual_edit_analysis("demo", 3, "edit-12345")
+        self.assertEqual(result["id"], "run-12345")
+        self.assertEqual(launch.call_args.args[1], "manual_edit_analysis")
+        self.assertIn("manual_edit_learning_worker.py", launch.call_args.args[0][1])
+        update.assert_called_once_with(web_app.ROOT, "demo", 3, "edit-12345", "queued")
+
     def test_batch_rewrite_progress_is_visible_without_prose(self) -> None:
         lines, hidden = web_app.operational_log_lines(
             "批量重写：正在处理第 3/9 章\n小说正文一段\n"

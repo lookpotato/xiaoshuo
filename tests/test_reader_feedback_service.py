@@ -377,6 +377,11 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertEqual(saved["versions"][0]["content"], current["content"])
         self.assertIn("- word_count: ", self.chapter.read_text(encoding="utf-8"))
         self.assertNotIn("- word_count: 9999", self.chapter.read_text(encoding="utf-8"))
+        edit = service.manual_edit_history(self.root, "demo", 1)[0]
+        self.assertEqual(edit["status"], "queued")
+        self.assertIn("-甲把门推开。", edit["comparison"])
+        self.assertIn("+甲慢慢把门推开。", edit["comparison"])
+        self.assertTrue((self.project / "reader_feedback" / "manual_edits" / "0001" / edit["id"] / "after.md").is_file())
 
     def test_manual_edit_rejects_stale_version_without_overwriting(self) -> None:
         current = service.chapter_versions(self.root, "demo", 1)["current"]
@@ -388,6 +393,26 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
                 current["sha256"],
             )
         self.assertIn("新补一句。", self.chapter.read_text(encoding="utf-8"))
+
+    def test_older_manual_edit_can_recover_exact_after_version(self) -> None:
+        current = service.chapter_versions(self.root, "demo", 1)["current"]
+        saved = service.save_manual_revision(
+            self.root, "demo", 1,
+            current["content"].replace("甲把门推开。", "甲慢慢把门推开。"),
+            current["sha256"],
+        )
+        edit_id = saved["receipt"]["edit_id"]
+        folder = self.project / "reader_feedback" / "manual_edits" / "0001" / edit_id
+        (folder / "after.md").unlink()
+        (folder / "diff.md").unlink()
+        (folder / "analysis_status.json").unlink()
+        old = service.manual_edit_record(self.root, "demo", 1, edit_id)
+        self.assertEqual(old["status"], "unavailable")
+        self.assertTrue(old["can_analyze"])
+        self.assertIn("+甲慢慢把门推开。", old["comparison"])
+        service.prepare_manual_edit_analysis(self.root, "demo", 1, edit_id)
+        self.assertTrue((folder / "after.md").is_file())
+        self.assertTrue((folder / "diff.md").is_file())
 
     def test_worker_result_requires_revision_only_when_author_accepts(self) -> None:
         parsed = parse_result(json.dumps({

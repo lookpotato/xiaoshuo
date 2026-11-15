@@ -288,6 +288,13 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .feedback-manual-editor p { color: var(--muted); font-size: 12px; line-height: 1.7; }
 .feedback-manual-editor textarea { width: 100%; min-height: 58vh; padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: #fffefa; color: var(--ink); font: 15px/1.85 "Microsoft YaHei UI", sans-serif; resize: vertical; }
 .feedback-manual-actions { display: flex; gap: 9px; margin-top: 12px; }
+.manual-edit-history { padding: 19px 22px; }
+.manual-edit-history > p { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.manual-edit-history details { border-top: 1px solid var(--line); padding: 10px 0; }
+.manual-edit-history summary { cursor: pointer; font-size: 12px; font-weight: 700; }
+.manual-edit-analysis h3 { margin: 15px 0 7px; font-size: 12px; }
+.manual-edit-analysis pre { max-height: 360px; overflow: auto; margin: 0; padding: 13px; border-radius: 8px; background: #f7f4ee; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.75 "Microsoft YaHei UI", sans-serif; }
+.manual-edit-analysis p { color: var(--muted); font-size: 12px; }
 .feedback-reader h2 { margin-bottom: 30px; font-size: 28px; }
 .feedback-reader p { margin-bottom: 1.1em; }
 .feedback-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
