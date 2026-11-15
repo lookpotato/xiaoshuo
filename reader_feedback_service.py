@@ -39,6 +39,7 @@ MAX_DIALOGUE_MESSAGE_CHARS = 5000
 MAX_INTERVIEW_ANSWER_CHARS = 5000
 PROMOTION_SCOPES = {"book": "本书", "author": "作者", "shared_language": "中文语言库"}
 PROMOTION_LOCK = threading.RLock()
+MANUAL_EDIT_LOCK = threading.RLock()
 
 
 def read_json(path: Path, default=None):
@@ -406,6 +407,14 @@ def chapter_versions(root: Path, book_id: str, chapter: int) -> dict:
             label=f"生成草稿 · {path.stem.split('-chapter-')[0]}",
         ))
 
+    for path in sorted((project / "reader_feedback" / "manual_edits" / f"{chapter:04d}").glob("*/before.md"), reverse=True):
+        versions.append(_version_payload(
+            path,
+            version_id=f"manual:{path.parent.name}",
+            kind="before_manual_edit",
+            label="手动修改前备份",
+        ))
+
     for item in list_feedback(root, book_id, chapter):
         folder = _feedback_dir(root, book_id, str(item["id"]))
         applied_at = item.get("applied_at") or item.get("created_at")
@@ -439,6 +448,72 @@ def chapter_versions(root: Path, book_id: str, chapter: int) -> dict:
         },
         "versions": versions[:60],
     }
+
+
+def save_manual_revision(root: Path, book_id: str, chapter: int,
+                         content: str, expected_sha256: str) -> dict:
+    """Save an author's direct edit, preserving the former chapter for comparison."""
+    if not isinstance(content, str) or not 1 <= len(content) <= 200_000:
+        raise ValueError("正文内容长度无效")
+    if not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+        raise ValueError("章节版本标识无效")
+    _, project = _book(root, book_id)
+    chapter_path = _chapter(project, chapter)
+    with MANUAL_EDIT_LOCK:
+        current = chapter_path.read_text(encoding="utf-8")
+        current_sha = hashlib.sha256(current.encode("utf-8")).hexdigest()
+        if current_sha != expected_sha256:
+            raise ValueError("章节已在别处更新，请重新载入后再保存")
+        narrative = _narrative(content.replace("\r\n", "\n")).strip()
+        current_narrative = _narrative(current)
+        if narrative == current_narrative:
+            raise ValueError("正文没有修改")
+        if not narrative.splitlines() or narrative.splitlines()[0] != current_narrative.splitlines()[0]:
+            raise ValueError("手动修改请保留原章节标题")
+        count = _body_hanzi_count(narrative)
+        if count < max(100, int(_body_hanzi_count(current) * 0.6)):
+            raise ValueError("正文缩短过多，请检查是否误删了章节内容")
+        marker = re.search(r"\n---\s*\n+\s*##\s+Metadata\b", current, re.I)
+        if marker:
+            metadata = current[marker.start():]
+            if re.search(r"(?m)^\s*-\s*word_count\s*:", metadata):
+                metadata = _refresh_word_count(metadata, count)
+            else:
+                metadata = metadata.rstrip() + f"\n- word_count: {count}\n"
+        else:
+            metadata = (
+                f"\n\n---\n\n## Metadata\n\n- chapter_number: {chapter}\n"
+                f"- word_count: {count}\n- upload_status: not_uploaded\n"
+            )
+        revised = narrative + ("\n" if marker else "") + metadata
+        if not revised.endswith("\n"):
+            revised += "\n"
+        edit_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
+        folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
+        atomic_text(folder / "before.md", current)
+        atomic_text(chapter_path, revised)
+        invalidated = []
+        for directory, label in (
+            ("reader_checks", "读者验收"), ("literary_reviews", "文学终审"),
+            ("module_reports", "创作能力报告"), ("chapter_reviews", "章节审读"),
+        ):
+            artifact = project / directory / f"{chapter:04d}.json"
+            if artifact.is_file():
+                atomic_text(folder / f"{directory}.json", artifact.read_text(encoding="utf-8"))
+                artifact.unlink()
+                invalidated.append(label)
+        receipt = {
+            "chapter": chapter,
+            "filename": chapter_path.name,
+            "applied_at": datetime.now().astimezone().isoformat(),
+            "word_count": count,
+            "previous_sha256": current_sha,
+            "current_sha256": hashlib.sha256(revised.encode("utf-8")).hexdigest(),
+            "backup": str((folder / "before.md").relative_to(project)),
+            "invalidated_checks": invalidated,
+        }
+        atomic_json(folder / "receipt.json", receipt)
+    return {"receipt": receipt, **chapter_versions(root, book_id, chapter)}
 
 
 def _learning_candidate(analysis: dict) -> dict:

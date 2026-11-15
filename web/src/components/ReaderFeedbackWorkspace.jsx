@@ -15,7 +15,7 @@ const reviewModes = [
   { id: "chapter_interview", title: "整章写法审校", note: "读完整章后审校人物说话与行动；给出更自然的中文写法" },
 ];
 
-export default function ReaderFeedbackWorkspace({ book, onNotice }) {
+export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) {
   const readableChapters = book.chapters.filter((item) => item.number <= book.last_completed_chapter);
   const [chapterNumber, setChapterNumber] = useState(readableChapters[0]?.number || 0);
   const [chapter, setChapter] = useState(null);
@@ -36,6 +36,10 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   const [interviewAnswers, setInterviewAnswers] = useState({});
   const [applyErrors, setApplyErrors] = useState({});
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [editSha, setEditSha] = useState("");
+  const [editError, setEditError] = useState("");
   const readerRef = useRef(null);
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     setReceipt(null); setQuote(""); setComment(""); setFeedbackRuns([]); setSelectedFeedbackRun(null); setFeedbackRunLog(null);
     setInterviewAnswers({});
     setLearningDrafts({});
+    setEditing(false); setEditText(""); setEditError("");
   }, [book.id, book.last_completed_chapter]);
 
   const load = useCallback(async () => {
@@ -147,6 +152,28 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
     }
   }
 
+  function beginEdit() {
+    if (!chapter || selectedVersion !== "current") return;
+    setEditText(chapter.content); setEditSha(chapter.sha256);
+    setEditError(""); setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (busy || !editing || apiVersion < 13 || editText === chapter?.content) return;
+    setBusy(true); setEditError("");
+    try {
+      const result = await api("/api/reader-feedback/manual-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, content: editText, sha256: editSha }),
+      });
+      setChapter(result.current); setVersions(result.versions || []);
+      setReceipt(result.receipt); setSelectedVersion("current"); setEditing(false);
+      onNotice(`第 ${chapterNumber} 章已保存，修改前版本可在草稿箱查看`);
+      await load();
+    } catch (error) { setEditError(error.message); }
+    finally { setBusy(false); }
+  }
+
   async function requestChapterRewrite(item) {
     const error = applyErrors[item.id] || "当前候选修订不符合整章要求";
     if (["queued", "responding"].includes(item.author_dialogue_status)) return;
@@ -222,19 +249,19 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
   return <section className="reader-feedback-page">
     <article className="panel feedback-intro">
       <div><p className="eyebrow">CO-AUTHOR REVIEW</p><h2>读者反馈</h2><p>你说读到哪里不对劲，作者会一次列出最多四个要点。你在一个框里按编号回复，再看修订建议。</p></div>
-      <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setSelectedVersion("current"); setReceipt(null); setQuote(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
+      <label>当前章节<select value={chapterNumber} onChange={(event) => { setChapterNumber(Number(event.target.value)); setSelectedVersion("current"); setReceipt(null); setQuote(""); setEditing(false); setEditError(""); }}>{readableChapters.map((item) => <option key={item.number} value={item.number}>第 {item.number} 章 · {item.title}</option>)}</select></label>
     </article>
 
     {receipt && <article className="revision-receipt" role="status">
       <div><strong>第 {receipt.chapter} 章更新完成</strong><span>{new Date(receipt.applied_at).toLocaleString("zh-CN")} · 当前已显示最新正式稿</span></div>
       <p>旧版本已收入草稿箱；{receipt.word_count ? `正文现为 ${receipt.word_count} 字。` : "最新正式稿已经重新载入。"}{receipt.invalidated_checks?.length ? `已撤销过期的${receipt.invalidated_checks.join("、")}，重新验收前不会发布。` : "本次没有需要撤销的旧验收。"}</p>
     </article>}
+    {apiVersion < 13 && <div className="stale-version-warning" role="alert">请重启工作台服务，启用正文直接编辑功能。</div>}
 
     <div className="feedback-workspace">
       <article className="panel feedback-reader" onMouseUp={captureSelection} ref={readerRef}>
-        <div className="feedback-reader-head"><span>{isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><small>{isCurrent ? (reviewMode === "chapter_interview" ? "整章阅读，不针对单句圈选" : "拖动选中文字，即可带入右侧反馈") : "历史版本仅供对照，不能在旧稿上继续留言"}</small></div>
-        <h2>{lines[0]?.replace(/^#\s*/, "")}</h2>
-        {lines.slice(1).filter((line) => line.trim() && !/^---$/.test(line.trim()) && !/^## Metadata/.test(line)).map((line, index) => <p key={index}>{line.replace(/^#+\s*/, "")}</p>)}
+        <div className="feedback-reader-head"><span>{editing ? "正在编辑最新正式稿" : isCurrent ? "最新正式稿 · 可继续评审" : `草稿箱 · ${displayedChapter?.label || "历史版本"}`}</span><div className="feedback-reader-tools"><small>{isCurrent ? (reviewMode === "chapter_interview" ? "整章阅读，不针对单句圈选" : "拖动选中文字，即可带入右侧反馈") : "历史版本仅供对照，不能在旧稿上继续留言"}</small>{isCurrent && !editing && <button className="button ghost" disabled={apiVersion < 13} onClick={beginEdit}>编辑正文</button>}</div></div>
+        {editing ? <div className="feedback-manual-editor"><p>直接修改正文并保存。章节标题保持原样；修改前版本会放入草稿箱，过期验收会撤销。</p><textarea aria-label="编辑章节正文" value={editText} onChange={(event) => setEditText(event.target.value)} /><div className="feedback-manual-actions"><button className="button primary" disabled={busy || editText === chapter?.content} onClick={saveEdit}>{busy ? "保存中…" : "保存修改"}</button><button className="button ghost" disabled={busy} onClick={() => { setEditing(false); setEditError(""); }}>取消</button></div>{editError && <p className="feedback-error" role="alert">{editError}</p>}</div> : <><h2>{lines[0]?.replace(/^#\s*/, "")}</h2>{lines.slice(1).filter((line) => line.trim() && !/^---$/.test(line.trim()) && !/^## Metadata/.test(line)).map((line, index) => <p key={index}>{line.replace(/^#+\s*/, "")}</p>)}</>}
       </article>
 
       <aside className="feedback-side">
@@ -268,7 +295,7 @@ export default function ReaderFeedbackWorkspace({ book, onNotice }) {
           {reviewMode !== "chapter_interview" && <label>选中的原文<textarea value={quote} onChange={(event) => setQuote(event.target.value.slice(0, 3000))} placeholder="可直接留言，也可以先在左侧圈选原文" rows="5" /></label>}
           <label>你想说的问题<textarea value={comment} onChange={(event) => setComment(event.target.value.slice(0, 5000))} placeholder="例如：十三楼此前限行，周寻怎么突然提着工具包上去了？" rows="5" required /></label>
           {!isCurrent && <div className="stale-version-warning">你正在查看历史版本。请先切回“最新正式稿”再继续评审。</div>}
-          <button className="button primary" disabled={busy || !comment.trim() || !isCurrent}>{busy ? "正在提交" : "发送反馈"}<b>→</b></button>
+          <button className="button primary" disabled={busy || editing || !comment.trim() || !isCurrent}>{busy ? "正在提交" : "发送反馈"}<b>→</b></button>
         </form>
       </aside>
     </div>

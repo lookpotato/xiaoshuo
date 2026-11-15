@@ -283,6 +283,11 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .feedback-reader::selection, .feedback-reader *::selection { color: #20140e; background: #ffd09d; }
 .feedback-reader-head { display: flex; justify-content: space-between; gap: 16px; margin: -8px 0 28px; padding-bottom: 13px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; }
 .feedback-reader-head span { color: var(--red); font-weight: 800; letter-spacing: .08em; }
+.feedback-reader-tools { display: flex; align-items: center; gap: 12px; }
+.feedback-reader-tools .button { flex: none; padding: 6px 10px; font-size: 11px; }
+.feedback-manual-editor p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.feedback-manual-editor textarea { width: 100%; min-height: 58vh; padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: #fffefa; color: var(--ink); font: 15px/1.85 "Microsoft YaHei UI", sans-serif; resize: vertical; }
+.feedback-manual-actions { display: flex; gap: 9px; margin-top: 12px; }
 .feedback-reader h2 { margin-bottom: 30px; font-size: 28px; }
 .feedback-reader p { margin-bottom: 1.1em; }
 .feedback-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }

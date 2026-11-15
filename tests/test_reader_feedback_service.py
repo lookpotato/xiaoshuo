@@ -359,6 +359,36 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
         self.assertEqual(kinds, {"generated_draft", "proposal", "before_apply"})
         self.assertIn("甲停了一下", result["current"]["content"])
 
+    def test_manual_edit_preserves_previous_version_and_invalidates_review(self) -> None:
+        original = self.chapter.read_text(encoding="utf-8")
+        self.chapter.write_text(original + "\n\n---\n\n## Metadata\n\n- word_count: 9999\n", encoding="utf-8")
+        review = self.project / "chapter_reviews" / "0001.json"
+        review.parent.mkdir()
+        review.write_text('{"reader": "old"}', encoding="utf-8")
+        current = service.chapter_versions(self.root, "demo", 1)["current"]
+        revised = current["content"].replace("甲把门推开。", "甲慢慢把门推开。")
+
+        saved = service.save_manual_revision(self.root, "demo", 1, revised, current["sha256"])
+
+        self.assertIn("甲慢慢把门推开。", saved["current"]["content"])
+        self.assertEqual(saved["receipt"]["invalidated_checks"], ["章节审读"])
+        self.assertFalse(review.exists())
+        self.assertEqual(saved["versions"][0]["kind"], "before_manual_edit")
+        self.assertEqual(saved["versions"][0]["content"], current["content"])
+        self.assertIn("- word_count: ", self.chapter.read_text(encoding="utf-8"))
+        self.assertNotIn("- word_count: 9999", self.chapter.read_text(encoding="utf-8"))
+
+    def test_manual_edit_rejects_stale_version_without_overwriting(self) -> None:
+        current = service.chapter_versions(self.root, "demo", 1)["current"]
+        self.chapter.write_text(self.chapter.read_text(encoding="utf-8") + "\n新补一句。", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "别处更新"):
+            service.save_manual_revision(
+                self.root, "demo", 1,
+                current["content"].replace("甲把门推开。", "甲慢慢把门推开。"),
+                current["sha256"],
+            )
+        self.assertIn("新补一句。", self.chapter.read_text(encoding="utf-8"))
+
     def test_worker_result_requires_revision_only_when_author_accepts(self) -> None:
         parsed = parse_result(json.dumps({
             "decision": "reject", "author_judgment": "人物有意沉默。",

@@ -41,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 12
+API_VERSION = 13
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -958,6 +958,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/promote": 16 * 1024,
                 "/api/reader-feedback/dialogue": 16 * 1024,
                 "/api/reader-feedback/interview-answers": 64 * 1024,
+                "/api/reader-feedback/manual-edit": 1024 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
@@ -1013,6 +1014,16 @@ class AppHandler(BaseHTTPRequestHandler):
                     "ok": True,
                     **reader_feedback_service.apply_revision(
                         ROOT, book_id, feedback_id
+                    ),
+                })
+                return
+            if parsed.path == "/api/reader-feedback/manual-edit":
+                book_id = str(payload.get("book_id", ""))
+                self.send_json({
+                    "ok": True,
+                    **reader_feedback_service.save_manual_revision(
+                        ROOT, book_id, int(payload.get("chapter")),
+                        payload.get("content"), payload.get("sha256"),
                     ),
                 })
                 return
