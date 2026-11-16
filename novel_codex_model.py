@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-MODEL = "gpt-6-sol"
+MODEL = "gpt-6.1-sol"
 REASONING_EFFORT = "medium"
 MODEL_OPTIONS = (
     {"id": "gpt-6-sol", "label": "GPT-6 Sol"},

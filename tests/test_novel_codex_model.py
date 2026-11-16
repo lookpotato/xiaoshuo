@@ -29,7 +29,7 @@ class NovelCodexModelTest(TestCase):
     def test_main_chapter_command_pins_model_and_effort(self):
         command = xiaoshuo_on_demand._stage_command("codex", Path("result.md"))
         self.assertEqual(command[:6], [
-            "codex", "exec", "--model", "gpt-6-sol",
+            "codex", "exec", "--model", "gpt-6.1-sol",
             "--config", 'model_reasoning_effort="medium"',
         ])
         self.assertIn("--output-last-message", command)
