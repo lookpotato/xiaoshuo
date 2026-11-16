@@ -79,6 +79,19 @@ class WebAppDataTests(unittest.TestCase):
         self.assertTrue(command[1].endswith("batch_rewrite.py"))
         self.assertEqual(command[-4:], ["--book", "night-floor", "--from-chapter", "3"])
 
+    def test_overview_summary_launches_revision_bound_analysis(self) -> None:
+        with patch.object(web_app, "launch_command", return_value={"id": "summary"}) as launch, \
+             patch.object(web_app, "list_runs", return_value=[]), \
+             patch.object(web_app.overview_handoff_service, "validate_pending") as validate:
+            result = web_app.launch_overview_handoff({"book_id": "night-floor", "chapter": 25, "revision": "revision"}, "summarize")
+        self.assertEqual(result["id"], "summary")
+        command, kind, label = launch.call_args.args
+        self.assertEqual(command[2], "summarize")
+        self.assertEqual(command[-2:], ["--revision", "revision"])
+        self.assertEqual(kind, "overview_summarize")
+        self.assertIn("总结修改理解", label)
+        validate.assert_called_once()
+
     def test_react_frontend_is_configured(self) -> None:
         package = web_app.read_json(web_app.ROOT / "web" / "package.json", {})
         self.assertIn("react", package.get("dependencies", {}))

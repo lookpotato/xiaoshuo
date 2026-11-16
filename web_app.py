@@ -41,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 14
+API_VERSION = 15
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -670,7 +670,7 @@ def launch_overview_handoff(payload: dict, action: str) -> dict:
         command.extend(["--revision", str(payload.get("revision", ""))])
         if action == "ask":
             command.extend(["--question", str(payload.get("question", ""))])
-        label = f"《{book.get('title', book_id)}》第 {chapter} 章" + ("作者答疑" if action == "ask" else "按总览扩写")
+        label = f"《{book.get('title', book_id)}》第 {chapter} 章" + ({"ask": "作者答疑", "summarize": "总结修改理解"}.get(action, "按总览扩写"))
     return launch_command(command, f"overview_{action}", label)
 
 
@@ -993,6 +993,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/overview-handoff/save": 256 * 1024,
                 "/api/overview-handoff/prepare": 16 * 1024,
                 "/api/overview-handoff/ask": 16 * 1024,
+                "/api/overview-handoff/summarize": 16 * 1024,
                 "/api/overview-handoff/expand": 16 * 1024,
                 "/api/run/cancel": 16 * 1024,
             }
@@ -1142,7 +1143,7 @@ class AppHandler(BaseHTTPRequestHandler):
                                                        payload.get("content"), str(payload.get("revision", "")))
                 self.send_json({"ok": True, **result})
                 return
-            for action in ("prepare", "ask", "expand"):
+            for action in ("prepare", "ask", "summarize", "expand"):
                 if parsed.path == f"/api/overview-handoff/{action}":
                     self.send_json({"ok": True, "run": launch_overview_handoff(payload, action)}, HTTPStatus.ACCEPTED)
                     return

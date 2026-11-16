@@ -31,7 +31,8 @@ class OverviewHandoffTests(unittest.TestCase):
         overview = "# 第三章\n" + "人物先确认门后的声音。" * 12
         (self.run / "overview.md").write_text(overview, encoding="utf-8")
         service._write_meta(self.run, {"status": "pending", "plan_revision": service._hash(
-            (self.project / "chapter_plans" / "0003.json").read_text(encoding="utf-8")), "questions": []})
+            (self.project / "chapter_plans" / "0003.json").read_text(encoding="utf-8")), "questions": [],
+            "understanding": {"status": "ready", "revision": service._hash(overview), "text": "测试：已理解"}})
 
     def test_save_and_expand_use_author_revision(self):
         initial = service.workspace(self.root, "book", 3)
@@ -41,6 +42,11 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertEqual(saved["change_summary"]["changes"][0]["kind"], "新增")
         self.assertIn("亲自开门", saved["change_summary"]["changes"][0]["after"])
         self.assertEqual(service.workspace(self.root, "book", 3)["change_summary"], saved["change_summary"])
+        with self.assertRaisesRegex(ValueError, "理解总结"):
+            service.validate_pending(self.root, "book", 3, "expand", saved["revision"])
+        with patch.object(service, "execute", side_effect=lambda prompt, output, run, **kwargs:
+                          output.write_text("理解：应由她亲自开门，先确认门后声音；这是当前章拟写，并非前章事实。后续不可再写她没有进门。尚未同步规划，待确认扩写时落实。" * 3, encoding="utf-8")):
+            service.summarize(self.root, "book", 3, saved["revision"])
         with self.assertRaisesRegex(ValueError, "别处更新"):
             service.save(self.root, "book", 3, initial["overview"], initial["revision"])
         (self.run / "reader_review.json").write_text('{"blocking":[]}', encoding="utf-8")
@@ -86,6 +92,51 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertEqual(service.workspace(self.root, "book", 3)["revision"], initial["revision"])
         self.assertEqual(len(service.workspace(self.root, "book", 3)["questions"]), 1)
         self.assertEqual(service.workspace(self.root, "book", 3)["questions"][0]["status"], "answered")
+
+    def test_understanding_is_read_only_revision_bound_and_preserves_planning(self):
+        initial = service.workspace(self.root, "book", 3)
+        before_plan = (self.project / "chapter_plans" / "0003.json").read_bytes()
+        before_state = (self.project / "chapter_state.json").read_bytes()
+
+        def execute(prompt, output, run, **kwargs):
+            self.assertTrue(kwargs["read_only"])
+            self.assertEqual(service.workspace(self.root, "book", 3)["understanding"]["status"], "running")
+            self.assertIn("不能只罗列字符差异", prompt.read_text(encoding="utf-8"))
+            output.write_text("旧稿没有交代进门动机；现在应先核对门后声音，再由本人决定开门。这是本章拟写，不是既有事实。理解已形成，但人物线和接力尚未同步。仍有疑问：门后人的身份待查。" * 3, encoding="utf-8")
+
+        with patch.object(service, "execute", side_effect=execute):
+            service.summarize(self.root, "book", 3, initial["revision"])
+        report = service.workspace(self.root, "book", 3)["understanding"]
+        self.assertEqual(report["status"], "ready")
+        self.assertEqual(report["revision"], initial["revision"])
+        self.assertIn("尚未同步", report["text"])
+        self.assertEqual((self.project / "chapter_plans" / "0003.json").read_bytes(), before_plan)
+        self.assertEqual((self.project / "chapter_state.json").read_bytes(), before_state)
+        service.save(self.root, "book", 3, initial["overview"] + "新增改动", initial["revision"])
+        self.assertEqual(service.workspace(self.root, "book", 3)["understanding"]["status"], "pending")
+
+    def test_failed_understanding_can_retry_without_losing_saved_overview(self):
+        initial = service.workspace(self.root, "book", 3)
+        with patch.object(service, "execute", side_effect=RuntimeError("网络失败")):
+            with self.assertRaisesRegex(RuntimeError, "网络失败"):
+                service.summarize(self.root, "book", 3, initial["revision"])
+        result = service.workspace(self.root, "book", 3)
+        self.assertEqual(result["understanding"]["status"], "failed")
+        self.assertEqual(result["overview"], initial["overview"])
+        with self.assertRaisesRegex(ValueError, "理解总结"):
+            service.expand(self.root, "book", 3, initial["revision"])
+
+    def test_summary_of_changed_overview_cannot_be_marked_ready(self):
+        initial = service.workspace(self.root, "book", 3)
+
+        def execute(prompt, output, run, **kwargs):
+            service.save(self.root, "book", 3, initial["overview"] + "\n改变了后续路线", initial["revision"])
+            output.write_text("这是针对旧总览的理解，不能覆盖新版本的待分析状态。" * 8, encoding="utf-8")
+
+        with patch.object(service, "execute", side_effect=execute):
+            with self.assertRaisesRegex(ValueError, "旧总结"):
+                service.summarize(self.root, "book", 3, initial["revision"])
+        self.assertEqual(service.workspace(self.root, "book", 3)["understanding"]["status"], "pending")
 
     def test_failed_question_is_visible_for_retry(self):
         revision = service.workspace(self.root, "book", 3)["revision"]

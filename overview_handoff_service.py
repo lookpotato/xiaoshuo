@@ -102,6 +102,7 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         "questions": meta.get("questions", []),
         "change_summary": comparison, "progress": meta.get("progress"),
         "plan_change_summary": meta.get("plan_change_summary"),
+        "understanding": meta.get("understanding"),
         "result_summary": meta.get("result_summary"),
         "last_report": last_report.get("result_summary"),
         "term_note": ORIGINAL_TABLE_NOTE if book_id == "night-floor" and "原表" in overview else "",
@@ -192,6 +193,11 @@ def validate_pending(root: Path, book_id: str, chapter: int, action: str,
         raise ValueError("问题长度无效")
     if action == "expand" and len(_read(run / "overview.md").strip()) < 50:
         raise ValueError("请先完成写前总览")
+    if action == "expand":
+        understanding = _paths(root, book_id, chapter)[2].get("understanding", {})
+        if (understanding.get("status") != "ready" or understanding.get("revision") != revision
+                or not isinstance(understanding.get("text"), str) or not understanding["text"].strip()):
+            raise ValueError("请先保存总览并查看当前版本的 AI 理解总结，再确认扩写")
 
 
 def save(root: Path, book_id: str, chapter: int, content: str, revision: str) -> dict:
@@ -205,11 +211,58 @@ def save(root: Path, book_id: str, chapter: int, content: str, revision: str) ->
     if not (run / "overview.original.md").exists():
         (run / "overview.original.md").write_text(before, encoding="utf-8")
     temporary.write_text(content, encoding="utf-8")
+    (run / "overview.previous.md").write_text(before, encoding="utf-8")
     temporary.replace(run / "overview.md")
     if before != content or not meta.get("change_summary"):
         meta["change_summary"] = compare_overviews(before, content)
+    if before != content:
+        meta["understanding"] = {"revision": _hash(content), "status": "pending", "text": ""}
     _write_meta(run, meta)
-    return {"revision": _hash(content), "change_summary": meta["change_summary"]}
+    return {"revision": _hash(content), "change_summary": meta["change_summary"], "understanding": meta.get("understanding")}
+
+
+def summarize(root: Path, book_id: str, chapter: int, revision: str) -> str:
+    project, run, meta = _check_pending(root, book_id, chapter)
+    if _hash(_read(run / "overview.md")) != revision:
+        raise ValueError("总览版本已变化，请针对当前总览重新总结")
+    meta["understanding"] = {"revision": revision, "status": "running", "text": ""}
+    _progress(run, meta, "AI 正在分析修改意见，整理理解与后续影响")
+    prompt = run / f"understanding-{revision}.prompt.md"
+    output = run / f"understanding-{revision}.result.md"
+    recent = sorted((project / "chapters").glob("*.md"))
+    recent = [p for p in recent if re.match(r"^\d+-", p.name) and int(p.name.split("-", 1)[0]) < chapter][-2:]
+    prompt.write_text(
+        "# 向副作者说明你如何理解本次剧情修改\n\n"
+        f"当前已保存总览：`{run / 'overview.md'}`；上一保存版本：`{run / 'overview.previous.md'}`；"
+        f"最初总览（如存在）：`{run / 'overview.original.md'}`；原章节规划：`{project / 'chapter_plans' / f'{chapter:04d}.json'}`。\n"
+        f"核对作品世界规则 `{project / 'world.md'}`、接力状态 `{project / 'chapter_state.json'}` 与近期正文："
+        + "、".join(f"`{p}`" for p in recent) + "。不存在的文件跳过。\n\n"
+        "用户需要审核你是否真正理解并吸收修改，请用自然中文说明，不能只罗列字符差异或空泛说‘已吸收’。"
+        "逐项写清：用户修改了什么、旧安排为何有问题、你现在理解的因果/空间/人物动机、准备在本章及后续怎样落实、哪些旧情节必须删除不再沿用。"
+        "每项引用当前总览或前章正文的短句并注明来源，区分正文已经发生、当前章拟写和未来待办。"
+        "用户未表达的意图不能替他认定。若修改仍有冲突、歧义或未吸收的要求，直说原因与需要澄清之处，不要为了显得接受而全盘赞同。\n"
+        "最后明确列出‘已理解、待扩写时落实’与‘仍有疑问’。当前操作仅分析：规划、人物线与后续接力尚未同步，"
+        "绝不能声称已经写入或已完成剧情更新，也不要直接替用户扩写或改任何文件。\n"
+        "只输出供用户阅读的 Markdown 总结，建议400—900个汉字，不输出代码差异或JSON。\n",
+        encoding="utf-8",
+    )
+    try:
+        execute(prompt, output, run, read_only=True)
+        response = _read(output).strip()
+        if len(response) < 80:
+            raise ValueError("AI 理解总结为空或过短，请重新生成")
+        _, _, latest = _check_pending(root, book_id, chapter)
+        if _hash(_read(run / "overview.md")) != revision:
+            raise ValueError("总结期间总览已修改，旧总结不适用于当前版本")
+    except Exception as exc:
+        _, _, latest = _paths(root, book_id, chapter)
+        if _hash(_read(run / "overview.md")) == revision:
+            latest["understanding"] = {"revision": revision, "status": "failed", "text": "", "error": str(exc)[:300]}
+            _progress(run, latest, "AI 理解总结失败，保存内容保留，可重新总结")
+        raise
+    latest["understanding"] = {"revision": revision, "status": "ready", "text": response}
+    _progress(run, latest, "AI 理解总结已生成，请审阅后确认扩写")
+    return response
 
 
 def ask(root: Path, book_id: str, chapter: int, question: str, revision: str) -> str:
@@ -262,6 +315,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
     prompt.write_text(
         _read(run / "director.md") + "\n\n# 作者确认后的规划同步\n"
         f"读取 `{run / 'approved_overview.md'}` 与当前合同 `{plan_path}`、前章正文和世界规则。"
+        f"如有 `{run / 'approved_understanding.md'}`，读取用户已审阅的理解总结以保持修改意图；以确认总览和既有正文为准，不能把疑问和建议自动当成既定事实。"
         "以确认总览替换本章旧设想，逐项同步目标、人物驱动、场景、回报、结尾与视角合同。"
         "被总览删除的事件、承诺和观察位置不得继续出现在合同其他字段。"
         "总览中的未来打算不能写成前章已发生事实；与既有事实冲突应报错。"
@@ -310,6 +364,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
 
 
 def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
+    validate_pending(root, book_id, chapter, "expand", revision)
     project, run, meta = _check_pending(root, book_id, chapter, allow_expanding=True)
     overview = _read(run / "overview.md")
     if _hash(overview) != revision:
@@ -324,6 +379,7 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
         and (run / "candidate.md").is_file()
     )
     (run / "approved_overview.md").write_text(approved, encoding="utf-8")
+    (run / "approved_understanding.md").write_text(meta["understanding"]["text"], encoding="utf-8")
     meta["status"] = "expanding"
     meta["approved_revision"] = revision
     _write_meta(run, meta)
@@ -359,14 +415,15 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     meta["result_summary"] = {"chapter": chapter, "next_hook": state.get("notes_for_next_chapter", ""),
                               "handoff_change_summary": compare_overviews(prior_hook, state.get("notes_for_next_chapter", "")),
                               "invalidated": [str(p.relative_to(superseded)) for p in superseded.rglob("*") if p.is_file()] if superseded.exists() else [],
-                              "change_summary": meta.get("change_summary"), "plan_change_summary": meta.get("plan_change_summary")}
+                              "change_summary": meta.get("change_summary"), "plan_change_summary": meta.get("plan_change_summary"),
+                              "understanding": meta.get("understanding")}
     _progress(run, meta, "已完成扩写、归档和后续接力更新")
     return archived
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("prepare", "ask", "expand"))
+    parser.add_argument("action", choices=("prepare", "ask", "summarize", "expand"))
     parser.add_argument("--book", required=True)
     parser.add_argument("--chapter", type=int, required=True)
     parser.add_argument("--question")
@@ -376,6 +433,9 @@ def main() -> None:
         print(f"写前总览已准备：{prepare(ROOT, args.book, args.chapter)}", flush=True)
     elif args.action == "ask":
         print(ask(ROOT, args.book, args.chapter, args.question, args.revision), flush=True)
+    elif args.action == "summarize":
+        summarize(ROOT, args.book, args.chapter, args.revision)
+        print("AI 理解总结已生成，请在页面审阅。", flush=True)
     else:
         print(f"章节已归档：{expand(ROOT, args.book, args.chapter, args.revision)}", flush=True)
 
