@@ -35,18 +35,18 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   }, [book.id, chapter]);
   useEffect(() => { setData(null); setRun(null); load(); }, [load]);
   useEffect(() => {
-    if (!run && data?.understanding?.status !== "running" && data?.status !== "expanding" && !data?.questions?.some((item) => item.status === "running")) return undefined;
+    if (!run && data?.learning?.status !== "running" && data?.last_report?.learning?.status !== "running" && data?.status !== "expanding" && !data?.questions?.some((item) => item.status === "running")) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const result = await api(`/api/overview-handoff?book_id=${encodeURIComponent(book.id)}&chapter=${chapter}`);
         setData((current) => current ? { ...current, questions: result.questions, status: result.status,
           progress: result.progress, change_summary: result.change_summary, result_summary: result.result_summary,
-          plan_change_summary: result.plan_change_summary, understanding: result.understanding,
+          plan_change_summary: result.plan_change_summary, understanding: result.understanding, learning: result.learning, last_report: result.last_report,
           plan_stale: result.plan_stale } : current);
       } catch (failure) { setError(failure.message); }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [book.id, chapter, data?.questions?.some((item) => item.status === "running"), data?.status, data?.understanding?.status, run?.id]);
+  }, [book.id, chapter, data?.questions?.some((item) => item.status === "running"), data?.status, data?.learning?.status, data?.last_report?.learning?.status, run?.id]);
   useEffect(() => {
     if (!run) return undefined;
     const timer = window.setInterval(async () => {
@@ -72,7 +72,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     setBusy(true); setError("");
     try {
       let revision = data?.revision;
-      if (action === "summarize" && text !== data.overview) {
+      if ((action === "expand" || action === "summarize") && text !== data.overview) {
         const saved = await api("/api/overview-handoff/save", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ book_id: book.id, chapter, content: text, revision }),
@@ -99,12 +99,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         body: JSON.stringify({ book_id: book.id, chapter, content: text, revision: data.revision }),
       });
       setData((current) => ({ ...current, overview: text, revision: result.revision, change_summary: result.change_summary, understanding: result.understanding }));
-      const analysis = await api("/api/overview-handoff/summarize", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, chapter, revision: result.revision }),
-      });
-      setRun({ id: analysis.run.id, action: "summarize" }); onRunStarted(analysis.run);
-      onNotice("总览已保存，AI 正在分析修改是否理解到位");
+      onNotice("写前总览已保存；点击保存并扩写即可直接写章并总结长期经验");
     } catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
   }
@@ -134,8 +129,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   }
 
   const dirty = data?.status === "pending" && text !== data.overview;
-  const understanding = data?.understanding || data?.last_report?.understanding;
-  const understood = data?.understanding?.status === "ready" && data?.understanding?.revision === data?.revision && !dirty;
+  const learning = data?.learning || data?.last_report?.learning;
   const exchanges = data?.questions || [];
   const lastExchange = exchanges[exchanges.length - 1];
   const showLocalPending = pendingQuestion && run?.action === "ask" &&
@@ -147,7 +141,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     <article className="panel human-intro">
       <div className="panel-head"><div><p className="eyebrow">AUTHOR HANDOFF</p><h2>写前总览接力</h2></div><span className="local-badge">第 {chapter} 章</span></div>
       <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；保存并确认后，AI 再以你的总览扩成正文。</p>
-      {apiVersion < 15 && <p className="feedback" role="alert">请重启 Python 工作台服务，加载 AI 理解总结接口。已保存的总览会保留。</p>}
+      {apiVersion < 15 && <p className="feedback" role="alert">请重启 Python 工作台服务，加载长期经验总结功能。已保存的总览会保留。</p>}
     </article>
     {(busy || run || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
       <div role="status" aria-live="polite"><strong>{busy ? "正在保存或提交任务，请稍候……" : run || data?.status === "expanding" ? (data?.progress?.stage || (run?.action === "ask" ? "作者正在回答……" : run?.action === "prepare" ? "正在生成总览……" : "正在启动扩写与剧情同步……")) : data?.progress?.stage || "总览已保存，等待确认扩写"}</strong>
@@ -156,20 +150,18 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       <ChangeSummary summary={data?.plan_change_summary || data?.last_report?.plan_change_summary} title="本章规划同步前后对比" note="这是实际写入章节规划的变化。" />
       {(data?.result_summary || data?.last_report) && (() => { const result = data.result_summary || data.last_report; return <section><h3>第 {result.chapter} 章后续剧情更新结果</h3><p style={{ whiteSpace: "pre-wrap" }}>{result.next_hook || "未返回后续接力内容。"}</p><ChangeSummary summary={result.handoff_change_summary} title="后续接力更新前后对比" note="" /><p>已备份并撤销 {(result.invalidated || []).length} 份后续旧材料。</p>{result.invalidated?.length > 0 && <details><summary>查看已撤销材料</summary><ul>{result.invalidated.map((path) => <li key={path}>{path}</li>)}</ul></details>}</section>; })()}
     </article>}
-    {data && (data.status !== "none" || understanding) && <article className="panel human-guide" aria-label="AI 对修改的理解总结">
-      <h2>AI 对这次修改的理解</h2>
-      <p>先检查 AI 理解的问题、修正办法和后续影响是否符合你的意思，再确认扩写。理解总结本身不代表已完成剧情同步。</p>
-      {understanding?.status === "running" || run?.action === "summarize" ? <p role="status">AI 正在阅读总览、原规划与前章，分析修改意图和后续影响……</p> : understanding?.status === "ready" ? <><div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{understanding.text}</div>{!understood && data.status === "pending" && <p role="alert">总览已有修改，下面扩写前需要重新总结当前版本。</p>}</> : <p>{understanding?.status === "failed" ? `总结失败：${understanding.error || "请重试"}` : "尚未生成理解总结。保存总览后会自动分析，也可点击下面的按钮。"}</p>}
-      <button className="button ghost" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={() => launch("summarize")}>重新总结我的修改</button>
+    {learning && <article className="panel human-guide" aria-label="本次修改的长期总结">
+      <h2>本次修改吸收的长期经验</h2>
+      {learning.status === "running" ? <p role="status">正文已归档，AI 正在总结修改原因、可复用原则和后续适用条件……</p> : learning.status === "failed" ? <p role="alert">扩写归档已完成，长期总结未写入：{learning.error}</p> : <><p style={{ whiteSpace: "pre-wrap" }}>{learning.summary}</p>{learning.lessons?.map((item, index) => <section key={index}><h3>{index + 1}. {item.problem}</h3><p>{item.principle}</p><p>适用：{item.applies_when}</p><p>避免误用：{item.avoid}</p></section>)}<p>已记入本书经验库，下次生成总览会读取这些原则。</p></>}
     </article>}
     {data?.status === "none" ? <article className="panel human-guide"><h2>准备第 {chapter} 章</h2><p>生成写前材料可能需要几分钟，完成后会在本页显示可修改的总览。</p><button className="button primary" disabled={busy || !!run || apiVersion < 12} onClick={() => launch("prepare")}>{run?.action === "prepare" ? "正在生成……" : "生成写前总览"}</button></article> : data && <>
       <article className="panel human-editor"><div className="panel-head"><div><p className="eyebrow">YOUR OVERVIEW</p><h2>修改本章总览</h2></div><span>{text.length} 字符</span></div>
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}
         {(data.term_note || (book.id === "night-floor" && text.includes("原表"))) && <div className="overview-term-note"><strong>这里的“原表”是什么？</strong><p>{data.term_note || "街道手里的二零二旧登记表：二零二一栏写着‘已退出’，但刘桂芳仍实际居住。街道已暂停按空户处理，原表还没改；旧凭据号与郭冬梅母亲的收条末四位相同，错记原因仍未查清。"}</p></div>}
         <textarea aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />
-        <div className="human-actions"><button className="button primary" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={save}>保存总览并总结理解</button><button className="button ghost" disabled={busy || !!run || apiVersion < 15 || !understood || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>理解正确，确认扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
+        <div className="human-actions"><button className="button primary" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={save}>保存总览</button><button className="button ghost" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>保存总览并扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
         <p className="feedback">扩写前会同步本章规划与人物线；归档后按最终正文更新后续接力，后续旧规划将备份并重新生成。</p>
-        {dirty && <p className="feedback">有未保存修改，请先保存并查看 AI 的理解总结。</p>}
+        {dirty && <p className="feedback">有未保存修改，点击保存总览并扩写会自动保存后直接扩写。</p>}
         {data.status === "expanding" && <p className="feedback">已交给 AI 扩写。若任务已停止或失败，可用保存的总览重试。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("expand")}>重试扩写</button></p>}
         {data.status === "archived" && <p className="feedback">本章已按确认的总览完成归档，后续接力已按最终正文更新。</p>}
       </article>

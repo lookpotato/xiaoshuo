@@ -31,6 +31,7 @@ BOOK_SOURCE_NAMES = (
     "resource_ledger.md",
     "chapter_state.json",
     "feedback_learning.json",
+    "overview_learning.json",
     "narrative_style_pack.md",
     "character_voice_bible.md",
 )
@@ -42,6 +43,7 @@ MUTABLE_PLAN_CONTEXT_NAMES = {
     "resource_ledger.md",
     "chapter_state.json",
     "feedback_learning.json",
+    "overview_learning.json",
 }
 
 REVIEW_DIMENSIONS = (
@@ -253,6 +255,9 @@ def director_prompt(
 
 完整读取下列当前作品资料；列表之外的小说不得读取：
 {_path_list(available_book_sources(project))}
+
+若资料含 overview_learning.json，先读取其中由用户总览修改提炼的长期经验。规划时按适用条件检查是否重犯旧问题，
+遵守误用边界；它们是写法与推理经验，不是新的故事事实。最新正文和当前用户总览优先，不得把某章的具体安排机械复制到后续。
 
 近期正文：
 {_path_list([path for _, path in recent])}

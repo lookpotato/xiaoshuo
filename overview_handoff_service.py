@@ -103,6 +103,7 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         "change_summary": comparison, "progress": meta.get("progress"),
         "plan_change_summary": meta.get("plan_change_summary"),
         "understanding": meta.get("understanding"),
+        "learning": meta.get("learning"),
         "result_summary": meta.get("result_summary"),
         "last_report": last_report.get("result_summary"),
         "term_note": ORIGINAL_TABLE_NOTE if book_id == "night-floor" and "原表" in overview else "",
@@ -193,11 +194,6 @@ def validate_pending(root: Path, book_id: str, chapter: int, action: str,
         raise ValueError("问题长度无效")
     if action == "expand" and len(_read(run / "overview.md").strip()) < 50:
         raise ValueError("请先完成写前总览")
-    if action == "expand":
-        understanding = _paths(root, book_id, chapter)[2].get("understanding", {})
-        if (understanding.get("status") != "ready" or understanding.get("revision") != revision
-                or not isinstance(understanding.get("text"), str) or not understanding["text"].strip()):
-            raise ValueError("请先保存总览并查看当前版本的 AI 理解总结，再确认扩写")
 
 
 def save(root: Path, book_id: str, chapter: int, content: str, revision: str) -> dict:
@@ -261,7 +257,7 @@ def summarize(root: Path, book_id: str, chapter: int, revision: str) -> str:
             _progress(run, latest, "AI 理解总结失败，保存内容保留，可重新总结")
         raise
     latest["understanding"] = {"revision": revision, "status": "ready", "text": response}
-    _progress(run, latest, "AI 理解总结已生成，请审阅后确认扩写")
+    _progress(run, latest, "修改分析已生成，可直接保存总览并扩写")
     return response
 
 
@@ -363,6 +359,53 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
     _write_meta(run, meta)
 
 
+def learn_from_overview(project: Path, run: Path, chapter: int, revision: str, meta: dict) -> dict:
+    chapters = list((project / "chapters").glob(f"{chapter:04d}-*.md"))
+    if len(chapters) != 1:
+        raise ValueError("须先完成章节归档，再总结长期经验")
+    storage = project / "overview_learning.json"
+    saved = json.loads(_read(storage)) if storage.is_file() else {"schema_version": 1, "entries": []}
+    key = f"{chapter:04d}-{revision}"
+    existing = next((entry for entry in saved["entries"] if entry.get("id") == key), None)
+    if existing:
+        return existing
+    _progress(run, meta, "正文已归档，正在提炼本次修改的长期经验")
+    prompt, output = run / "long_term_learning.prompt.md", run / "long_term_learning.result.json"
+    prompt.write_text(
+        "# 从用户修改总览中提炼长期经验\n"
+        f"阅读确认总览 `{run / 'approved_overview.md'}`、旧规划 `{run / 'plan.before_overview.json'}`、"
+        f"原总览 `{run / 'overview.original.md'}`（存在时）、最终归档正文 `{chapters[0]}`、已有经验 `{storage}`（存在时）。\n"
+        "说明用户纠正了什么问题、为什么不合理、以后规划怎样避免。只提炼有修改证据且可跨章复用的原则，"
+        "包括空间因果、人物主动性、事件兑现和救援行动等确有证据的问题；不要机械记住具体楼层、站位或人物动作。"
+        "每条必须注明适用条件和误用边界；不能将未发生的情节变成事实，也不能把一次选择说成所有章节必须照办。"
+        "不要空泛宣称吸收，不修改任何文件。只输出JSON："
+        '{"summary":"供用户审阅的自然中文总结：发现的问题、吸收的原则、后续怎样应用",'
+        '"lessons":[{"problem":"旧问题","principle":"以后应怎样规划","applies_when":"适用条件",'
+        '"avoid":"误用边界","evidence":"确认总览或归档正文中的逐字短句"}]}。'
+        "没有可复用修改则 lessons 为[]并说明，不编造；最多8条。\n", encoding="utf-8",
+    )
+    execute(prompt, output, run, read_only=True)
+    report = json.loads(_read(output))
+    if not isinstance(report, dict) or not isinstance(report.get("summary"), str) or not report["summary"].strip():
+        raise ValueError("长期总结缺少有效说明")
+    lessons = report.get("lessons")
+    if not isinstance(lessons, list) or len(lessons) > 8:
+        raise ValueError("长期经验格式无效")
+    evidence_source = _read(run / "approved_overview.md") + "\n" + _read(chapters[0])
+    for item in lessons:
+        if (not isinstance(item, dict) or not all(isinstance(item.get(k), str) and item[k].strip()
+                for k in ("problem", "principle", "applies_when", "avoid", "evidence"))
+                or item["evidence"] not in evidence_source):
+            raise ValueError("长期经验缺少适用边界或修改依据")
+    entry = {"id": key, "chapter": chapter, "revision": revision,
+             "summary": report["summary"], "lessons": lessons}
+    saved["entries"].append(entry)
+    temporary = storage.with_suffix(".tmp")
+    temporary.write_text(json.dumps(saved, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(storage)
+    return entry
+
+
 def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     validate_pending(root, book_id, chapter, "expand", revision)
     project, run, meta = _check_pending(root, book_id, chapter, allow_expanding=True)
@@ -379,7 +422,8 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
         and (run / "candidate.md").is_file()
     )
     (run / "approved_overview.md").write_text(approved, encoding="utf-8")
-    (run / "approved_understanding.md").write_text(meta["understanding"]["text"], encoding="utf-8")
+    # An earlier optional analysis must not become a mandatory approval or stale input.
+    (run / "approved_understanding.md").unlink(missing_ok=True)
     meta["status"] = "expanding"
     meta["approved_revision"] = revision
     _write_meta(run, meta)
@@ -417,7 +461,17 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
                               "invalidated": [str(p.relative_to(superseded)) for p in superseded.rglob("*") if p.is_file()] if superseded.exists() else [],
                               "change_summary": meta.get("change_summary"), "plan_change_summary": meta.get("plan_change_summary"),
                               "understanding": meta.get("understanding")}
-    _progress(run, meta, "已完成扩写、归档和后续接力更新")
+    meta["learning"] = {"status": "running"}
+    meta["result_summary"]["learning"] = meta["learning"]
+    _write_meta(run, meta)
+    try:
+        entry = learn_from_overview(project, run, chapter, revision, meta)
+        meta["learning"] = {"status": "ready", **entry}
+    except Exception as exc:
+        meta["learning"] = {"status": "failed", "error": str(exc)[:300]}
+    meta["result_summary"]["learning"] = meta["learning"]
+    _progress(run, meta, "扩写、归档及长期经验总结已完成" if meta["learning"]["status"] == "ready"
+              else "扩写归档已完成；长期经验总结失败，尚未写入经验库")
     return archived
 
 

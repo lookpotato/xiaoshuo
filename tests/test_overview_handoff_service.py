@@ -42,8 +42,7 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertEqual(saved["change_summary"]["changes"][0]["kind"], "新增")
         self.assertIn("亲自开门", saved["change_summary"]["changes"][0]["after"])
         self.assertEqual(service.workspace(self.root, "book", 3)["change_summary"], saved["change_summary"])
-        with self.assertRaisesRegex(ValueError, "理解总结"):
-            service.validate_pending(self.root, "book", 3, "expand", saved["revision"])
+        service.validate_pending(self.root, "book", 3, "expand", saved["revision"])
         with patch.object(service, "execute", side_effect=lambda prompt, output, run, **kwargs:
                           output.write_text("理解：应由她亲自开门，先确认门后声音；这是当前章拟写，并非前章事实。后续不可再写她没有进门。尚未同步规划，待确认扩写时落实。" * 3, encoding="utf-8")):
             service.summarize(self.root, "book", 3, saved["revision"])
@@ -123,8 +122,7 @@ class OverviewHandoffTests(unittest.TestCase):
         result = service.workspace(self.root, "book", 3)
         self.assertEqual(result["understanding"]["status"], "failed")
         self.assertEqual(result["overview"], initial["overview"])
-        with self.assertRaisesRegex(ValueError, "理解总结"):
-            service.expand(self.root, "book", 3, initial["revision"])
+        service.validate_pending(self.root, "book", 3, "expand", initial["revision"])
 
     def test_summary_of_changed_overview_cannot_be_marked_ready(self):
         initial = service.workspace(self.root, "book", 3)
@@ -231,6 +229,56 @@ class OverviewHandoffTests(unittest.TestCase):
         (self.project / "chapter_plans" / "0003.json").write_text("{}", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "规划已变化"):
             service.validate_pending(self.root, "book", 3, "expand", initial["revision"])
+
+    def test_direct_expansion_learns_after_archive_without_summary_approval(self):
+        from novel_stage_pipeline import available_book_sources, director_prompt
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        meta = json.loads((self.run / "overview_handoff.json").read_text(encoding="utf-8"))
+        meta.pop("understanding", None)
+        service._write_meta(self.run, meta)
+        calls = []
+
+        def execute(prompt, output, run, **kwargs):
+            calls.append(prompt.name)
+            if prompt.name == "long_term_learning.prompt.md":
+                self.assertTrue((self.project / "chapters" / "0003-进门.md").exists())
+                self.assertTrue(kwargs["read_only"])
+                output.write_text(json.dumps({"summary": "已解决的路线不要重复制造阻拦；后续规划按最终事实承接。", "lessons": [{
+                    "problem": "总览重复回家受阻", "principle": "以最终正文为准，已完成事件不再作为待办",
+                    "applies_when": "接续已解决的通行安排", "avoid": "有新阻碍仍应按新因果处理", "evidence": "她已经进门了。"
+                }]}, ensure_ascii=False), encoding="utf-8")
+
+        def archive(run, project, chapter):
+            (project / "chapters").mkdir()
+            path = project / "chapters" / "0003-进门.md"
+            path.write_text("# 第3章 进门\n她已经进门了。", encoding="utf-8")
+            (project / "chapter_state.json").write_text('{"next_chapter_number":4,"notes_for_next_chapter":"人已回家"}', encoding="utf-8")
+            return path
+
+        with patch.object(service, "sync_overview_context"), patch.object(service, "execute", side_effect=execute), \
+             patch.object(service, "review_and_archive", side_effect=archive):
+            service.expand(self.root, "book", 3, revision)
+            final_meta = json.loads((self.run / "overview_handoff.json").read_text(encoding="utf-8"))
+            service.learn_from_overview(self.project, self.run, 3, revision, final_meta)
+        self.assertEqual(calls, ["draft.md", "deep_edit.md", "long_term_learning.prompt.md"])
+        memory = json.loads((self.project / "overview_learning.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(memory["entries"]), 1)
+        self.assertEqual(service.workspace(self.root, "book", 4)["last_report"]["learning"]["status"], "ready")
+        self.assertIn(self.project / "overview_learning.json", available_book_sources(self.project))
+        (self.root / "novel_pipeline.json").write_text((service.ROOT / "novel_pipeline.json").read_text(encoding="utf-8"), encoding="utf-8")
+        self.assertIn("overview_learning.json", director_prompt(self.root, self.project, 4, "测试"))
+
+    def test_learning_failure_does_not_undo_successful_archive(self):
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        with patch.object(service, "sync_overview_context"), patch.object(service, "execute"), \
+             patch.object(service, "review_and_archive", return_value=self.project / "chapters" / "0003.md"), \
+             patch.object(service, "learn_from_overview", side_effect=RuntimeError("总结网络失败")):
+            result = service.expand(self.root, "book", 3, revision)
+        self.assertEqual(result.name, "0003.md")
+        state = service.workspace(self.root, "book", 3)
+        self.assertEqual(state["status"], "archived")
+        self.assertEqual(state["learning"]["status"], "failed")
+        self.assertFalse((self.project / "overview_learning.json").exists())
 
 
 if __name__ == "__main__":
