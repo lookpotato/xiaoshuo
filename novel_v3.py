@@ -18,6 +18,7 @@ from novel_engine_v3.engine import WORKFLOW, LEGACY_WORKFLOW
 from novel_stage_pipeline import plan_path
 from novel_reader_gate import narrative_sha256
 from chapter_titles import duplicate_title_message, duplicate_title_paths
+import novel_codex_model
 from novel_engine_v3.continuity import (
     stamp_candidate, validate_characters, validate_director, validate_timeline_head,
     validate_unified_run, validate_viewpoint_contract,
@@ -26,6 +27,45 @@ from novel_engine_v3.continuity import (
 
 ROOT = Path(__file__).resolve().parent
 MAX_READER_REPAIRS = 3
+OVERVIEW_CONTINUITY_CONTRACT = """
+作者确认总览后，接力状态必须依据最终 candidate.md 重建，不能照抄旧合同、旧人物线或旧接力摘要。
+continuity_review.json 额外提供非空 handoff_facts 数组，每项结构为：
+{"fact": "正文已兑现的结果或仍待兑现的明确承诺", "quote": "最终正文逐字原句", "status": "completed或pending"}。
+逐项记录已完成结果与真正未完成事项。已在正文解决的回家路线等不能再作为待办。
+被总览删除且正文没有发生的事件、观察盲区、人物承诺必须从接力中删除。
+引句必须能支持该事实和完成状态；不得把写前打算、作者猜测作为下一章已知事实。
+发现事实与引句不符写入 blocking。下一章接力将由程序从这些事实重建。
+"""
+
+
+def invalidate_future_planning(run: Path, project: Path, chapter: int) -> None:
+    """Preserve unfinished future derivatives outside the active book context."""
+    targets = []
+    for directory in ("chapter_plans", "character_threads", "human_guides"):
+        for path in (project / directory).glob("*"):
+            match = re.match(r"^(\d+)(?:[.-]|$)", path.name)
+            if match and int(match.group(1)) > chapter:
+                if project.resolve() not in path.resolve().parents:
+                    raise V3ValidationError(f"后续规划目录越界：{path}")
+                number = int(match.group(1))
+                if list((project / "chapters").glob(f"{number:04d}-*.md")):
+                    raise V3ValidationError("已有后续正式章节，不能自动撤销其规划，请先处理章节顺序")
+                targets.append(path)
+    saved = []
+    try:
+        for path in targets:
+            # Unique backup directories permit a safe retry after an interrupted archive.
+            parent = run / "superseded_future" / path.parent.name
+            parent.mkdir(parents=True, exist_ok=True)
+            target = parent / path.name
+            if target.exists():
+                raise V3ValidationError(f"后续规划备份已存在，请检查：{target}")
+            path.rename(target)
+            saved.append((path, target))
+    except Exception:
+        for path, target in reversed(saved):
+            target.rename(path)
+        raise
 
 
 def validate_scene_seed(run: Path) -> None:
@@ -93,6 +133,7 @@ def save_chapter_review(run: Path, project: Path, chapter: int, final_path: Path
         "continuity": {
             "next_hook": continuity.get("next_hook", ""),
             "unresolved": continuity.get("unresolved", []),
+            "handoff_facts": continuity.get("handoff_facts", []),
         },
     }
     destination = project / "chapter_reviews" / f"{chapter:04d}.json"
@@ -139,9 +180,11 @@ def execute(prompt: Path, output: Path, run_dir: Path, *, capture_candidate: boo
     # explicitly added project and run directories, so project-level Git and
     # publishing instructions cannot hijack an internal creative stage.
     isolated_cwd = Path(tempfile.mkdtemp(prefix="xiaoshuo-v3-"))
+    manifest_path = run_dir / "manifest.json"
+    book_id = json.loads(manifest_path.read_text(encoding="utf-8-sig")).get("book_id") if manifest_path.is_file() else None
     try:
         result = subprocess.run(
-            [codex, "exec", "--ephemeral", "--skip-git-repo-check",
+            [*novel_codex_model.exec_prefix(str(codex), book_id, ROOT), "--ephemeral", "--skip-git-repo-check",
              "-C", str(isolated_cwd),
              "--add-dir", str(ROOT), "--add-dir", str(run_dir),
              "--sandbox", "read-only" if capture_candidate or read_only else "workspace-write",
@@ -204,6 +247,27 @@ def archive_chapter(run: Path, project: Path, chapter: int) -> Path:
     unresolved = delta.get("unresolved", [])
     if isinstance(unresolved, list) and unresolved:
         next_hook += " 待解问题：" + "；".join(str(item) for item in unresolved if item)
+    if (run / "approved_overview.md").is_file():
+        facts = delta.get("handoff_facts")
+        if not isinstance(facts, list) or not facts:
+            raise V3ValidationError("确认总览后的接力缺少最终正文事实依据")
+        for fact in facts:
+            if (not isinstance(fact, dict) or not isinstance(fact.get("fact"), str) or not fact["fact"].strip()
+                    or not isinstance(fact.get("quote"), str) or not fact["quote"].strip()
+                    or fact["quote"] not in body
+                    or fact.get("status") not in ("completed", "pending")):
+                raise V3ValidationError("后续接力包含缺失或不在最终正文中的事实证据")
+        next_hook = "；".join(
+            ("已完成：" if item["status"] == "completed" else "待办：") + item["fact"].strip()
+            for item in facts
+        )
+        invalidate_future_planning(run, project, chapter)
+        delta["next_hook"] = next_hook
+        delta["unresolved"] = [item["fact"] for item in facts if item["status"] == "pending"]
+        if manifest_path.is_file():
+            (run / "continuity_review.json").write_text(
+                json.dumps(delta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
     project.joinpath("chapters").mkdir(parents=True, exist_ok=True)
     project.joinpath("drafts").mkdir(parents=True, exist_ok=True)
     final_path.write_text(final, encoding="utf-8")

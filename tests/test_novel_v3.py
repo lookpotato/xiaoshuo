@@ -45,7 +45,10 @@ class DeepEditAcceptanceTests(unittest.TestCase):
                     patch("novel_v3.subprocess.run") as run:
                 run.return_value.returncode = 0
                 execute(prompt, root / "output.md", root)
-            self.assertEqual(run.call_args.args[0][0], cli)
+            self.assertEqual(run.call_args.args[0][0], str(cli))
+            command = run.call_args.args[0]
+            self.assertEqual(command[command.index("--model") + 1], "gpt-6.1-sol")
+            self.assertIn('model_reasoning_effort="medium"', command)
 
     def test_scene_seed_must_be_prose_before_expansion(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -111,6 +114,49 @@ class DeepEditAcceptanceTests(unittest.TestCase):
                 archive_chapter(run, project, 2)
             self.assertFalse(list((project / "chapters").glob("0002-*.md")))
             self.assertFalse((project / "drafts").exists())
+
+    def test_approved_archive_rebuilds_handoff_and_backs_up_future_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, project = root / "run", root / "book"
+            run.mkdir()
+            (project / "chapter_plans").mkdir(parents=True)
+            (project / "character_threads" / "0003").mkdir(parents=True)
+            plan = project / "chapter_plans" / "0003.json"
+            plan.write_text('{"immediate_goal":"邻楼借窗"}', encoding="utf-8")
+            (project / "chapter_plans" / "0001.json").write_text('{}', encoding="utf-8")
+            (project / "chapter_state.json").write_text('{"next_chapter_number":2}', encoding="utf-8")
+            (run / "candidate.md").write_text('# 第2章 绕路回家\n\n她推车进了后门。', encoding="utf-8")
+            (run / "approved_overview.md").write_text('不用邻楼窗口', encoding="utf-8")
+            delta = {"next_hook": "旧的错误：借窗口", "unresolved": ["邻楼观察盲区"],
+                     "handoff_facts": [{"fact": "住户已回家", "quote": "她推车进了后门。", "status": "completed"}]}
+            (run / "state_delta.json").write_text(json.dumps(delta, ensure_ascii=False), encoding="utf-8")
+            archive_chapter(run, project, 2)
+            state = json.loads((project / "chapter_state.json").read_text(encoding="utf-8"))
+            self.assertEqual(state["notes_for_next_chapter"], "已完成：住户已回家")
+            self.assertFalse(plan.exists())
+            self.assertFalse((project / "character_threads" / "0003").exists())
+            self.assertTrue((run / "superseded_future" / "chapter_plans" / "0003.json").is_file())
+            self.assertTrue((project / "chapter_plans" / "0001.json").is_file())
+
+    def test_unsupported_handoff_fact_stops_before_archive_or_invalidation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, project = root / "run", root / "book"
+            run.mkdir()
+            (project / "chapter_plans").mkdir(parents=True)
+            (project / "chapter_plans" / "0003.json").write_text('{}', encoding="utf-8")
+            (project / "chapter_state.json").write_text('{"next_chapter_number":2}', encoding="utf-8")
+            (run / "candidate.md").write_text('# 第2章 回家\n\n她进门了。', encoding="utf-8")
+            (run / "approved_overview.md").write_text('回家', encoding="utf-8")
+            (run / "state_delta.json").write_text(json.dumps({"handoff_facts": [
+                {"fact": "借窗口", "quote": "不存在的正文", "status": "pending"}
+            ]}), encoding="utf-8")
+            with self.assertRaisesRegex(V3ValidationError, "事实证据"):
+                archive_chapter(run, project, 2)
+            self.assertTrue((project / "chapter_plans" / "0003.json").exists())
+            self.assertFalse((project / "chapters").exists())
+            self.assertEqual(json.loads((project / "chapter_state.json").read_text())["next_chapter_number"], 2)
 
     def test_unified_archive_uses_final_continuity_hook(self):
         with tempfile.TemporaryDirectory() as directory:

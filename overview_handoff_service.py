@@ -6,11 +6,13 @@ import argparse
 import hashlib
 import json
 import re
+import tempfile
 from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
 from novel_engine_v3.continuity import validate_characters, validate_timeline_head, validate_viewpoint_contract
 from novel_v3 import ensure_director_plan, execute, review_and_archive, validate_scene_seed
+from novel_stage_pipeline import planning_context_sha256, validate_plan
 
 
 ROOT = Path(__file__).resolve().parent
@@ -198,6 +200,65 @@ def ask(root: Path, book_id: str, chapter: int, question: str, revision: str) ->
     return response
 
 
+def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
+                          revision: str, meta: dict) -> None:
+    """Rebuild planning inputs before prose can reuse superseded story decisions."""
+    if meta.get("context_revision") == revision:
+        return
+    plan_path = project / "chapter_plans" / f"{chapter:04d}.json"
+    original = plan_path.read_bytes()
+    backup = run / "plan.before_overview.json"
+    if not backup.exists():
+        backup.write_bytes(original)
+    prompt = run / "overview_sync.md"
+    result = run / "overview_sync.result.json"
+    prompt.write_text(
+        _read(run / "director.md") + "\n\n# 作者确认后的规划同步\n"
+        f"读取 `{run / 'approved_overview.md'}` 与当前合同 `{plan_path}`、前章正文和世界规则。"
+        "以确认总览替换本章旧设想，逐项同步目标、人物驱动、场景、回报、结尾与视角合同。"
+        "被总览删除的事件、承诺和观察位置不得继续出现在合同其他字段。"
+        "总览中的未来打算不能写成前章已发生事实；与既有事实冲突应报错。"
+        "不要调用工具修改文件，不生成正文。最终回复只输出完整章节合同 JSON 对象，"
+        "沿用合同结构和章号，不加代码围栏；前面要求写文件的指令改为只在回复输出。\n",
+        encoding="utf-8",
+    )
+    execute(prompt, result, run, read_only=True)
+    plan = json.loads(_read(result))
+    if not isinstance(plan, dict) or plan.get("chapter_number") != chapter:
+        raise ValueError("总览同步返回的章节合同章号错误")
+    plan["planning_context_sha256"] = planning_context_sha256(root, project, chapter)
+    try:
+        plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        validate_plan(root, project, chapter)
+    except Exception:
+        plan_path.write_bytes(original)
+        raise
+    meta["plan_revision"] = _hash(_read(plan_path))
+    _write_meta(run, meta)
+    threads = project / "character_threads" / f"{chapter:04d}"
+    if threads.is_dir():
+        if project.resolve() not in threads.resolve().parents:
+            raise ValueError("人物线目录越界")
+        backup_dir = Path(tempfile.mkdtemp(prefix="overview-characters-", dir=run))
+        threads.rename(backup_dir / threads.name)
+    for stage in ("characters", "author_room", "scene_seed"):
+        refreshed = run / f"{stage}.overview.md"
+        refreshed.write_text(
+            _read(run / f"{stage}.md") + "\n\n"
+            f"先读取 `{run / 'approved_overview.md'}` 和刚同步的章节合同。"
+            "按确认总览重新建立本章材料，覆盖旧版本；旧稿已删除的情节与承诺不得沿用。"
+            "人物名单与私线须服从修改后的实际出场安排。\n", encoding="utf-8",
+        )
+        execute(refreshed, run / f"{stage}.overview.result.md", run)
+        if stage == "characters":
+            validate_characters(project, chapter, final=False)
+            validate_viewpoint_contract(root, project, chapter)
+        elif stage == "scene_seed":
+            validate_scene_seed(run)
+    meta["context_revision"] = revision
+    _write_meta(run, meta)
+
+
 def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     project, run, meta = _check_pending(root, book_id, chapter, allow_expanding=True)
     overview = _read(run / "overview.md")
@@ -217,16 +278,22 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     meta["approved_revision"] = revision
     _write_meta(run, meta)
     try:
+        sync_overview_context(root, project, run, chapter, revision, meta)
+        for stale_review in ("reader_review.json", "continuity_review.json", "chronology.json"):
+            (run / stale_review).unlink(missing_ok=True)
         if resume_candidate:
             print(f"复用第 {chapter:04d} 章候选稿，重新审读后归档。", flush=True)
-            for stale_review in ("reader_review.json", "continuity_review.json", "chronology.json"):
-                (run / stale_review).unlink(missing_ok=True)
         else:
             for stage in ("draft", "deep_edit"):
                 execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
                         capture_candidate=stage == "deep_edit")
             meta["candidate_revision"] = revision
             _write_meta(run, meta)
+        # Refresh old run packages too; their continuity prompt predates this gate.
+        from novel_v3 import OVERVIEW_CONTINUITY_CONTRACT
+        continuity = run / "continuity.md"
+        if OVERVIEW_CONTINUITY_CONTRACT not in _read(continuity):
+            continuity.write_text(_read(continuity) + "\n" + OVERVIEW_CONTINUITY_CONTRACT, encoding="utf-8")
         archived = review_and_archive(run, project, chapter)
     except Exception:
         meta["status"] = "pending"

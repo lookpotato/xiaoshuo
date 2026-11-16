@@ -39,12 +39,14 @@ class OverviewHandoffTests(unittest.TestCase):
         saved = service.save(self.root, "book", 3, revised, initial["revision"])
         with self.assertRaisesRegex(ValueError, "别处更新"):
             service.save(self.root, "book", 3, initial["overview"], initial["revision"])
+        (self.run / "reader_review.json").write_text('{"blocking":[]}', encoding="utf-8")
 
         def fake_execute(prompt, output, run, **kwargs):
             if prompt.name == "draft.md":
                 self.assertEqual((run / "approved_overview.md").read_text(encoding="utf-8"), revised)
+                self.assertFalse((run / "reader_review.json").exists())
 
-        with patch.object(service, "execute", side_effect=fake_execute), patch.object(
+        with patch.object(service, "sync_overview_context"), patch.object(service, "execute", side_effect=fake_execute), patch.object(
             service, "review_and_archive", return_value=self.project / "chapters" / "0003.md"
         ):
             service.expand(self.root, "book", 3, saved["revision"])
@@ -88,11 +90,68 @@ class OverviewHandoffTests(unittest.TestCase):
             self.assertEqual((run / "candidate.md").read_text(encoding="utf-8"), "# 第三章\n候选正文\n")
             return project / "chapters" / "0003.md"
 
-        with patch.object(service, "execute") as execute, patch.object(
+        with patch.object(service, "sync_overview_context"), patch.object(service, "execute") as execute, patch.object(
             service, "review_and_archive", side_effect=review
         ):
             service.expand(self.root, "book", 3, revision)
         execute.assert_not_called()
+
+    def test_overview_rebuilds_plan_and_removes_old_character_inputs(self):
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        (self.run / "approved_overview.md").write_text("住户已经回家，不借窗口。", encoding="utf-8")
+        threads = self.project / "character_threads" / "0003"
+        threads.mkdir(parents=True)
+        (threads / "旧邻楼观察者.md").write_text("借窗取证", encoding="utf-8")
+        meta = json.loads((self.run / "overview_handoff.json").read_text(encoding="utf-8"))
+        stages = []
+
+        def execute(prompt, output, run, **kwargs):
+            stages.append(prompt.name)
+            if prompt.name == "overview_sync.md":
+                self.assertTrue(kwargs["read_only"])
+                output.write_text(json.dumps({"chapter_number": 3, "immediate_goal": "街对面复测"}), encoding="utf-8")
+            elif prompt.name == "characters.overview.md":
+                self.assertFalse(threads.exists())
+                threads.mkdir()
+                (threads / "新人物.md").write_text("街对面复测", encoding="utf-8")
+
+        with patch.object(service, "execute", side_effect=execute), \
+             patch.object(service, "planning_context_sha256", return_value="current"), \
+             patch.object(service, "validate_plan"), patch.object(service, "validate_characters"), \
+             patch.object(service, "validate_viewpoint_contract"), patch.object(service, "validate_scene_seed"):
+            service.sync_overview_context(self.root, self.project, self.run, 3, revision, meta)
+            service.sync_overview_context(self.root, self.project, self.run, 3, revision, meta)
+        self.assertEqual(stages, ["overview_sync.md", "characters.overview.md", "author_room.overview.md", "scene_seed.overview.md"])
+        self.assertEqual(meta["context_revision"], revision)
+        self.assertFalse(service.workspace(self.root, "book", 3)["plan_stale"])
+        self.assertEqual(len(list(self.run.glob("overview-characters-*/0003/旧邻楼观察者.md"))), 1)
+
+    def test_invalid_synced_plan_restores_original_and_keeps_context_pending(self):
+        plan = self.project / "chapter_plans" / "0003.json"
+        original = plan.read_bytes()
+        meta = json.loads((self.run / "overview_handoff.json").read_text(encoding="utf-8"))
+
+        def execute(prompt, output, run, **kwargs):
+            output.write_text('{"chapter_number":3}', encoding="utf-8")
+
+        with patch.object(service, "execute", side_effect=execute), \
+             patch.object(service, "planning_context_sha256", return_value="current"), \
+             patch.object(service, "validate_plan", side_effect=ValueError("合同不完整")):
+            with self.assertRaisesRegex(ValueError, "合同不完整"):
+                service.sync_overview_context(self.root, self.project, self.run, 3, "revision", meta)
+        self.assertEqual(plan.read_bytes(), original)
+        self.assertNotIn("context_revision", meta)
+
+    def test_sync_failure_keeps_chapter_pending_and_never_starts_prose(self):
+        revision = service.workspace(self.root, "book", 3)["revision"]
+        with patch.object(service, "sync_overview_context", side_effect=ValueError("同步失败")), \
+             patch.object(service, "execute") as execute, patch.object(service, "review_and_archive") as archive:
+            with self.assertRaisesRegex(ValueError, "同步失败"):
+                service.expand(self.root, "book", 3, revision)
+        execute.assert_not_called()
+        archive.assert_not_called()
+        self.assertEqual(service.workspace(self.root, "book", 3)["status"], "pending")
+        self.assertEqual(json.loads((self.project / "chapter_state.json").read_text())["next_chapter_number"], 3)
 
     def test_changed_plan_blocks_expansion(self):
         initial = service.workspace(self.root, "book", 3)

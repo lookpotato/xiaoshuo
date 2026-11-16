@@ -38,7 +38,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         if (current && current.status !== "running") {
           window.clearInterval(timer); setRun(null);
           await load();
-          if (current.status === "success") onNotice(run.action === "prepare" ? "写前总览已生成，请先审阅和修改" : run.action === "ask" ? "作者已回答问题" : "章节扩写与归档已完成");
+          if (current.status === "success") onNotice(run.action === "prepare" ? "写前总览已生成，请先审阅和修改" : run.action === "ask" ? "作者已回答问题" : "章节扩写、归档与后续接力更新已完成");
           else {
             const failedLog = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=100`);
             setError(failedLog.error_summary || "任务未完成，请在控制台查看失败原因");
@@ -53,9 +53,18 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     if (busy || run) return;
     setBusy(true); setError("");
     try {
+      let revision = data?.revision;
+      if (action === "expand" && text !== data.overview) {
+        const saved = await api("/api/overview-handoff/save", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ book_id: book.id, chapter, content: text, revision }),
+        });
+        revision = saved.revision;
+        setData((current) => ({ ...current, overview: text, revision }));
+      }
       const result = await api(`/api/overview-handoff/${action}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, chapter, revision: data?.revision, question }),
+        body: JSON.stringify({ book_id: book.id, chapter, revision, question }),
       });
       setRun({ id: result.run.id, action }); onRunStarted(result.run);
       if (action === "ask") setQuestion("");
@@ -120,10 +129,11 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}
         {(data.term_note || (book.id === "night-floor" && text.includes("原表"))) && <div className="overview-term-note"><strong>这里的“原表”是什么？</strong><p>{data.term_note || "街道手里的二零二旧登记表：二零二一栏写着‘已退出’，但刘桂芳仍实际居住。街道已暂停按空户处理，原表还没改；旧凭据号与郭冬梅母亲的收条末四位相同，错记原因仍未查清。"}</p></div>}
         <textarea aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />
-        <div className="human-actions"><button className="button primary" disabled={busy || !!run || !dirty || data.plan_stale} onClick={save}>保存总览</button><button className="button ghost" disabled={busy || !!run || dirty || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>确认总览并扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
-        {dirty && <p className="feedback">有未保存修改；提问时会自动保存，扩写前请先保存。</p>}
+        <div className="human-actions"><button className="button primary" disabled={busy || !!run || !dirty || data.plan_stale} onClick={save}>保存总览</button><button className="button ghost" disabled={busy || !!run || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>保存总览并扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
+        <p className="feedback">扩写前会同步本章规划与人物线；归档后按最终正文更新后续接力，后续旧规划将备份并重新生成。</p>
+        {dirty && <p className="feedback">有未保存修改；提问和扩写时会自动保存。</p>}
         {data.status === "expanding" && <p className="feedback">已交给 AI 扩写。若任务已停止或失败，可用保存的总览重试。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("expand")}>重试扩写</button></p>}
-        {data.status === "archived" && <p className="feedback">本章已按确认的总览完成归档。</p>}
+        {data.status === "archived" && <p className="feedback">本章已按确认的总览完成归档，后续接力已按最终正文更新。</p>}
       </article>
       {(data.status === "pending" || exchanges.length > 0 || pendingQuestion) && <article className="panel human-guide"><h2>与作者讨论</h2><p>指出逻辑、人物动机或场景安排的问题。提问时会自动保存当前总览；回复会直接显示在下面。</p>
         {data.status === "pending" && <><textarea className="overview-question" aria-label="向作者提问" placeholder="例如：这个人物为什么此时愿意交出钥匙？" value={question} onChange={(event) => setQuestion(event.target.value)} />
