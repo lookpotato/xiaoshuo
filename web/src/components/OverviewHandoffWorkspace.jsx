@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
+function ChangeSummary({ summary, title = "保存后的对比总结", note = "这里只对比总览文本。剧情规划与后续接力是否已同步，请看下面的运行进度和完成结果。" }) {
+  if (!summary) return null;
+  const changes = summary.changes || [];
+  return <section className="overview-comparison" aria-label="总览修改对比">
+    <h3>{title}</h3>
+    {summary.baseline && <p>{summary.baseline}</p>}
+    <p>{changes.length ? `本次共 ${changes.length} 处变化：` + ["新增", "修改", "删除"].map((kind) => `${kind} ${changes.filter((item) => item.kind === kind).length} 处`).join("，") : "本次保存与上一版内容相同。"}</p>
+    {changes.map((item, index) => <details key={index} open={changes.length <= 3}>
+      <summary>{index + 1}. {item.kind}</summary>
+      <div className="workspace-grid"><div><strong>保存前</strong><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{item.before || "（无）"}</p></div><div><strong>保存后</strong><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{item.after || "（已删除）"}</p></div></div>
+    </details>)}
+    {note && <p>{note}</p>}
+  </section>;
+}
+
 export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, onRunStarted }) {
   const chapter = book.next_chapter_number;
   const [data, setData] = useState(null);
@@ -20,15 +35,18 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   }, [book.id, chapter]);
   useEffect(() => { setData(null); setRun(null); load(); }, [load]);
   useEffect(() => {
-    if (!data?.questions?.some((item) => item.status === "running")) return undefined;
+    if (!run && data?.status !== "expanding" && !data?.questions?.some((item) => item.status === "running")) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const result = await api(`/api/overview-handoff?book_id=${encodeURIComponent(book.id)}&chapter=${chapter}`);
-        setData((current) => current ? { ...current, questions: result.questions } : current);
+        setData((current) => current ? { ...current, questions: result.questions, status: result.status,
+          progress: result.progress, change_summary: result.change_summary, result_summary: result.result_summary,
+          plan_change_summary: result.plan_change_summary,
+          plan_stale: result.plan_stale } : current);
       } catch (failure) { setError(failure.message); }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [book.id, chapter, data?.questions]);
+  }, [book.id, chapter, data?.questions?.some((item) => item.status === "running"), data?.status, run?.id]);
   useEffect(() => {
     if (!run) return undefined;
     const timer = window.setInterval(async () => {
@@ -60,7 +78,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
           body: JSON.stringify({ book_id: book.id, chapter, content: text, revision }),
         });
         revision = saved.revision;
-        setData((current) => ({ ...current, overview: text, revision }));
+        setData((current) => ({ ...current, overview: text, revision, change_summary: saved.change_summary }));
       }
       const result = await api(`/api/overview-handoff/${action}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -80,7 +98,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: book.id, chapter, content: text, revision: data.revision }),
       });
-      setData((current) => ({ ...current, overview: text, revision: result.revision }));
+      setData((current) => ({ ...current, overview: text, revision: result.revision, change_summary: result.change_summary }));
       onNotice("写前总览已保存");
     } catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
@@ -97,7 +115,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
           body: JSON.stringify({ book_id: book.id, chapter, content: text, revision }),
         });
         revision = saved.revision;
-        setData((current) => ({ ...current, overview: text, revision }));
+        setData((current) => ({ ...current, overview: text, revision, change_summary: saved.change_summary }));
       }
       const result = await api("/api/overview-handoff/ask", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -124,6 +142,13 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；保存并确认后，AI 再以你的总览扩成正文。</p>
       {apiVersion < 12 && <p className="feedback" role="alert">请重启 Python 工作台服务，启用写前总览接口。</p>}
     </article>
+    {(busy || run || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
+      <div role="status" aria-live="polite"><strong>{busy ? "正在保存或提交任务，请稍候……" : run || data?.status === "expanding" ? (data?.progress?.stage || (run?.action === "ask" ? "作者正在回答……" : run?.action === "prepare" ? "正在生成总览……" : "正在启动扩写与剧情同步……")) : data?.progress?.stage || "总览已保存，等待确认扩写"}</strong>
+      {(run || data?.status === "expanding") && <p>任务运行中，进度每 3 秒更新。当前阶段可能需要几分钟，请勿重复提交。</p>}</div>
+      <ChangeSummary summary={data?.change_summary || data?.last_report?.change_summary} />
+      <ChangeSummary summary={data?.plan_change_summary || data?.last_report?.plan_change_summary} title="本章规划同步前后对比" note="这是实际写入章节规划的变化。" />
+      {(data?.result_summary || data?.last_report) && (() => { const result = data.result_summary || data.last_report; return <section><h3>第 {result.chapter} 章后续剧情更新结果</h3><p style={{ whiteSpace: "pre-wrap" }}>{result.next_hook || "未返回后续接力内容。"}</p><ChangeSummary summary={result.handoff_change_summary} title="后续接力更新前后对比" note="" /><p>已备份并撤销 {(result.invalidated || []).length} 份后续旧材料。</p>{result.invalidated?.length > 0 && <details><summary>查看已撤销材料</summary><ul>{result.invalidated.map((path) => <li key={path}>{path}</li>)}</ul></details>}</section>; })()}
+    </article>}
     {data?.status === "none" ? <article className="panel human-guide"><h2>准备第 {chapter} 章</h2><p>生成写前材料可能需要几分钟，完成后会在本页显示可修改的总览。</p><button className="button primary" disabled={busy || !!run || apiVersion < 12} onClick={() => launch("prepare")}>{run?.action === "prepare" ? "正在生成……" : "生成写前总览"}</button></article> : data && <>
       <article className="panel human-editor"><div className="panel-head"><div><p className="eyebrow">YOUR OVERVIEW</p><h2>修改本章总览</h2></div><span>{text.length} 字符</span></div>
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}

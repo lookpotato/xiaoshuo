@@ -37,6 +37,10 @@ class OverviewHandoffTests(unittest.TestCase):
         initial = service.workspace(self.root, "book", 3)
         revised = initial["overview"] + "\n最后由她亲自开门。"
         saved = service.save(self.root, "book", 3, revised, initial["revision"])
+        self.assertEqual(saved["change_summary"]["count"], 1)
+        self.assertEqual(saved["change_summary"]["changes"][0]["kind"], "新增")
+        self.assertIn("亲自开门", saved["change_summary"]["changes"][0]["after"])
+        self.assertEqual(service.workspace(self.root, "book", 3)["change_summary"], saved["change_summary"])
         with self.assertRaisesRegex(ValueError, "别处更新"):
             service.save(self.root, "book", 3, initial["overview"], initial["revision"])
         (self.run / "reader_review.json").write_text('{"blocking":[]}', encoding="utf-8")
@@ -51,6 +55,21 @@ class OverviewHandoffTests(unittest.TestCase):
         ):
             service.expand(self.root, "book", 3, saved["revision"])
         self.assertEqual(service.workspace(self.root, "book", 3)["status"], "archived")
+        next_page = service.workspace(self.root, "book", 4)
+        self.assertEqual(next_page["last_report"]["chapter"], 3)
+        self.assertEqual(next_page["last_report"]["change_summary"], saved["change_summary"])
+
+    def test_recovered_legacy_comparison_is_labelled_against_initial_plan(self):
+        initial = "初始总览" * 20
+        (self.run / "overview.original.md").write_text(initial, encoding="utf-8")
+        result = service.workspace(self.root, "book", 3)
+        self.assertIn("初始规划", result["change_summary"]["baseline"])
+
+    def test_comparison_preserves_added_deleted_and_replaced_text(self):
+        report = service.compare_overviews("删掉的承诺\n保持\n旧路线", "保持\n新路线\n")
+        self.assertEqual([item["kind"] for item in report["changes"]], ["删除", "修改"])
+        self.assertEqual(report["changes"][0]["before"], "删掉的承诺")
+        self.assertEqual(report["changes"][1]["after"], "新路线")
 
     def test_question_is_read_only_and_saved_without_changing_overview(self):
         initial = service.workspace(self.root, "book", 3)
@@ -107,6 +126,8 @@ class OverviewHandoffTests(unittest.TestCase):
 
         def execute(prompt, output, run, **kwargs):
             stages.append(prompt.name)
+            progress = service.workspace(self.root, "book", 3)["progress"]
+            self.assertTrue(progress["stage"].startswith("正在"))
             if prompt.name == "overview_sync.md":
                 self.assertTrue(kwargs["read_only"])
                 output.write_text(json.dumps({"chapter_number": 3, "immediate_goal": "街对面复测"}), encoding="utf-8")
@@ -151,6 +172,7 @@ class OverviewHandoffTests(unittest.TestCase):
         execute.assert_not_called()
         archive.assert_not_called()
         self.assertEqual(service.workspace(self.root, "book", 3)["status"], "pending")
+        self.assertIn("任务失败", service.workspace(self.root, "book", 3)["progress"]["stage"])
         self.assertEqual(json.loads((self.project / "chapter_state.json").read_text())["next_chapter_number"], 3)
 
     def test_changed_plan_blocks_expansion(self):

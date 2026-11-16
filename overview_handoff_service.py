@@ -7,6 +7,8 @@ import hashlib
 import json
 import re
 import tempfile
+from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from novel_engine_v3 import AuthorEngine, V3ValidationError
@@ -30,6 +32,24 @@ def _hash(text: str) -> str:
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig") if path.is_file() else ""
+
+
+def compare_overviews(before: str, after: str) -> dict:
+    changes = []
+    old, new = before.splitlines(), after.splitlines()
+    for tag, a, b, c, d in SequenceMatcher(None, old, new, autojunk=False).get_opcodes():
+        if tag != "equal":
+            changes.append({"kind": {"replace": "修改", "delete": "删除", "insert": "新增"}[tag],
+                            "before": "\n".join(old[a:b]), "after": "\n".join(new[c:d])})
+    return {"before_revision": _hash(before), "after_revision": _hash(after),
+            "saved_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "changes": changes, "count": len(changes)}
+
+
+def _progress(run: Path, meta: dict, stage: str) -> None:
+    meta["progress"] = {"stage": stage, "updated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    _write_meta(run, meta)
+    print(f"[总览接力] {stage}", flush=True)
 
 
 def _run(root: Path, book_id: str, chapter: int) -> Path | None:
@@ -57,18 +77,33 @@ def _paths(root: Path, book_id: str, chapter: int) -> tuple[Path, Path, dict]:
 
 def workspace(root: Path, book_id: str, chapter: int) -> dict:
     AuthorEngine(root).book(book_id)
+    previous = _run(root, book_id, chapter - 1) if chapter > 1 else None
+    last_report = json.loads(_read(previous / "overview_handoff.json")) if previous else {}
     run = _run(root, book_id, chapter)
     if run is None:
-        return {"book_id": book_id, "chapter": chapter, "status": "none"}
+        return {"book_id": book_id, "chapter": chapter, "status": "none", "last_report": last_report.get("result_summary")}
     project, run, meta = _paths(root, book_id, chapter)
     overview = _read(run / "overview.md")
     plan_path = project / "chapter_plans" / f"{chapter:04d}.json"
     plan_revision = _hash(_read(plan_path))
+    comparison = meta.get("change_summary")
+    if (not comparison and meta.get("status") == "pending" and not meta.get("context_revision")
+            and plan_revision == meta.get("plan_revision")):
+        baseline = _read(run / "overview.original.md")
+        if not baseline and plan_path.is_file():
+            baseline = _render_overview(json.loads(_read(plan_path)), run, chapter)
+        if baseline and baseline != overview:
+            comparison = compare_overviews(baseline, overview)
+            comparison["baseline"] = "与初始规划生成的总览对比"
     return {
         "book_id": book_id, "chapter": chapter, "status": meta["status"],
         "overview": overview, "revision": _hash(overview),
         "plan_stale": plan_revision != meta["plan_revision"],
         "questions": meta.get("questions", []),
+        "change_summary": comparison, "progress": meta.get("progress"),
+        "plan_change_summary": meta.get("plan_change_summary"),
+        "result_summary": meta.get("result_summary"),
+        "last_report": last_report.get("result_summary"),
         "term_note": ORIGINAL_TABLE_NOTE if book_id == "night-floor" and "原表" in overview else "",
         "run_dir": str(run),
     }
@@ -104,6 +139,14 @@ def prepare(root: Path, book_id: str, chapter: int) -> Path:
             validate_scene_seed(run)
     plan_path = project / "chapter_plans" / f"{chapter:04d}.json"
     plan = json.loads(_read(plan_path))
+    overview = _render_overview(plan, run, chapter)
+    (run / "overview.md").write_text(overview, encoding="utf-8")
+    (run / "overview.original.md").write_text(overview, encoding="utf-8")
+    _write_meta(run, {"status": "pending", "plan_revision": _hash(_read(plan_path)), "questions": []})
+    return run
+
+
+def _render_overview(plan: dict, run: Path, chapter: int) -> str:
     scenes = "\n".join(
         f"{index}. {item.get('purpose', '')}；阻力：{item.get('conflict', '')}；变化：{item.get('turn', '')}"
         for index, item in enumerate(plan.get("scene_plan", []), 1) if isinstance(item, dict)
@@ -118,9 +161,7 @@ def prepare(root: Path, book_id: str, chapter: int) -> Path:
         "## 结尾压力\n"
         f"{plan.get('ending_pressure', {}).get('visible_trigger', '')}\n"
     )
-    (run / "overview.md").write_text(overview, encoding="utf-8")
-    _write_meta(run, {"status": "pending", "plan_revision": _hash(_read(plan_path)), "questions": []})
-    return run
+    return overview
 
 
 def _write_meta(run: Path, meta: dict) -> None:
@@ -154,15 +195,21 @@ def validate_pending(root: Path, book_id: str, chapter: int, action: str,
 
 
 def save(root: Path, book_id: str, chapter: int, content: str, revision: str) -> dict:
-    _, run, _ = _check_pending(root, book_id, chapter)
+    _, run, meta = _check_pending(root, book_id, chapter)
     if not isinstance(content, str) or not 50 <= len(content.strip()) <= 100_000:
         raise ValueError("总览应在 50 到 100000 字符之间")
     if not re.fullmatch(r"[0-9a-f]{64}", revision or "") or _hash(_read(run / "overview.md")) != revision:
         raise ValueError("总览已在别处更新，请刷新后再保存")
     temporary = run / "overview.tmp"
+    before = _read(run / "overview.md")
+    if not (run / "overview.original.md").exists():
+        (run / "overview.original.md").write_text(before, encoding="utf-8")
     temporary.write_text(content, encoding="utf-8")
     temporary.replace(run / "overview.md")
-    return {"revision": _hash(content)}
+    if before != content or not meta.get("change_summary"):
+        meta["change_summary"] = compare_overviews(before, content)
+    _write_meta(run, meta)
+    return {"revision": _hash(content), "change_summary": meta["change_summary"]}
 
 
 def ask(root: Path, book_id: str, chapter: int, question: str, revision: str) -> str:
@@ -222,6 +269,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
         "沿用合同结构和章号，不加代码围栏；前面要求写文件的指令改为只在回复输出。\n",
         encoding="utf-8",
     )
+    _progress(run, meta, "正在对比确认总览并同步本章规划")
     execute(prompt, result, run, read_only=True)
     plan = json.loads(_read(result))
     if not isinstance(plan, dict) or plan.get("chapter_number") != chapter:
@@ -234,6 +282,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
         plan_path.write_bytes(original)
         raise
     meta["plan_revision"] = _hash(_read(plan_path))
+    meta["plan_change_summary"] = compare_overviews(original.decode("utf-8-sig"), _read(plan_path))
     _write_meta(run, meta)
     threads = project / "character_threads" / f"{chapter:04d}"
     if threads.is_dir():
@@ -242,6 +291,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
         backup_dir = Path(tempfile.mkdtemp(prefix="overview-characters-", dir=run))
         threads.rename(backup_dir / threads.name)
     for stage in ("characters", "author_room", "scene_seed"):
+        _progress(run, meta, {"characters": "正在重建人物线", "author_room": "正在更新人物与现场理解", "scene_seed": "正在重写场景粗稿"}[stage])
         refreshed = run / f"{stage}.overview.md"
         refreshed.write_text(
             _read(run / f"{stage}.md") + "\n\n"
@@ -278,6 +328,7 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
     meta["approved_revision"] = revision
     _write_meta(run, meta)
     try:
+        _progress(run, meta, "开始同步总览与剧情规划")
         sync_overview_context(root, project, run, chapter, revision, meta)
         for stale_review in ("reader_review.json", "continuity_review.json", "chronology.json"):
             (run / stale_review).unlink(missing_ok=True)
@@ -285,6 +336,7 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
             print(f"复用第 {chapter:04d} 章候选稿，重新审读后归档。", flush=True)
         else:
             for stage in ("draft", "deep_edit"):
+                _progress(run, meta, "正在扩写章节正文" if stage == "draft" else "正在编辑章节正文")
                 execute(run / f"{stage}.md", run / f"{stage}.result.md", run,
                         capture_candidate=stage == "deep_edit")
             meta["candidate_revision"] = revision
@@ -294,13 +346,21 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
         continuity = run / "continuity.md"
         if OVERVIEW_CONTINUITY_CONTRACT not in _read(continuity):
             continuity.write_text(_read(continuity) + "\n" + OVERVIEW_CONTINUITY_CONTRACT, encoding="utf-8")
+        _progress(run, meta, "正在审稿、核对连续性并更新后续接力")
+        prior_hook = json.loads(_read(project / "chapter_state.json")).get("notes_for_next_chapter", "")
         archived = review_and_archive(run, project, chapter)
-    except Exception:
+    except Exception as exc:
         meta["status"] = "pending"
-        _write_meta(run, meta)
+        _progress(run, meta, f"任务失败，可重试：{str(exc)[:300]}")
         raise
     meta["status"] = "archived"
-    _write_meta(run, meta)
+    state = json.loads(_read(project / "chapter_state.json"))
+    superseded = run / "superseded_future"
+    meta["result_summary"] = {"chapter": chapter, "next_hook": state.get("notes_for_next_chapter", ""),
+                              "handoff_change_summary": compare_overviews(prior_hook, state.get("notes_for_next_chapter", "")),
+                              "invalidated": [str(p.relative_to(superseded)) for p in superseded.rglob("*") if p.is_file()] if superseded.exists() else [],
+                              "change_summary": meta.get("change_summary"), "plan_change_summary": meta.get("plan_change_summary")}
+    _progress(run, meta, "已完成扩写、归档和后续接力更新")
     return archived
 
 
