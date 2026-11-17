@@ -41,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 15
+API_VERSION = 16
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -984,6 +984,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 "/api/reader-feedback/interview-answers": 64 * 1024,
                 "/api/reader-feedback/manual-edit": 1024 * 1024,
                 "/api/reader-feedback/manual-edit/retry": 16 * 1024,
+                "/api/reader-feedback/manual-edit/promote": 16 * 1024,
                 "/api/chapter/delete-tail": 16 * 1024,
                 "/api/chapter/batch-rewrite": 16 * 1024,
                 "/api/chapter/batch-rewrite/resume": 16 * 1024,
@@ -1070,13 +1071,24 @@ class AppHandler(BaseHTTPRequestHandler):
                 chapter = int(payload.get("chapter"))
                 edit_id = str(payload.get("edit_id", ""))
                 record = reader_feedback_service.manual_edit_record(ROOT, book_id, chapter, edit_id)
-                if record["status"] not in {"failed", "unavailable"}:
+                if record["status"] not in {"failed", "unavailable"} and not (
+                    record["status"] == "completed" and not record["structured_analysis"]
+                ):
                     raise ValueError("只有失败或旧版手动修改记录可以重新分析")
                 run = launch_manual_edit_analysis(book_id, chapter, edit_id)
                 self.send_json({"ok": True, "run": run,
                                 "manual_edits": reader_feedback_service.manual_edit_history(
                                     ROOT, book_id, chapter,
                                 )}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/reader-feedback/manual-edit/promote":
+                book_id = str(payload.get("book_id", ""))
+                chapter = int(payload.get("chapter"))
+                edit_id = str(payload.get("edit_id", ""))
+                index = int(payload.get("candidate_index"))
+                self.send_json({"ok": True, **reader_feedback_service.promote_manual_edit_learning(
+                    ROOT, book_id, chapter, edit_id, index,
+                )})
                 return
             if parsed.path == "/api/reader-feedback/promote":
                 book_id = str(payload.get("book_id", ""))

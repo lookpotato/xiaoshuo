@@ -295,6 +295,10 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.03em; }
 .manual-edit-analysis h3 { margin: 15px 0 7px; font-size: 12px; }
 .manual-edit-analysis pre { max-height: 360px; overflow: auto; margin: 0; padding: 13px; border-radius: 8px; background: #f7f4ee; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.75 "Microsoft YaHei UI", sans-serif; }
 .manual-edit-analysis p { color: var(--muted); font-size: 12px; }
+.manual-learning-candidate { margin-top: 12px; padding: 14px; border: 1px solid rgba(31,128,101,.24); border-radius: 9px; background: #f2f7f1; font-size: 12px; line-height: 1.7; }
+.manual-learning-candidate > strong { display: block; font-size: 13px; }
+.manual-learning-candidate p { margin: 5px 0; }
+.manual-learning-candidate > span { color: var(--green); font-weight: 700; }
 .feedback-reader h2 { margin-bottom: 30px; font-size: 28px; }
 .feedback-reader p { margin-bottom: 1.1em; }
 .feedback-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }

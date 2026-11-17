@@ -394,6 +394,28 @@ class ReaderFeedbackServiceTests(unittest.TestCase):
             )
         self.assertIn("新补一句。", self.chapter.read_text(encoding="utf-8"))
 
+    def test_manual_edit_candidate_can_be_confirmed_for_author_once(self) -> None:
+        current = service.chapter_versions(self.root, "demo", 1)["current"]
+        saved = service.save_manual_revision(
+            self.root, "demo", 1,
+            current["content"].replace("甲把门推开。", "甲慢慢把门推开。"),
+            current["sha256"],
+        )
+        edit_id = saved["receipt"]["edit_id"]
+        folder = self.project / "reader_feedback" / "manual_edits" / "0001" / edit_id
+        service.atomic_json(folder / "analysis.json", {"learning_candidates": [{
+            "principle": "动作速度可以承担人物的犹豫。", "applies_when": "人物需要试探时",
+            "avoid": "别让所有动作都放慢", "rationale": "改后开门动作更符合此刻关系",
+            "recommended_scope": "author", "confidence": "medium", "tags": ["动作"],
+        }]})
+        service.update_manual_edit_status(self.root, "demo", 1, edit_id, "completed")
+        first = service.promote_manual_edit_learning(self.root, "demo", 1, edit_id, 0)
+        second = service.promote_manual_edit_learning(self.root, "demo", 1, edit_id, 0)
+        self.assertEqual(first["promotion"], second["promotion"])
+        author = json.loads((self.root / "novel_engine_v2" / "authors" / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(sum("动作速度" in item for item in author["language_principles"]), 1)
+        self.assertIn("动作速度", (self.project / "style_guide.md").read_text(encoding="utf-8"))
+
     def test_older_manual_edit_can_recover_exact_after_version(self) -> None:
         current = service.chapter_versions(self.root, "demo", 1)["current"]
         saved = service.save_manual_revision(

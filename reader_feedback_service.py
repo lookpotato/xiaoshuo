@@ -539,6 +539,8 @@ def manual_edit_record(root: Path, book_id: str, chapter: int, edit_id: str) -> 
         raise ValueError("找不到手动修改记录")
     state = read_json(folder / "analysis_status.json", {}) or {}
     analysis = (folder / "analysis.md").read_text(encoding="utf-8") if (folder / "analysis.md").is_file() else ""
+    structured = read_json(folder / "analysis.json", {}) or {}
+    promotions = read_json(folder / "promotions.json", {}) or {}
     comparison = (folder / "diff.md").read_text(encoding="utf-8") if (folder / "diff.md").is_file() else ""
     after = folder / "after.md"
     before = folder / "before.md"
@@ -554,6 +556,9 @@ def manual_edit_record(root: Path, book_id: str, chapter: int, edit_id: str) -> 
         "error": state.get("error", "此记录保存于自动分析功能启用前。"),
         "comparison": comparison[:30_000], "comparison_truncated": len(comparison) > 30_000,
         "analysis": analysis[:16_000],
+        "structured_analysis": (folder / "analysis.json").is_file(),
+        "learning_candidates": structured.get("learning_candidates", []),
+        "promotions": promotions,
         "can_analyze": recoverable,
     }
 
@@ -564,6 +569,91 @@ def manual_edit_history(root: Path, book_id: str, chapter: int) -> list[dict]:
     return [manual_edit_record(root, book_id, chapter, folder.name)
             for folder in sorted(base.iterdir(), reverse=True)[:20]
             if folder.is_dir() and SAFE_ID.fullmatch(folder.name)] if base.is_dir() else []
+
+
+def promote_manual_edit_learning(root: Path, book_id: str, chapter: int,
+                                 edit_id: str, candidate_index: int) -> dict:
+    """Confirm one lesson inferred from a direct edit for the bound author or language library."""
+    if not isinstance(candidate_index, int) or isinstance(candidate_index, bool):
+        raise ValueError("经验候选编号无效")
+    record = manual_edit_record(root, book_id, chapter, edit_id)
+    if record["status"] != "completed":
+        raise ValueError("修改复盘尚未完成")
+    candidates = record["learning_candidates"]
+    if not isinstance(candidates, list) or not 0 <= candidate_index < len(candidates):
+        raise ValueError("找不到这条经验候选")
+    candidate = _learning_candidate({"learning_candidate": candidates[candidate_index]})
+    scope = candidate["recommended_scope"]
+    if scope not in {"author", "shared_language"}:
+        raise ValueError("仅支持沉淀到作者或中文语言库")
+    _, project = _book(root, book_id)
+    folder = project / "reader_feedback" / "manual_edits" / f"{chapter:04d}" / edit_id
+    source_id = f"manual:{book_id}:{chapter}:{edit_id}:{candidate_index}"
+    rule_id = _rule_id("manual_edit", candidate["principle"])
+    now = datetime.now().astimezone().isoformat()
+    lesson = {"id": rule_id, "scope": scope, "book_id": book_id if scope == "author" else None,
+              "category": "manual_edit", **candidate, "evidence_feedback_ids": [source_id],
+              "evidence_count": 1, "confirmed_at": now, "updated_at": now}
+    with PROMOTION_LOCK:
+        promotions = read_json(folder / "promotions.json", {}) or {}
+        key = str(candidate_index)
+        if key in promotions:
+            return {"promotion": promotions[key], "record": manual_edit_record(root, book_id, chapter, edit_id)}
+        if scope == "author":
+            import author_registry
+            from novel_engine_v2.engine import NovelEngine
+
+            author = author_registry.book_author(root, book_id)
+            author_path = (root / author["document_id"]).resolve()
+            profile = author_registry.read_object(author_path)
+            lessons = profile.setdefault("feedback_learning", [])
+            if not isinstance(lessons, list):
+                raise ValueError("作者档案 feedback_learning 必须为数组")
+            promoted = _upsert_learning(lessons, lesson, source_id)
+            rendered = _render_rule(promoted)
+            principles = profile.setdefault("language_principles", [])
+            if rendered not in principles:
+                principles.append(rendered)
+            author_registry.validate_author_profile(profile, author["id"])
+            NovelEngine(root)._compile_author_context(profile)
+            bound_projects = _author_projects(root, author["id"])
+            for bound_project in bound_projects:
+                if not (bound_project / "style_guide.md").is_file():
+                    raise ValueError(f"缺少长期规则载体：{bound_project / 'style_guide.md'}")
+            atomic_json(author_path, profile)
+            destinations = [str(author_path)]
+            for bound_project in bound_projects:
+                style_path = bound_project / "style_guide.md"
+                _append_markdown_rule(style_path, f"author-feedback-learning:{rule_id}", promoted)
+                destinations.append(str(style_path))
+        else:
+            language_path = root / "shared" / "chinese_dialogue_feedback.jsonl"
+            lines = language_path.read_text(encoding="utf-8").splitlines() if language_path.is_file() else []
+            values = []
+            found = False
+            for line in lines:
+                try:
+                    existing = json.loads(line)
+                except json.JSONDecodeError:
+                    values.append(line)
+                    continue
+                if isinstance(existing, dict) and existing.get("id") == rule_id:
+                    evidence = existing.setdefault("evidence_feedback_ids", [])
+                    if source_id not in evidence:
+                        evidence.append(source_id)
+                    existing.update({"evidence_count": len(evidence), "updated_at": now,
+                                     "status": "user_confirmed"})
+                    found = True
+                values.append(json.dumps(existing, ensure_ascii=False))
+            if not found:
+                values.append(json.dumps({**lesson, "status": "user_confirmed"}, ensure_ascii=False))
+            atomic_text(language_path, "\n".join(values).rstrip() + "\n")
+            destinations = [str(language_path)]
+        promotion = {"rule_id": rule_id, "scope": scope, "scope_label": PROMOTION_SCOPES[scope],
+                     "promoted_at": now, "destinations": destinations}
+        promotions[key] = promotion
+        atomic_json(folder / "promotions.json", promotions)
+    return {"promotion": promotion, "record": manual_edit_record(root, book_id, chapter, edit_id)}
 
 
 def update_manual_edit_status(root: Path, book_id: str, chapter: int,

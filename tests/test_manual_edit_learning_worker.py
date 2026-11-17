@@ -36,12 +36,18 @@ class ManualEditLearningWorkerTests(unittest.TestCase):
             self.assertIn("before.md", prompt)
             self.assertIn("after.md", prompt)
             self.assertIn("diff.md", prompt)
-            output.write_text(
-                "## 改了什么\n开门动作加了轻缓的节奏。\n"
-                "## 为什么这样更合适\n人物此刻在试探，动作放慢。\n"
-                "## 可以吸收什么\n紧张场景可用动作速度，但日常开门不必套用。\n",
-                encoding="utf-8",
-            )
+            output.write_text(json.dumps({
+                "summary": "开门动作加了轻缓的节奏。",
+                "changes": [{"before": "甲把门推开。", "after": "甲轻轻把门推开。",
+                             "effect": "人物此刻在试探，动作放慢。"}],
+                "tradeoffs": [],
+                "learning_candidates": [{
+                    "principle": "用动作速度表达试探，不替人物解释心情。",
+                    "applies_when": "人物面对不确定回应时", "avoid": "日常开门不必套用",
+                    "rationale": "改前动作太直，改后让试探可见。",
+                    "recommended_scope": "shared_language", "confidence": "medium", "tags": ["动作"],
+                }],
+            }, ensure_ascii=False), encoding="utf-8")
 
         with patch.object(worker, "ROOT", self.root), patch.object(
             worker, "resolve_codex", return_value="codex"
@@ -52,7 +58,11 @@ class ManualEditLearningWorkerTests(unittest.TestCase):
         record = service.manual_edit_record(self.root, "demo", 1, self.edit_id)
         self.assertEqual(record["status"], "completed")
         self.assertIn("日常开门不必套用", record["analysis"])
+        self.assertEqual(record["learning_candidates"][0]["recommended_scope"], "shared_language")
         self.assertEqual((self.project / "style_guide.md").read_text(encoding="utf-8"), "# 原有文风\n")
+        promoted = service.promote_manual_edit_learning(self.root, "demo", 1, self.edit_id, 0)
+        self.assertEqual(promoted["promotion"]["scope"], "shared_language")
+        self.assertTrue((self.root / "shared" / "chinese_dialogue_feedback.jsonl").is_file())
 
     def test_failed_analysis_keeps_edit_and_shows_error(self) -> None:
         with patch.object(worker, "ROOT", self.root), patch.object(

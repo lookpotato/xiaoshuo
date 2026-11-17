@@ -189,6 +189,22 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
     finally { setBusy(false); }
   }
 
+  async function promoteManualLearning(edit, index) {
+    const candidate = edit.learning_candidates[index];
+    const destination = candidate.recommended_scope === "shared_language" ? "中文语言库" : "作者规则";
+    if (!window.confirm(`确认把这条写法沉淀到${destination}吗？后续创作会读取它。`)) return;
+    setBusy(true);
+    try {
+      const result = await api("/api/reader-feedback/manual-edit/promote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: book.id, chapter: chapterNumber, edit_id: edit.id, candidate_index: index }),
+      });
+      setManualEdits((current) => current.map((item) => item.id === edit.id ? result.record : item));
+      onNotice(`已加入${destination}`);
+    } catch (error) { onNotice(error.message); }
+    finally { setBusy(false); }
+  }
+
   async function requestChapterRewrite(item) {
     const error = applyErrors[item.id] || "当前候选修订不符合整章要求";
     if (["queued", "responding"].includes(item.author_dialogue_status)) return;
@@ -272,8 +288,9 @@ export default function ReaderFeedbackWorkspace({ book, apiVersion, onNotice }) 
       <p>旧版本已收入草稿箱；{receipt.word_count ? `正文现为 ${receipt.word_count} 字。` : "最新正式稿已经重新载入。"}{receipt.invalidated_checks?.length ? `已撤销过期的${receipt.invalidated_checks.join("、")}，重新验收前不会发布。` : "本次没有需要撤销的旧验收。"}</p>
     </article>}
     {apiVersion < 14 && <div className="stale-version-warning" role="alert">请重启工作台服务，启用保存后的自动对比分析。</div>}
+    {apiVersion >= 14 && apiVersion < 16 && <div className="stale-version-warning" role="alert">请重启工作台服务，启用手动改稿的作者规则和中文语言库候选。</div>}
 
-    {manualEdits.length > 0 && <article className="panel manual-edit-history"><div className="panel-head"><div><p className="eyebrow">YOUR EDITS</p><h2>手动修改与 AI 复盘</h2></div><span className="count-label">{manualEdits.length} 次</span></div><p>每次保存都保留当时的原文和修改稿。以下分析只供你判断，不会自动写入长期规则。</p>{manualEdits.slice(0, 6).map((edit, index) => <details key={edit.id} defaultOpen={index === 0}><summary>{new Date(edit.receipt.applied_at).toLocaleString("zh-CN")} · {edit.status === "completed" ? "分析完成" : edit.status === "failed" ? "分析失败" : edit.status === "unavailable" ? "旧记录无分析" : "AI 正在分析"}</summary><div className="manual-edit-analysis"><h3>原文对比</h3><pre>{edit.comparison || "此记录保存时尚未生成逐行对比。"}{edit.comparison_truncated ? "\n…对比过长，已截取前段" : ""}</pre><h3>写法复盘</h3>{edit.status === "completed" ? <pre>{edit.analysis}</pre> : <p>{edit.status === "failed" || edit.status === "unavailable" ? edit.error || "分析失败，可在运行记录查看日志。" : "AI 正在阅读本次修改，完成后会显示在这里。"}</p>}{["failed", "unavailable"].includes(edit.status) && edit.can_analyze && <button className="button ghost" disabled={busy} onClick={() => retryManualAnalysis(edit)}>{edit.status === "unavailable" ? "补做分析" : "重新分析"}</button>}</div></details>)}</article>}
+    {manualEdits.length > 0 && <article className="panel manual-edit-history"><div className="panel-head"><div><p className="eyebrow">YOUR EDITS</p><h2>手动修改与 AI 复盘</h2></div><span className="count-label">{manualEdits.length} 次</span></div><p>每次保存都保留原文和修改稿。AI 会逐项对比，并提出适合作者或中文语言库的候选；由你确认后才会入库。</p>{manualEdits.slice(0, 6).map((edit, index) => <details key={edit.id} defaultOpen={index === 0}><summary>{new Date(edit.receipt.applied_at).toLocaleString("zh-CN")} · {edit.status === "completed" ? "分析完成" : edit.status === "failed" ? "分析失败" : edit.status === "unavailable" ? "旧记录无分析" : "AI 正在分析"}</summary><div className="manual-edit-analysis"><h3>原文对比</h3><pre>{edit.comparison || "此记录保存时尚未生成逐行对比。"}{edit.comparison_truncated ? "\n…对比过长，已截取前段" : ""}</pre><h3>写法复盘</h3>{edit.status === "completed" ? <pre>{edit.analysis}</pre> : <p>{edit.status === "failed" || edit.status === "unavailable" ? edit.error || "分析失败，可在运行记录查看日志。" : "AI 正在阅读本次修改，完成后会显示在这里。"}</p>}{edit.status === "completed" && edit.structured_analysis && !edit.learning_candidates?.length && <p>本次改动没有足够可推广的写法，保留为本章经验。</p>}{edit.status === "completed" && edit.learning_candidates?.map((candidate, candidateIndex) => <div className="manual-learning-candidate" key={candidateIndex}><strong>{candidate.principle}</strong><p>建议范围：{candidate.recommended_scope === "shared_language" ? "中文语言库" : "作者规则"} · {candidate.confidence === "high" ? "高把握" : "中等把握"}</p><p>适用：{candidate.applies_when}</p><p>边界：{candidate.avoid}</p><p>依据：{candidate.rationale}</p>{edit.promotions?.[String(candidateIndex)] ? <span>已加入{edit.promotions[String(candidateIndex)].scope_label}</span> : <button className="button ghost" disabled={busy || apiVersion < 16} onClick={() => promoteManualLearning(edit, candidateIndex)}>确认加入{candidate.recommended_scope === "shared_language" ? "中文语言库" : "作者规则"}</button>}</div>)}{(["failed", "unavailable"].includes(edit.status) || (edit.status === "completed" && !edit.structured_analysis)) && edit.can_analyze && <button className="button ghost" disabled={busy || (edit.status === "completed" && apiVersion < 16)} onClick={() => retryManualAnalysis(edit)}>{edit.status === "completed" ? "补做经验候选" : edit.status === "unavailable" ? "补做分析" : "重新分析"}</button>}</div></details>)}</article>}
 
     <div className="feedback-workspace">
       <article className="panel feedback-reader" onMouseUp={captureSelection} ref={readerRef}>
