@@ -26,6 +26,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const chatRef = useRef(null);
+  const editorRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -42,6 +43,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         setData((current) => current ? { ...current, questions: result.questions, status: result.status,
           progress: result.progress, change_summary: result.change_summary, result_summary: result.result_summary,
           plan_change_summary: result.plan_change_summary, understanding: result.understanding, learning: result.learning, last_report: result.last_report,
+          proposal: result.proposal,
           plan_stale: result.plan_stale } : current);
       } catch (failure) { setError(failure.message); }
     }, 3000);
@@ -56,7 +58,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
         if (current && current.status !== "running") {
           window.clearInterval(timer); setRun(null);
           await load();
-          if (current.status === "success") onNotice(run.action === "prepare" ? "写前总览已生成，请先审阅和修改" : run.action === "summarize" ? "AI 理解总结已生成，请检查是否理解正确" : run.action === "ask" ? "作者已回答问题" : "章节扩写、归档与后续接力更新已完成");
+          if (current.status === "success") onNotice(run.action === "prepare" ? "写前总览已生成，请先审阅和修改" : run.action === "summarize" ? "AI 理解总结已生成，请检查是否理解正确" : run.action === "ask" ? "作者已回答问题" : run.action === "revise" ? "总览修改稿已生成，请审阅后决定是否采用" : "章节扩写、归档与后续接力更新已完成");
           else {
             const failedLog = await api(`/api/run-log?run_id=${encodeURIComponent(run.id)}&tail=100`);
             setError(failedLog.error_summary || "任务未完成，请在控制台查看失败原因");
@@ -67,7 +69,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     return () => window.clearInterval(timer);
   }, [run, load, onNotice]);
 
-  async function launch(action) {
+  async function launch(action, questionIndex) {
     if (busy || run) return;
     setBusy(true); setError("");
     try {
@@ -82,11 +84,11 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       }
       const result = await api(`/api/overview-handoff/${action}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: book.id, chapter, revision, question }),
+        body: JSON.stringify({ book_id: book.id, chapter, revision, question, question_index: questionIndex }),
       });
       setRun({ id: result.run.id, action }); onRunStarted(result.run);
       if (action === "ask") setQuestion("");
-      onNotice(action === "prepare" ? "正在生成写前总览" : action === "summarize" ? "AI 正在总结你的修改意图与后续影响" : action === "ask" ? "作者正在回答" : "正在按你确认的总览扩写");
+      onNotice(action === "prepare" ? "正在生成写前总览" : action === "summarize" ? "AI 正在总结你的修改意图与后续影响" : action === "ask" ? "作者正在回答" : action === "revise" ? "正在根据对话生成总览修改稿" : "正在按你确认的总览扩写");
     } catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
   }
@@ -128,6 +130,14 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
     finally { setBusy(false); }
   }
 
+  function adoptProposal() {
+    if (!data?.proposal || text !== data.overview) return;
+    setText(data.proposal.content);
+    editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    editorRef.current?.focus();
+    onNotice("修改稿已放入总览编辑框；请审阅后保存，作者回答本身不会自动改动总览");
+  }
+
   const dirty = data?.status === "pending" && text !== data.overview;
   const learning = data?.learning || data?.last_report?.learning;
   const exchanges = data?.questions || [];
@@ -140,7 +150,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   return <div className="human-workspace overview-handoff">
     <article className="panel human-intro">
       <div className="panel-head"><div><p className="eyebrow">AUTHOR HANDOFF</p><h2>写前总览接力</h2></div><span className="local-badge">第 {chapter} 章</span></div>
-      <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；保存并确认后，AI 再以你的总览扩成正文。</p>
+      <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；对话后可生成修改稿，审阅并保存后再扩写正文。</p>
       {apiVersion < 15 && <p className="feedback" role="alert">请重启 Python 工作台服务，加载长期经验总结功能。已保存的总览会保留。</p>}
     </article>
     {(busy || run || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
@@ -158,17 +168,20 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       <article className="panel human-editor"><div className="panel-head"><div><p className="eyebrow">YOUR OVERVIEW</p><h2>修改本章总览</h2></div><span>{text.length} 字符</span></div>
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}
         {(data.term_note || (book.id === "night-floor" && text.includes("原表"))) && <div className="overview-term-note"><strong>这里的“原表”是什么？</strong><p>{data.term_note || "街道手里的二零二旧登记表：二零二一栏写着‘已退出’，但刘桂芳仍实际居住。街道已暂停按空户处理，原表还没改；旧凭据号与郭冬梅母亲的收条末四位相同，错记原因仍未查清。"}</p></div>}
-        <textarea aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />
+        <textarea ref={editorRef} aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />
         <div className="human-actions"><button className="button primary" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={save}>保存总览</button><button className="button ghost" disabled={busy || !!run || apiVersion < 15 || data.status !== "pending" || data.plan_stale} onClick={() => launch("expand")}>保存总览并扩写</button><button className="button ghost" disabled={!!run} onClick={load}>重新载入</button></div>
         <p className="feedback">扩写前会同步本章规划与人物线；归档后按最终正文更新后续接力，后续旧规划将备份并重新生成。</p>
         {dirty && <p className="feedback">有未保存修改，点击保存总览并扩写会自动保存后直接扩写。</p>}
         {data.status === "expanding" && <p className="feedback">已交给 AI 扩写。若任务已停止或失败，可用保存的总览重试。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("expand")}>重试扩写</button></p>}
         {data.status === "archived" && <p className="feedback">本章已按确认的总览完成归档，后续接力已按最终正文更新。</p>}
       </article>
-      {(data.status === "pending" || exchanges.length > 0 || pendingQuestion) && <article className="panel human-guide"><h2>与作者讨论</h2><p>指出逻辑、人物动机或场景安排的问题。提问时会自动保存当前总览；回复会直接显示在下面。</p>
+      {(data.status === "pending" || exchanges.length > 0 || pendingQuestion) && <article className="panel human-guide"><h2>与作者讨论</h2><p>指出逻辑、人物动机或场景安排的问题。提问时会自动保存当前总览；回复会直接显示在下面，修改稿需由你审阅后采用。</p>
         {data.status === "pending" && <><textarea className="overview-question" aria-label="向作者提问" placeholder="例如：这个人物为什么此时愿意交出钥匙？" value={question} onChange={(event) => setQuestion(event.target.value)} />
         <div className="human-actions"><button className="button ghost" disabled={busy || !!run || data.plan_stale || question.trim().length < 2} onClick={askAuthor}>询问作者</button></div></>}
-        <div className="overview-answers" aria-live="polite" ref={chatRef}>{exchanges.map((item, index) => <div className="overview-exchange" key={index}><p className="overview-user"><strong>你</strong><span>{item.question}</span></p><p className="overview-author"><strong>作者 AI</strong><span>{item.status === "running" ? "正在思考并组织回答……" : item.status === "failed" ? "回答失败，请重新提问或查看控制台。" : item.answer}</span></p></div>)}{showLocalPending && <div className="overview-exchange"><p className="overview-user"><strong>你</strong><span>{pendingQuestion}</span></p><p className="overview-author"><strong>作者 AI</strong><span>正在思考并组织回答……</span></p></div>}</div>
+        <div className="overview-answers" aria-live="polite" ref={chatRef}>{exchanges.map((item, index) => <div className="overview-exchange" key={index}><p className="overview-user"><strong>你</strong><span>{item.question}</span></p><p className="overview-author"><strong>作者 AI</strong><span>{item.status === "running" ? "正在思考并组织回答……" : item.status === "failed" ? "回答失败，请重新提问或查看控制台。" : item.answer}</span></p>{data.status === "pending" && item.status === "answered" && <button className="button ghost" disabled={busy || !!run || apiVersion < 17 || data.plan_stale || dirty} onClick={() => launch("revise", index)}>按这条答复修改总览</button>}</div>)}{showLocalPending && <div className="overview-exchange"><p className="overview-user"><strong>你</strong><span>{pendingQuestion}</span></p><p className="overview-author"><strong>作者 AI</strong><span>正在思考并组织回答……</span></p></div>}</div>
+        {dirty && exchanges.some((item) => item.status === "answered") && <p className="feedback">先保存编辑框里尚未保存的改动，再根据作者答复生成修改稿。</p>}
+        {apiVersion < 17 && exchanges.some((item) => item.status === "answered") && <p className="feedback" role="alert">请重启 Python 工作台服务，加载对话修改功能。</p>}
+        {data.status === "pending" && data.proposal && <section className="overview-proposal"><h3>根据对话生成的总览修改稿</h3><ChangeSummary summary={data.proposal.comparison} title="建议修改的内容" note="修改稿尚未保存，不会自动进入章节扩写。" /><button className="button primary" disabled={busy || !!run || dirty || !data.proposal.comparison?.count} onClick={adoptProposal}>放入总览编辑框</button></section>}
       </article>}
     </>}
     {error && <p className="feedback" role="alert">{error}</p>}

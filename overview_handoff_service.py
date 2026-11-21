@@ -100,6 +100,8 @@ def workspace(root: Path, book_id: str, chapter: int) -> dict:
         "overview": overview, "revision": _hash(overview),
         "plan_stale": plan_revision != meta["plan_revision"],
         "questions": meta.get("questions", []),
+        "proposal": (meta.get("proposal") if meta.get("status") == "pending"
+                     and meta.get("proposal", {}).get("revision") == _hash(overview) else None),
         "change_summary": comparison, "progress": meta.get("progress"),
         "plan_change_summary": meta.get("plan_change_summary"),
         "understanding": meta.get("understanding"),
@@ -186,12 +188,19 @@ def _check_pending(root: Path, book_id: str, chapter: int, *, allow_expanding: b
 
 
 def validate_pending(root: Path, book_id: str, chapter: int, action: str,
-                     revision: str, question: str | None = None) -> None:
-    _, run, _ = _check_pending(root, book_id, chapter, allow_expanding=action == "expand")
+                     revision: str, question: str | None = None,
+                     question_index: int | None = None) -> None:
+    _, run, meta = _check_pending(root, book_id, chapter, allow_expanding=action == "expand")
     if _hash(_read(run / "overview.md")) != revision:
         raise ValueError("总览版本已变化，请刷新后重试")
     if action == "ask" and (not isinstance(question, str) or not 2 <= len(question.strip()) <= 2000):
         raise ValueError("问题长度无效")
+    if action == "revise":
+        exchanges = meta.get("questions", [])
+        if (not isinstance(question_index, int) or isinstance(question_index, bool)
+                or not 0 <= question_index < len(exchanges)
+                or exchanges[question_index].get("status") != "answered"):
+            raise ValueError("请先完成作者对话，再根据回答修改总览")
     if action == "expand" and len(_read(run / "overview.md").strip()) < 50:
         raise ValueError("请先完成写前总览")
 
@@ -213,6 +222,7 @@ def save(root: Path, book_id: str, chapter: int, content: str, revision: str) ->
         meta["change_summary"] = compare_overviews(before, content)
     if before != content:
         meta["understanding"] = {"revision": _hash(content), "status": "pending", "text": ""}
+        meta.pop("proposal", None)
     _write_meta(run, meta)
     return {"revision": _hash(content), "change_summary": meta["change_summary"], "understanding": meta.get("understanding")}
 
@@ -294,6 +304,37 @@ def ask(root: Path, book_id: str, chapter: int, question: str, revision: str) ->
     exchange.update({"answer": response, "status": "answered"})
     _write_meta(run, meta)
     return response
+
+
+def revise(root: Path, book_id: str, chapter: int, revision: str, question_index: int) -> dict:
+    validate_pending(root, book_id, chapter, "revise", revision, question_index=question_index)
+    project, run, meta = _check_pending(root, book_id, chapter)
+    exchange = meta["questions"][question_index]
+    prompt = run / f"overview_revise_{question_index + 1}.md"
+    output = run / f"overview_revise_{question_index + 1}.result.md"
+    prompt.write_text(
+        "# 根据作者对话提出写前总览修订稿\n\n"
+        f"阅读当前总览 `{run / 'overview.md'}`、章节合同 "
+        f"`{project / 'chapter_plans' / f'{chapter:04d}.json'}`、上一章正文及本书世界规则。\n"
+        f"用户提问：{exchange['question']}\n作者回答：{exchange['answer']}\n\n"
+        "只针对这段问答中已经说清的修改意见调整总览，保持其他情节、人物知情边界和已发生事实。"
+        "若回答给出多个互斥选项且用户尚未选择，不替用户擅定；保留待决定处。"
+        "不要修改任何文件。最终只输出完整的 Markdown 写前总览，从原有标题开始，不附解释或代码围栏。\n",
+        encoding="utf-8",
+    )
+    execute(prompt, output, run, read_only=True)
+    content = _read(output).strip()
+    original = _read(run / "overview.md")
+    heading = original.splitlines()[0] if original else ""
+    if not 50 <= len(content) <= 100_000 or not heading.startswith("# ") or content.splitlines()[0] != heading:
+        raise ValueError("作者没有返回完整的写前总览修订稿，请重试")
+    _, _, latest = _check_pending(root, book_id, chapter)
+    if _hash(_read(run / "overview.md")) != revision:
+        raise ValueError("生成修订稿期间总览已变化，请重新生成")
+    latest["proposal"] = {"revision": revision, "question_index": question_index,
+                          "content": content, "comparison": compare_overviews(original, content)}
+    _write_meta(run, latest)
+    return latest["proposal"]
 
 
 def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
@@ -477,16 +518,20 @@ def expand(root: Path, book_id: str, chapter: int, revision: str) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("prepare", "ask", "summarize", "expand"))
+    parser.add_argument("action", choices=("prepare", "ask", "revise", "summarize", "expand"))
     parser.add_argument("--book", required=True)
     parser.add_argument("--chapter", type=int, required=True)
     parser.add_argument("--question")
+    parser.add_argument("--question-index", type=int)
     parser.add_argument("--revision")
     args = parser.parse_args()
     if args.action == "prepare":
         print(f"写前总览已准备：{prepare(ROOT, args.book, args.chapter)}", flush=True)
     elif args.action == "ask":
         print(ask(ROOT, args.book, args.chapter, args.question, args.revision), flush=True)
+    elif args.action == "revise":
+        revise(ROOT, args.book, args.chapter, args.revision, args.question_index)
+        print("总览修改稿已生成，请在页面审阅后决定是否采用。", flush=True)
     elif args.action == "summarize":
         summarize(ROOT, args.book, args.chapter, args.revision)
         print("AI 理解总结已生成，请在页面审阅。", flush=True)

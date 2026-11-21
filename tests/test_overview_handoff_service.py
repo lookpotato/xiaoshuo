@@ -92,6 +92,33 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertEqual(len(service.workspace(self.root, "book", 3)["questions"]), 1)
         self.assertEqual(service.workspace(self.root, "book", 3)["questions"][0]["status"], "answered")
 
+    def test_answer_revision_is_proposed_before_author_saves(self):
+        initial = service.workspace(self.root, "book", 3)
+        with patch.object(service, "execute", side_effect=lambda prompt, output, run, **kwargs:
+                          output.write_text("动机应该先落在门后的声音。", encoding="utf-8")):
+            service.ask(self.root, "book", 3, "为什么开门？", initial["revision"])
+        revised = initial["overview"] + "\n她先确认门后的声音，再决定开门。"
+
+        def propose(prompt, output, run, **kwargs):
+            self.assertTrue(kwargs["read_only"])
+            self.assertIn("为什么开门？", prompt.read_text(encoding="utf-8"))
+            output.write_text(revised, encoding="utf-8")
+
+        with patch.object(service, "execute", side_effect=propose):
+            proposal = service.revise(self.root, "book", 3, initial["revision"], 0)
+        current = service.workspace(self.root, "book", 3)
+        self.assertEqual(current["overview"], initial["overview"])
+        self.assertEqual(current["revision"], initial["revision"])
+        self.assertEqual(proposal["content"], revised)
+        self.assertEqual(current["proposal"]["content"], revised)
+        service.save(self.root, "book", 3, revised, initial["revision"])
+        self.assertIsNone(service.workspace(self.root, "book", 3)["proposal"])
+
+    def test_unanswered_question_cannot_generate_revision(self):
+        initial = service.workspace(self.root, "book", 3)
+        with self.assertRaisesRegex(ValueError, "请先完成作者对话"):
+            service.validate_pending(self.root, "book", 3, "revise", initial["revision"], question_index=0)
+
     def test_understanding_is_read_only_revision_bound_and_preserves_planning(self):
         initial = service.workspace(self.root, "book", 3)
         before_plan = (self.project / "chapter_plans" / "0003.json").read_bytes()

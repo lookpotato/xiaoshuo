@@ -92,6 +92,20 @@ class WebAppDataTests(unittest.TestCase):
         self.assertIn("总结修改理解", label)
         validate.assert_called_once()
 
+    def test_overview_revision_launches_for_selected_answer(self) -> None:
+        with patch.object(web_app, "launch_command", return_value={"id": "proposal"}) as launch, \
+             patch.object(web_app, "list_runs", return_value=[]), \
+             patch.object(web_app.overview_handoff_service, "validate_pending") as validate:
+            result = web_app.launch_overview_handoff(
+                {"book_id": "night-floor", "chapter": 25, "revision": "revision", "question_index": 2}, "revise")
+        self.assertEqual(result["id"], "proposal")
+        command, kind, label = launch.call_args.args
+        self.assertEqual(command[2], "revise")
+        self.assertEqual(command[-4:], ["--revision", "revision", "--question-index", "2"])
+        self.assertEqual(kind, "overview_revise")
+        self.assertIn("生成总览修改稿", label)
+        validate.assert_called_once()
+
     def test_react_frontend_is_configured(self) -> None:
         package = web_app.read_json(web_app.ROOT / "web" / "package.json", {})
         self.assertIn("react", package.get("dependencies", {}))

@@ -41,7 +41,7 @@ RUN_LOCK = threading.Lock()
 RUN_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_LINE_LENGTH = 1600
-API_VERSION = 16
+API_VERSION = 17
 OPERATIONAL_LOG_PREFIXES = (
     "[",
     "本批进度",
@@ -666,11 +666,14 @@ def launch_overview_handoff(payload: dict, action: str) -> dict:
         label = f"《{book.get('title', book_id)}》第 {chapter} 章生成写前总览"
     else:
         overview_handoff_service.validate_pending(ROOT, book_id, chapter, action,
-                                                   payload.get("revision"), payload.get("question"))
+                                                   payload.get("revision"), payload.get("question"),
+                                                   payload.get("question_index"))
         command.extend(["--revision", str(payload.get("revision", ""))])
         if action == "ask":
             command.extend(["--question", str(payload.get("question", ""))])
-        label = f"《{book.get('title', book_id)}》第 {chapter} 章" + ({"ask": "作者答疑", "summarize": "总结修改理解"}.get(action, "按总览扩写"))
+        if action == "revise":
+            command.extend(["--question-index", str(payload.get("question_index"))])
+        label = f"《{book.get('title', book_id)}》第 {chapter} 章" + ({"ask": "作者答疑", "revise": "生成总览修改稿", "summarize": "总结修改理解"}.get(action, "按总览扩写"))
     return launch_command(command, f"overview_{action}", label)
 
 
@@ -1155,7 +1158,7 @@ class AppHandler(BaseHTTPRequestHandler):
                                                        payload.get("content"), str(payload.get("revision", "")))
                 self.send_json({"ok": True, **result})
                 return
-            for action in ("prepare", "ask", "summarize", "expand"):
+            for action in ("prepare", "ask", "revise", "summarize", "expand"):
                 if parsed.path == f"/api/overview-handoff/{action}":
                     self.send_json({"ok": True, "run": launch_overview_handoff(payload, action)}, HTTPStatus.ACCEPTED)
                     return
