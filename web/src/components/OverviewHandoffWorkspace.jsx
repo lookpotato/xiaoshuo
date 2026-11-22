@@ -141,6 +141,10 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   const dirty = data?.status === "pending" && text !== data.overview;
   const learning = data?.learning || data?.last_report?.learning;
   const exchanges = data?.questions || [];
+  const answeredCount = exchanges.filter((item) => item.status === "answered").length;
+  const pendingStatus = dirty
+    ? `第 ${chapter} 章总览有未保存修改；尚未扩写`
+    : `第 ${chapter} 章总览已保存${answeredCount ? `，已完成 ${answeredCount} 次作者问答` : ""}${data?.proposal ? "，修改稿待审阅" : ""}；尚未扩写`;
   const lastExchange = exchanges[exchanges.length - 1];
   const showLocalPending = pendingQuestion && run?.action === "ask" &&
     !(lastExchange?.question === pendingQuestion && lastExchange?.status === "running");
@@ -153,8 +157,9 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；对话后可生成修改稿，审阅并保存后再扩写正文。</p>
       {apiVersion < 15 && <p className="feedback" role="alert">请重启 Python 工作台服务，加载长期经验总结功能。已保存的总览会保留。</p>}
     </article>
-    {(busy || run || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
-      <div role="status" aria-live="polite"><strong>{busy ? "正在保存或提交任务，请稍候……" : run || data?.status === "expanding" ? (data?.progress?.stage || (run?.action === "ask" ? "作者正在回答……" : run?.action === "prepare" ? "正在生成总览……" : "正在启动扩写与剧情同步……")) : data?.progress?.stage || "总览已保存，等待确认扩写"}</strong>
+    {(busy || run || data?.status === "pending" || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
+      <div role="status" aria-live="polite"><strong>{busy ? "正在保存或提交任务，请稍候……" : run || data?.status === "expanding" ? (data?.progress?.stage || (run?.action === "ask" ? "作者正在回答……" : run?.action === "prepare" ? "正在生成总览……" : "正在启动扩写与剧情同步……")) : data?.status === "pending" ? (data?.progress?.stage?.includes("失败") ? data.progress.stage : pendingStatus) : data?.status === "archived" ? `第 ${chapter} 章已归档` : `第 ${chapter} 章尚未生成写前总览`}</strong>
+      {data?.status === "pending" && !run && <p>当前停在写前总览确认阶段。审阅总览后，点击下方“保存总览并扩写”才会开始生成第 {chapter} 章正文。</p>}
       {(run || data?.status === "expanding") && <p>任务运行中，进度每 3 秒更新。当前阶段可能需要几分钟，请勿重复提交。</p>}</div>
       <details><summary>查看原文差异</summary><ChangeSummary summary={data?.change_summary || data?.last_report?.change_summary} /></details>
       <ChangeSummary summary={data?.plan_change_summary || data?.last_report?.plan_change_summary} title="本章规划同步前后对比" note="这是实际写入章节规划的变化。" />
