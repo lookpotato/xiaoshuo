@@ -151,19 +151,14 @@ def prepare(root: Path, book_id: str, chapter: int) -> Path:
 
 
 def _render_overview(plan: dict, run: Path, chapter: int) -> str:
-    scenes = "\n".join(
-        f"{index}. {item.get('purpose', '')}；阻力：{item.get('conflict', '')}；变化：{item.get('turn', '')}"
-        for index, item in enumerate(plan.get("scene_plan", []), 1) if isinstance(item, dict)
-    )
+    payoff = plan.get("reader_payoff") or {}
+    ending = plan.get("ending_pressure") or {}
     overview = (
         f"# 第 {chapter} 章写前总览\n\n"
-        f"## 本章要做的事\n{plan.get('immediate_goal', '')}\n\n"
-        f"## 冲突与选择\n{plan.get('central_conflict', '')}\n{plan.get('central_choice', '')}\n\n"
-        f"## 场景推进\n{scenes}\n\n"
-        f"## 读者看见的结果\n{plan.get('reader_payoff', {}).get('on_page_event', '')}\n\n"
-        f"## 作者对人物与现场的理解\n{_read(run / 'author_room.md').strip()}\n\n"
-        "## 结尾压力\n"
-        f"{plan.get('ending_pressure', {}).get('visible_trigger', '')}\n"
+        f"## 本章要发生什么\n{plan.get('immediate_goal', '')}\n\n"
+        f"## 人物关键选择\n{plan.get('central_choice', '')}\n\n"
+        f"## 读者能看到什么\n{payoff.get('on_page_event', '')}\n\n"
+        f"## 结尾留下什么\n{ending.get('visible_trigger', '')}\n"
     )
     return overview
 
@@ -353,8 +348,9 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
         _read(run / "director.md") + "\n\n# 作者确认后的规划同步\n"
         f"读取 `{run / 'approved_overview.md'}` 与当前合同 `{plan_path}`、前章正文和世界规则。"
         f"如有 `{run / 'approved_understanding.md'}`，读取用户已审阅的理解总结以保持修改意图；以确认总览和既有正文为准，不能把疑问和建议自动当成既定事实。"
-        "以确认总览替换本章旧设想，逐项同步目标、人物驱动、场景、回报、结尾与视角合同。"
-        "被总览删除的事件、承诺和观察位置不得继续出现在合同其他字段。"
+        "确认总览是短卡片：未提及的细节不代表删除，保留仍合理的原合同安排；"
+        "用户明确改动或否定的目标、人物选择、场景、回报、结尾与视角边界才同步到合同各字段。"
+        "被用户明确删除的事件、承诺和观察位置不得继续出现在合同其他字段。"
         "总览中的未来打算不能写成前章已发生事实；与既有事实冲突应报错。"
         "不要调用工具修改文件，不生成正文。最终回复只输出完整章节合同 JSON 对象，"
         "沿用合同结构和章号，不加代码围栏；前面要求写文件的指令改为只在回复输出。\n",
@@ -375,6 +371,7 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
     meta["plan_revision"] = _hash(_read(plan_path))
     meta["plan_change_summary"] = compare_overviews(original.decode("utf-8-sig"), _read(plan_path))
     _write_meta(run, meta)
+    AuthorEngine(root).write_prose_brief(run)
     threads = project / "character_threads" / f"{chapter:04d}"
     if threads.is_dir():
         if project.resolve() not in threads.resolve().parents:
@@ -384,11 +381,13 @@ def sync_overview_context(root: Path, project: Path, run: Path, chapter: int,
     for stage in ("characters", "author_room", "scene_seed"):
         _progress(run, meta, {"characters": "正在重建人物线", "author_room": "正在更新人物与现场理解", "scene_seed": "正在重写场景粗稿"}[stage])
         refreshed = run / f"{stage}.overview.md"
+        context = (f"先读取 `{run / 'approved_overview.md'}` 和刚同步的章节合同。"
+                   if stage == "characters" else
+                   f"先读取 `{run / 'approved_overview.md'}` 和更新后的简要写作依据 `{run / 'prose_brief.md'}`。")
         refreshed.write_text(
-            _read(run / f"{stage}.md") + "\n\n"
-            f"先读取 `{run / 'approved_overview.md'}` 和刚同步的章节合同。"
-            "按确认总览重新建立本章材料，覆盖旧版本；旧稿已删除的情节与承诺不得沿用。"
-            "人物名单与私线须服从修改后的实际出场安排。\n", encoding="utf-8",
+            _read(run / f"{stage}.md") + "\n\n" + context
+            + "按确认总览重新建立本章材料，覆盖旧版本；旧稿已删除的情节与承诺不得沿用。"
+            + "人物名单与私线须服从修改后的实际出场安排。\n", encoding="utf-8",
         )
         execute(refreshed, run / f"{stage}.overview.result.md", run)
         if stage == "characters":

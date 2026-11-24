@@ -154,7 +154,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
   return <div className="human-workspace overview-handoff">
     <article className="panel human-intro">
       <div className="panel-head"><div><p className="eyebrow">AUTHOR HANDOFF</p><h2>写前总览接力</h2></div><span className="local-badge">第 {chapter} 章</span></div>
-      <p>先生成章节规划、人物私线和场景粗稿，扩写会暂停在这里。你可以重写总览，向内置作者 AI 询问不合理之处；对话后可生成修改稿，审阅并保存后再扩写正文。</p>
+      <p>先生成写前材料，扩写会暂停在这里。短卡片只呈现本章目标、人物选择、读者回报和结尾；你可以直接修改，或向作者 AI 提问后再扩写正文。</p>
       {apiVersion < 15 && <p className="feedback" role="alert">请重启 Python 工作台服务，加载长期经验总结功能。已保存的总览会保留。</p>}
     </article>
     {(busy || run || data?.status === "pending" || data?.progress || data?.change_summary || data?.result_summary || data?.last_report) && <article className="panel human-guide" aria-label="总览接力进度与对比">
@@ -170,7 +170,7 @@ export default function OverviewHandoffWorkspace({ book, apiVersion, onNotice, o
       {learning.status === "running" ? <p role="status">正文已归档，AI 正在总结修改原因、可复用原则和后续适用条件……</p> : learning.status === "failed" ? <p role="alert">扩写归档已完成，长期总结未写入：{learning.error}</p> : <><p style={{ whiteSpace: "pre-wrap" }}>{learning.summary}</p>{learning.lessons?.map((item, index) => <section key={index}><h3>{index + 1}. {item.problem}</h3><p>{item.principle}</p><p>适用：{item.applies_when}</p><p>避免误用：{item.avoid}</p></section>)}<p>已记入本书经验库，下次生成总览会读取这些原则。</p></>}
     </article>}
     {data?.status === "none" ? <article className="panel human-guide"><h2>准备第 {chapter} 章</h2><p>生成写前材料可能需要几分钟，完成后会在本页显示可修改的总览。</p><button className="button primary" disabled={busy || !!run || apiVersion < 12} onClick={() => launch("prepare")}>{run?.action === "prepare" ? "正在生成……" : "生成写前总览"}</button></article> : data && <>
-      <article className="panel human-editor"><div className="panel-head"><div><p className="eyebrow">YOUR OVERVIEW</p><h2>修改本章总览</h2></div><span>{text.length} 字符</span></div>
+      <article className="panel human-editor"><div className="panel-head"><div><p className="eyebrow">YOUR OVERVIEW</p><h2>修改本章短卡片</h2></div><span>{text.length} 字符</span></div>
         {data.plan_stale && <p className="feedback" role="alert">底层章节规划已变动，请重新生成总览后再扩写。<button className="button ghost" disabled={busy || !!run} onClick={() => launch("prepare")}>重新生成总览</button></p>}
         {(data.term_note || (book.id === "night-floor" && text.includes("原表"))) && <div className="overview-term-note"><strong>这里的“原表”是什么？</strong><p>{data.term_note || "街道手里的二零二旧登记表：二零二一栏写着‘已退出’，但刘桂芳仍实际居住。街道已暂停按空户处理，原表还没改；旧凭据号与郭冬梅母亲的收条末四位相同，错记原因仍未查清。"}</p></div>}
         <textarea ref={editorRef} aria-label="写前总览" value={text} disabled={data.status !== "pending" || !!run} onChange={(event) => setText(event.target.value)} />

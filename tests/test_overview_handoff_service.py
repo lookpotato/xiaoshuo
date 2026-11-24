@@ -64,6 +64,18 @@ class OverviewHandoffTests(unittest.TestCase):
         self.assertEqual(next_page["last_report"]["chapter"], 3)
         self.assertEqual(next_page["last_report"]["change_summary"], saved["change_summary"])
 
+    def test_initial_overview_is_a_short_decision_card(self):
+        plan = {"immediate_goal": "找到门", "central_choice": "她决定亲自开门",
+                "reader_payoff": {"on_page_event": "门后有人回应"},
+                "ending_pressure": {"visible_trigger": "门内传来第二个人的声音"},
+                "scene_plan": [{"purpose": "逐项交接任务"}]}
+        (self.run / "author_room.md").write_text("很长的作者分析", encoding="utf-8")
+        card = service._render_overview(plan, self.run, 3)
+        for phrase in ("找到门", "她决定亲自开门", "门后有人回应", "第二个人的声音"):
+            self.assertIn(phrase, card)
+        self.assertNotIn("逐项交接任务", card)
+        self.assertNotIn("很长的作者分析", card)
+
     def test_recovered_legacy_comparison_is_labelled_against_initial_plan(self):
         initial = "初始总览" * 20
         (self.run / "overview.original.md").write_text(initial, encoding="utf-8")
@@ -215,9 +227,11 @@ class OverviewHandoffTests(unittest.TestCase):
         with patch.object(service, "execute", side_effect=execute), \
              patch.object(service, "planning_context_sha256", return_value="current"), \
              patch.object(service, "validate_plan"), patch.object(service, "validate_characters"), \
-             patch.object(service, "validate_viewpoint_contract"), patch.object(service, "validate_scene_seed"):
+             patch.object(service, "validate_viewpoint_contract"), patch.object(service, "validate_scene_seed"), \
+             patch.object(service.AuthorEngine, "write_prose_brief") as write_brief:
             service.sync_overview_context(self.root, self.project, self.run, 3, revision, meta)
             service.sync_overview_context(self.root, self.project, self.run, 3, revision, meta)
+        write_brief.assert_called_once_with(self.run)
         self.assertEqual(stages, ["overview_sync.md", "characters.overview.md", "author_room.overview.md", "scene_seed.overview.md"])
         self.assertEqual(meta["context_revision"], revision)
         self.assertFalse(service.workspace(self.root, "book", 3)["plan_stale"])

@@ -153,6 +153,8 @@ class UnifiedContinuityTests(unittest.TestCase):
         self.assertIn("scene_seed.md", draft_prompt)
         self.assertIn("prose_brief.md", draft_prompt)
         self.assertNotIn(str(self.project / "chapter_plans"), draft_prompt)
+        self.assertNotIn(str(self.project / "chapter_plans"), (run / "author_room.md").read_text(encoding="utf-8"))
+        self.assertNotIn(str(self.project / "chapter_plans"), (run / "scene_seed.md").read_text(encoding="utf-8"))
 
     def test_prose_brief_keeps_story_facts_without_full_planning_context(self):
         home = self.root / "novel_engine_v3"
@@ -172,8 +174,10 @@ class UnifiedContinuityTests(unittest.TestCase):
         path = AuthorEngine(self.root).write_prose_brief(run)
         brief = path.read_text(encoding="utf-8")
         self.assertIn("找出新门", brief)
-        self.assertIn("邻居先把门推开", brief)
-        self.assertIn("有人带尺进入", brief)
+        self.assertIn("先守住入口", brief)
+        self.assertIn("两栋楼相通", brief)
+        self.assertNotIn("邻居先把门推开", brief)
+        self.assertNotIn("有人带尺进入", brief)
         self.assertNotIn("character_drives", brief)
 
 

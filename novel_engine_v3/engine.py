@@ -155,7 +155,7 @@ class AuthorEngine:
 
 你不是提示词执行器。你要像一个长期写中国故事的作者，先理解这一章的人为什么此刻来到这里、各自还要过自己的生活、彼此有什么说不出口的顾虑，再决定这章怎样发生。
 
-先读取并遵守章节合同 `{plan}` 与本章人物私线 `{thread_dir}`；再读取这些资料：
+先读取本章简要写作依据 `{run / 'prose_brief.md'}` 与人物私线 `{thread_dir}`；再读取这些资料：
 {source_list}
 
 最近正文：
@@ -179,7 +179,7 @@ class AuthorEngine:
         latest_chapter = f"`{recent[-1].resolve()}`" if recent else "无历史正文"
         seed = f"""# 场景粗稿：先找到小说的声音
 
-读取 `{run / 'author_room.md'}`、`{plan}`、本章人物私线和最近一章正文（{latest_chapter}）。写入 `{run / 'scene_seed.md'}`。
+读取 `{run / 'author_room.md'}`、`{run / 'prose_brief.md'}`、本章人物私线和最近一章正文（{latest_chapter}）。写入 `{run / 'scene_seed.md'}`。
 只写约 400—800 汉字的小说正文片段，不写提纲、分析、人物卡、解释或审稿意见。让人物在现场做事、互相说话；可以粗糙，但要有可继续扩写的动作、语气和关系。不要试图在这几百字里塞进全章所有事件。
 一句对白若同时交代眼前动作、将来安排和对别人的要求，先只保留此刻最需要对方回应的一件事；其余让动作或后续场景承担。不要为了给扩写阶段留事实而让人物报清单。
 这份粗稿只为下一次独立调用提供真实的叙述起点；章节合同由后续事实核对把关。
@@ -254,32 +254,21 @@ class AuthorEngine:
         """Give the prose call a small factual boundary without planning prose."""
         manifest = _json(run / "manifest.json")
         plan = _json(plan_path(self.root, Path(manifest["project"]), manifest["chapter"]))
-        facts = [
-            f"# 第 {manifest['chapter']} 章事实边界",
-            "以下是写作边界，不是要逐条说出的对白或情节摘要。",
-        ]
+        facts = [f"# 第 {manifest['chapter']} 章简要写作依据",
+                 "以下只确定故事方向与事实边界，不要求逐项写进正文或对白。"]
         for key, label in (
             ("immediate_goal", "眼前目标"), ("central_choice", "关键选择"),
-            ("irreversible_change", "章末变化"), ("viewpoint_contract", "视角边界"),
+            ("viewpoint_contract", "视角边界"),
         ):
             value = plan.get(key)
             if isinstance(value, str) and value.strip():
                 facts.append(f"- {label}：{value.strip()}")
-        for index, scene in enumerate(plan.get("scene_plan", [])[:6], 1):
-            if isinstance(scene, dict) and isinstance(scene.get("turn"), str):
-                facts.append(f"- 场景 {index} 的变化：{scene['turn'].strip()}")
-        for key, label in (("reader_payoff", "当章可见回报"), ("ending_pressure", "结尾迫近事件")):
-            value = plan.get(key)
-            if isinstance(value, dict):
-                detail = value.get("on_page_event" if key == "reader_payoff" else "visible_trigger")
-                if isinstance(detail, str) and detail.strip():
-                    facts.append(f"- {label}：{detail.strip()}")
+        payoff = plan.get("reader_payoff") or {}
+        if isinstance(payoff, dict) and isinstance(payoff.get("on_page_event"), str):
+            facts.append(f"- 当章可见回报：{payoff['on_page_event'].strip()}")
         clock = plan.get("story_clock")
         if isinstance(clock, dict):
             facts.append("- 时间与最高楼层：" + json.dumps(clock, ensure_ascii=False))
-        for item in plan.get("forbidden_shortcuts", [])[:5]:
-            if isinstance(item, str) and item.strip():
-                facts.append(f"- 不可写错的事实：{item.strip()}")
         recent = manifest.get("recent_chapters", [])
         if recent:
             latest = Path(recent[-1]).read_text(encoding="utf-8-sig").split("\n---", 1)[0]
